@@ -1,6 +1,5 @@
 namespace Chess {
-    public enum PieceType
-    {
+    public enum PieceType {
         None,   // 0
         Pawn,   // 1
         Knight, // 2
