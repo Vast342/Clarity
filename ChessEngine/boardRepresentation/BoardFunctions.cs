@@ -2,10 +2,12 @@ namespace Chess {
     public class BoardFunctions {
         // basically subtracting the letter a from it to get a number from it because ascii
         public static int[] StartSquareFromMoveName(string name) {
-            return new int[] {name[0] - 'c', name[1] - '2'};
+            return new int[] {name[1] - '1', name[0] - 'a'};
         }
         public static int[] TargetSquareFromMoveName(string name) {
-            return new int[] {name[2] - 'c', name[3] - '2'};
+            int g = name[2] - 'a';
+            Console.WriteLine("Set Target To " + (int)name[2] + "-" + (int)'a' + "=" + g);
+            return new int[] {name[3] - '1', name[2] - 'a'};
         }
         public static bool MoveIsPromotionFromName(string name) {
             return name.Length > 4;

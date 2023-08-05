@@ -11,10 +11,10 @@ namespace Chess {
         public Move(string n, Board board) {
             name = n;
             int[] sq = BoardFunctions.StartSquareFromMoveName(n);
-            startSquare = board.squares[sq[1], sq[0]];
+            startSquare = board.squares[sq[0], sq[1]];
             piece = startSquare.piece;
             sq = BoardFunctions.TargetSquareFromMoveName(n);
-            targetSquare = board.squares[sq[1], sq[0]];
+            targetSquare = board.squares[sq[0], sq[1]];
             if(targetSquare.piece.type != PieceType.None) {
                 isCapture = true;
                 capturedPiece = targetSquare.piece;

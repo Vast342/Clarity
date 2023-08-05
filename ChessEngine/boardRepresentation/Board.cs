@@ -63,6 +63,8 @@ namespace Chess {
                     }
                 }
             }
+            isWhiteToMove = parts[1] == "w";
+            plyCount = int.Parse(parts[5]);
         }
         public int PieceIndexForHash(Piece p) {
             return (int)p.type + (p.isWhite ? 0 : 6);
@@ -94,7 +96,6 @@ namespace Chess {
                 int numEmptyFiles = 0;
                 for (int file = 0; file < 8; file++)
                 {
-                    int i = rank * 8 + file;
                     Piece piece = squares[rank, file].piece;
                     if (piece.type != PieceType.None)
                     {
@@ -168,12 +169,14 @@ namespace Chess {
             return fen;
         }
         public void MakeMove(Move move) {
+            Console.WriteLine(move.startSquare.rank + ", " + move.startSquare.file + ", " + move.targetSquare.rank + ", " + move.targetSquare.file);
             plyCount++;
             BoardFunctions.SwapSquares(ref squares, move.startSquare.rank, move.startSquare.file, move.targetSquare.rank, move.targetSquare.file);
             // checks if it was a capture
             if(move.isCapture) {
                 squares[move.startSquare.rank, move.startSquare.file].piece = new Piece(true, PieceType.None, move.startSquare.rank, move.startSquare.file);
             }
+            isWhiteToMove = !isWhiteToMove;
         }
         public Square GetSquareFromIndex(int i) {
             return squares[i >> 3, i & 7];
