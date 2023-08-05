@@ -5,8 +5,6 @@ namespace Chess {
             return new int[] {name[1] - '1', name[0] - 'a'};
         }
         public static int[] TargetSquareFromMoveName(string name) {
-            int g = name[2] - 'a';
-            Console.WriteLine("Set Target To " + (int)name[2] + "-" + (int)'a' + "=" + g);
             return new int[] {name[3] - '1', name[2] - 'a'};
         }
         public static bool MoveIsPromotionFromName(string name) {
