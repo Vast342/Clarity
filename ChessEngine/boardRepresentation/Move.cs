@@ -11,29 +11,27 @@ namespace Chess {
         public bool isCastle;
         public int castleType;
         public bool isEnPassant;
-        // true is right, false is left.
-        public bool enPassantDirection;
+        public int enPassantDirection;
+        public Square enPassantSquare;
         public Move(string n, Board board) {
             name = n;
             // castling detection
-            if(n == "e1g1" && board.castlingRights[0] && board.GetSquareFromPosition(0,5).piece.type == PieceType.None && board.GetSquareFromPosition(0,6).piece.type == PieceType.None) {
+            if(n == "e1g1" && board.castlingRights[0]) {
                 isCastle = true;
                 castleType = 1;
             }
-            if(n == "e1b1" && board.castlingRights[1] && board.GetSquareFromPosition(0,1).piece.type == PieceType.None && board.GetSquareFromPosition(0,2).piece.type == PieceType.None && board.GetSquareFromPosition(0,3).piece.type == PieceType.None) {
+            if(n == "e1b1" && board.castlingRights[1]) {
                 isCastle = true;
                 castleType = 2;
             }
-            if(n == "e8g8" && board.castlingRights[2] && board.GetSquareFromPosition(7,5).piece.type == PieceType.None && board.GetSquareFromPosition(7,6).piece.type == PieceType.None) {
+            if(n == "e8g8" && board.castlingRights[2]) {
                 isCastle = true;
                 castleType = 3;
             }
-            if(n == "e8b8" && board.castlingRights[3] && board.GetSquareFromPosition(7,1).piece.type == PieceType.None && board.GetSquareFromPosition(7,2).piece.type == PieceType.None && board.GetSquareFromPosition(7,3).piece.type == PieceType.None) {
+            if(n == "e8b8" && board.castlingRights[3]) {
                 isCastle = true;
                 castleType = 4;
             }
-            // en passant detection
-
             // everything else
             int[] sq = BoardFunctions.StartSquareFromMoveName(n);
             startSquare = board.GetSquareFromPosition(sq[0], sq[1]);
@@ -43,11 +41,32 @@ namespace Chess {
             if(targetSquare.piece.type != PieceType.None) {
                 isCapture = true;
                 capturedPiece = targetSquare.piece;
+            } else if(piece.isPawn && startSquare.rank != targetSquare.rank) {
+                // en passant detection
+                isEnPassant = true;
+                enPassantDirection = targetSquare.rank - startSquare.rank;  
+                enPassantSquare = board.GetSquareFromPosition(targetSquare.rank - (piece.isWhite ? 1 : -1), targetSquare.file);
             }
+            // promotion detection
             isPromotion = BoardFunctions.MoveIsPromotionFromName(n);
             if(isPromotion) {
                 promotionPiece = BoardFunctions.GetPromotionPiece(n, targetSquare, piece);
             }
         }
+        /*
+        public Move(int index1, int index2, Board board) {
+            startSquare = board.GetSquareFromIndex(index1);
+            targetSquare = board.GetSquareFromIndex(index2);
+            piece = startSquare.piece;
+            if(targetSquare.piece.type != PieceType.None) {
+                isCapture = true;
+                capturedPiece = targetSquare.piece;
+            }
+        }
+        public Move(int rank1, int file1, int rank2, int file2, Board board) {
+            startSquare = board.GetSquareFromPosition(rank1, file1);
+            targetSquare = board.GetSquareFromPosition(rank2, file2);
+        }
+        */
     }
 }

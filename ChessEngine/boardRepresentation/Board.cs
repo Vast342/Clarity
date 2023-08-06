@@ -13,6 +13,8 @@ namespace Chess {
         public ulong occupiedBitboard = 0;
         public ulong[] pieceBitboards = new ulong[14];
         public ulong[] attackBitboards = new ulong[2];
+        public ulong whiteBitboard = 0;
+        public ulong blackBitboard = 0;
         // for the >> 3 and & 7,  I learned those things from Ellie M, the developer of the chess engine Homura.
         // its the same as / 8 and % 8
         // future me, if you don't remember just look up bitwise functions
@@ -103,6 +105,8 @@ namespace Chess {
             fiftyMoveCounter = int.Parse(parts[4]);
             plyCount = int.Parse(parts[5]) * 2 - (isWhiteToMove ? 0 : 1);
             UpdateBitboards(1);
+            InitializeZobrist();
+            GenerateMoveData();
         }
         public readonly int PieceIndexForHash(Piece p) {
             return (int)p.type + (p.isWhite ? 0 : 6);
@@ -207,7 +211,13 @@ namespace Chess {
             if(canEnPassant) {
                 for(int i = 0; i < 16; i++) {
                     if(enPassantRights[i]) {
-
+                        if(i < 8) {
+                            fen += (char)(i + 'a');
+                            fen += '6';
+                        } else {
+                            fen += (char)(i - 8 + 'a');
+                            fen += '3';
+                        }
                     }
                 }
             } else {
@@ -228,6 +238,7 @@ namespace Chess {
             // reset en passant rights
             for(int i = 0; i < 16; i++) {
                 enPassantRights[i] = false;
+                canEnPassant = false;
             }
             // add to 50 move counter
             fiftyMoveCounter++;
@@ -256,7 +267,8 @@ namespace Chess {
                 }
             } else if(move.isEnPassant) {
                 // does en passant
-
+                squares[move.enPassantSquare.rank, move.enPassantSquare.file] = new Square(move.enPassantSquare.rank, move.enPassantSquare.file, PieceType.None, false);
+                BoardFunctions.SwapSquares(ref squares, move.startSquare.rank, move.startSquare.file, move.targetSquare.rank, move.targetSquare.file);
             } else {
                 // does a regular move
                 BoardFunctions.SwapSquares(ref squares, move.startSquare.rank, move.startSquare.file, move.targetSquare.rank, move.targetSquare.file);
@@ -267,7 +279,7 @@ namespace Chess {
                 fiftyMoveCounter = 0;
             }
             // if it's a king move that side can't castle anymore
-            if(move.piece.type == PieceType.King && castlingRights[0] && castlingRights[1] && move.piece.isWhite && !move.isCastle) {
+            if((move.piece.type == PieceType.King || move.piece.type == PieceType.Rook)&& castlingRights[0] && castlingRights[1] && move.piece.isWhite && !move.isCastle) {
                 castlingRights[0] = false;
                 castlingRights[1] = false;
             }
@@ -278,6 +290,11 @@ namespace Chess {
             // if it's a pawn move reset the 50 move count
             if(move.piece.type == PieceType.Pawn) {
                 fiftyMoveCounter = 0;
+                // update en passant rights
+                if(Math.Abs(move.startSquare.rank - move.targetSquare.rank) > 1) {
+                    enPassantRights[move.startSquare.file + (move.piece.isWhite ? 8 : 0)] = true;
+                    canEnPassant = true;
+                }
             }
             plyCount++;
             isWhiteToMove = !isWhiteToMove;
@@ -322,6 +339,8 @@ namespace Chess {
                     i++;
                 }
                 occupiedBitboard |= pieceBitboards[1] | pieceBitboards[2] | pieceBitboards[3] | pieceBitboards[4] | pieceBitboards[5] | pieceBitboards[6] | pieceBitboards[8] | pieceBitboards[9] | pieceBitboards[10] | pieceBitboards[11] | pieceBitboards[12] | pieceBitboards[13]; 
+                whiteBitboard |= pieceBitboards[1] | pieceBitboards[2] | pieceBitboards[3] | pieceBitboards[4] | pieceBitboards[5] | pieceBitboards[6];
+                blackBitboard |= pieceBitboards[8] | pieceBitboards[9] | pieceBitboards[10] | pieceBitboards[11] | pieceBitboards[12] | pieceBitboards[13];
             }
         }
         public readonly Move[] GetLegalMoves() {

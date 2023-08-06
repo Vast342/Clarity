@@ -3,8 +3,36 @@ using Chess;
 public class Bot {
     public static void Main() {
         Console.WriteLine("IT'S ALIVE");
+        // en passant testing itself
+        Board board = new("rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3");
+        Move move = new("e5d6", board);
+        board.MakeMove(move);
+        if(board.GetFenString() == "rnbqkbnr/ppp1p1pp/3P4/5p2/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 3") {
+            Console.WriteLine("Test 1 Passed");
+        } else {
+            Console.WriteLine("Test 1 Failed, outputted " + board.GetFenString());
+        }
+
+        // en passant rights testing
+        /*
+        Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        board.InitializeZobrist();
+        board.GenerateMoveData();
+        Move move = new("e2e4", board);
+        board.MakeMove(move);
+        if(board.GetFenString() == "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1") {
+            Console.WriteLine("Test 1 Passed");
+        } else {
+            Console.WriteLine("Test 1 Failed, outputted " + board.GetFenString());
+        }
+        Move move2 = new("e7e5", board);
+        board.MakeMove(move2);
+        if(board.GetFenString() == "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 3") {
+            Console.WriteLine("Test 2 Passed");
+        } else {
+            Console.WriteLine("Test 2 Failed, outputted " + board.GetFenString());
+        }
         // castling tests
-        
         // test 1
         Board board = new("r1bqkbnr/pppp2pp/2n2p2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 1 3");
         board.InitializeZobrist();
@@ -49,6 +77,6 @@ public class Bot {
         } else {
             Console.WriteLine("Test 4 Failed, outputed " + board4.GetFenString());
         }
-        
+        */
     }
 }
