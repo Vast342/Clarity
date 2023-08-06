@@ -15,6 +15,7 @@ namespace Chess {
         public int rank;
         public int file;
         public int index;
+        public ulong legalMoves;
         public Piece(bool w, PieceType t, int r, int f) {
             isWhite = w;
             type = t;

@@ -1,12 +1,18 @@
 namespace Chess {
     public struct Board {
         public Square[,] squares = new Square[8,8];
-        public ulong zobristKey;
         public Square[] kingSquares = new Square[2];
-        private static ulong[,,] zobTable = new ulong[8,8,13];
+        private readonly static ulong[,,] zobTable = new ulong[8,8,13];
         public bool isWhiteToMove;
-        public int fiftyMoveCounter;
+        public int fiftyMoveCounter = 0;
         public int plyCount;
+        public bool[] castlingRights = new bool[4];
+        // 8 for black's pieces, 8 for white pieces
+        public bool[] enPassantRights = new bool[16];
+        public bool canEnPassant;
+        public ulong occupiedBitboard = 0;
+        public ulong[] pieceBitboards = new ulong[14];
+        public ulong[] attackBitboards = new ulong[2];
         // for the >> 3 and & 7,  I learned those things from Ellie M, the developer of the chess engine Homura.
         // its the same as / 8 and % 8
         // future me, if you don't remember just look up bitwise functions
@@ -63,13 +69,45 @@ namespace Chess {
                     }
                 }
             }
+            // whose turn it is
             isWhiteToMove = parts[1] == "w";
-            plyCount = int.Parse(parts[5]) * 2 - 1;
+            // castling rights
+            if(parts[2] != "-") {
+                foreach(char right in parts[2]) {
+                    if(right == 'Q') {
+                        castlingRights[1] = true;
+                    } else if(right == 'K') {
+                        castlingRights[0] = true;
+                    } else if(right == 'q') {
+                        castlingRights[3] = true;
+                    } else if(right == 'k') {
+                        castlingRights[2] = true;
+                    }
+                }
+            }
+            // en passant rights
+            if(parts[3] != "-") {
+                int j = 0;
+                int index = 0;
+                foreach(char c in parts[3]) {
+                    if(j == 0) {
+                        index = c - 'a';
+                    } else {
+                        index += c == '3' ? 8 : 0;
+                    }
+                    j++;
+                }
+                enPassantRights[index] = true;
+            }
+            // fifty move counter and move counter
+            fiftyMoveCounter = int.Parse(parts[4]);
+            plyCount = int.Parse(parts[5]) * 2 - (isWhiteToMove ? 0 : 1);
+            UpdateBitboards(1);
         }
-        public int PieceIndexForHash(Piece p) {
+        public readonly int PieceIndexForHash(Piece p) {
             return (int)p.type + (p.isWhite ? 0 : 6);
         }
-        public void InitializeZobrist() {
+        public readonly void InitializeZobrist() {
             var rng = new Random();
             for(int i = 0; i < 8; i++) {
                 for(int j = 0; j < 8; j++) {
@@ -79,7 +117,7 @@ namespace Chess {
                 }
             }
         }
-        public ulong ZobristHash() {
+        public readonly ulong ZobristHash() {
             ulong hash = 0;
             for(int i = 0; i < 8; i++) {
                 for(int j = 0; j < 8; j++) {
@@ -152,11 +190,29 @@ namespace Chess {
 
             // castling, nothing yet
             fen += ' ';
-            fen += "-";
-
+            if(castlingRights[0]) {
+                fen += 'K';
+            }
+            if(castlingRights[1]) {
+                fen += 'Q';
+            }
+            if(castlingRights[2]) {
+                fen += 'k';
+            }
+            if(castlingRights[3]) {
+                fen += 'q';
+            }
             // En Passant, nothing yet
             fen += ' ';
-            fen += '-';
+            if(canEnPassant) {
+                for(int i = 0; i < 16; i++) {
+                    if(enPassantRights[i]) {
+
+                    }
+                }
+            } else {
+                fen += '-';
+            }
 
             // 50 move counter
             fen += ' ';
@@ -164,24 +220,126 @@ namespace Chess {
 
             // Full-move count (should be one at start, and increase after each move by black)
             fen += ' ';
-            fen += (plyCount / 2) + 1;
+            fen += plyCount / 2 + (isWhiteToMove ? 1 : 0);
 
             return fen;
         }
         public void MakeMove(Move move) {
-            plyCount++;
-            BoardFunctions.SwapSquares(ref squares, move.startSquare.rank, move.startSquare.file, move.targetSquare.rank, move.targetSquare.file);
-            // checks if it was a capture
-            if(move.isCapture) {
-                squares[move.startSquare.rank, move.startSquare.file].piece = new Piece(true, PieceType.None, move.startSquare.rank, move.startSquare.file);
+            // reset en passant rights
+            for(int i = 0; i < 16; i++) {
+                enPassantRights[i] = false;
             }
+            // add to 50 move counter
+            fiftyMoveCounter++;
+            // castling logic
+            if(move.isCastle) {
+                if(move.castleType == 1) {
+                    BoardFunctions.SwapSquares(ref squares, 0, 4, 0, 6);
+                    BoardFunctions.SwapSquares(ref squares, 0, 7, 0, 5);
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
+                } else if(move.castleType == 2) {
+                    BoardFunctions.SwapSquares(ref squares, 0, 4, 0, 2);
+                    BoardFunctions.SwapSquares(ref squares, 0, 0, 0, 3);
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
+                } else if(move.castleType == 3) {
+                    BoardFunctions.SwapSquares(ref squares, 7, 4, 7, 6);
+                    BoardFunctions.SwapSquares(ref squares, 7, 7, 7, 5);
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
+                } else if(move.castleType == 4) {
+                    BoardFunctions.SwapSquares(ref squares, 7, 4, 7, 2);
+                    BoardFunctions.SwapSquares(ref squares, 7, 0, 7, 3);
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
+                }
+            } else if(move.isEnPassant) {
+                // does en passant
+
+            } else {
+                // does a regular move
+                BoardFunctions.SwapSquares(ref squares, move.startSquare.rank, move.startSquare.file, move.targetSquare.rank, move.targetSquare.file);
+            }
+            // checks if it was a capture
+            if(move.isCapture && !move.isEnPassant) {
+                squares[move.startSquare.rank, move.startSquare.file].piece = new Piece(true, PieceType.None, move.startSquare.rank, move.startSquare.file);
+                fiftyMoveCounter = 0;
+            }
+            // if it's a king move that side can't castle anymore
+            if(move.piece.type == PieceType.King && castlingRights[0] && castlingRights[1] && move.piece.isWhite && !move.isCastle) {
+                castlingRights[0] = false;
+                castlingRights[1] = false;
+            }
+            if(move.piece.type == PieceType.King && castlingRights[2] && castlingRights[3] && !move.piece.isWhite && !move.isCastle) {
+                castlingRights[2] = false;
+                castlingRights[3] = false;
+            }
+            // if it's a pawn move reset the 50 move count
+            if(move.piece.type == PieceType.Pawn) {
+                fiftyMoveCounter = 0;
+            }
+            plyCount++;
             isWhiteToMove = !isWhiteToMove;
+            UpdateBitboards(2);
         }
-        public Square GetSquareFromIndex(int i) {
+        public readonly Square GetSquareFromIndex(int i) {
             return squares[i >> 3, i & 7];
         }
-        public Square GetSquareFromPosition(int r, int f) {
+        public readonly Square GetSquareFromPosition(int r, int f) {
             return squares[r, f];
+        }
+        public readonly int[] directionalOffsets = {8, -8, -1, 1, 7, -7, 9, -9};
+        public int[,,] squaresToEdge = new int[8,8,8];
+        // This is going to be the start of my move detection script, go watch sebastian lague's video again it'll be useful.
+        public readonly void GenerateMoveData() {
+            for(int rank = 0; rank < 8; rank++) {
+                for(int file = 0; file < 8; file++) {
+                    int north = 7 - rank;
+                    int south = rank;
+                    int west = file;
+                    int east = 7 - file;
+                    squaresToEdge[rank, file, 0] = north;
+                    squaresToEdge[rank, file, 1] = south;
+                    squaresToEdge[rank, file, 2] = west;
+                    squaresToEdge[rank, file, 3] = east;
+                    squaresToEdge[rank, file, 4] = Math.Min(north, west);
+                    squaresToEdge[rank, file, 5] = Math.Min(south, east);
+                    squaresToEdge[rank, file, 6] = Math.Min(north, east);
+                    squaresToEdge[rank, file, 7] = Math.Min(south, west);
+                }
+            }
+        }
+        public void UpdateBitboards(int type) {
+            // if type = 1, it's a full regeneration
+            // if type = 2, a singular move happened.
+            // nothing is done for now though, it just fully regenerates it
+            occupiedBitboard = 0;
+            if(type != 0) {
+                int i = 0;
+                foreach(Square square in squares) {
+                    pieceBitboards[(int)square.piece.type + (square.piece.isWhite ? 0 : 7)] += ((ulong)1) << i;
+                    i++;
+                }
+                occupiedBitboard |= pieceBitboards[1] | pieceBitboards[2] | pieceBitboards[3] | pieceBitboards[4] | pieceBitboards[5] | pieceBitboards[6] | pieceBitboards[8] | pieceBitboards[9] | pieceBitboards[10] | pieceBitboards[11] | pieceBitboards[12] | pieceBitboards[13]; 
+            }
+        }
+        public readonly Move[] GetLegalMoves() {
+            List<Move> moves = new();
+            // detect possible castles
+            if(castlingRights[0] && (occupiedBitboard & 0b01100000) == 0) {
+                moves.Add(new Move("e1g1", this));
+            }
+            if(castlingRights[1] && (occupiedBitboard & 0b00001110) == 0) {
+                moves.Add(new Move("e1b1", this));
+            }
+            if(castlingRights[2] && (occupiedBitboard & (0b01100000 << 56)) == 0) {
+                moves.Add(new Move("e8g8", this));
+            }
+            if(castlingRights[3] && (occupiedBitboard & (0b00001110 << 55)) == 0) {
+                moves.Add(new Move("e8b8", this));
+            }
+            return moves.ToArray();
         }
     }
 }
