@@ -193,18 +193,26 @@ namespace Chess {
             fen += isWhiteToMove ? 'w' : 'b';
 
             // castling, nothing yet
+            bool thingAdded = false;
             fen += ' ';
             if(castlingRights[0]) {
                 fen += 'K';
+                thingAdded = true;
             }
             if(castlingRights[1]) {
                 fen += 'Q';
+                thingAdded = true;
             }
             if(castlingRights[2]) {
                 fen += 'k';
+                thingAdded = true;
             }
             if(castlingRights[3]) {
                 fen += 'q';
+                thingAdded = true;
+            }
+            if(!thingAdded) {
+                fen += '-';
             }
             // En Passant, nothing yet
             fen += ' ';
@@ -278,14 +286,42 @@ namespace Chess {
                 squares[move.startSquare.rank, move.startSquare.file].piece = new Piece(true, PieceType.None, move.startSquare.rank, move.startSquare.file);
                 fiftyMoveCounter = 0;
             }
+            if(move.isPromotion) {
+                squares[move.targetSquare.rank, move.targetSquare.file].piece = move.promotionPiece;
+            }
             // if it's a king move that side can't castle anymore
-            if((move.piece.type == PieceType.King || move.piece.type == PieceType.Rook)&& castlingRights[0] && castlingRights[1] && move.piece.isWhite && !move.isCastle) {
+            if(move.piece.type == PieceType.King && move.piece.isWhite && !move.isCastle && (castlingRights[0] || castlingRights[1])) {
                 castlingRights[0] = false;
                 castlingRights[1] = false;
             }
-            if(move.piece.type == PieceType.King && castlingRights[2] && castlingRights[3] && !move.piece.isWhite && !move.isCastle) {
+            if(move.piece.type == PieceType.King && !move.piece.isWhite && !move.isCastle && (castlingRights[0] || castlingRights[1])) {
                 castlingRights[2] = false;
                 castlingRights[3] = false;
+            }
+            // rook move and rook detection (if it's moved off its starting square or has been captured it will revoke the castling rights)
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 0 && castlingRights[1] && move.piece.isWhite) {
+                castlingRights[1] = false;
+            }
+            if((pieceBitboards[4] & 0b1UL) == 0 && castlingRights[1]) {
+                castlingRights[1] = false;
+            }
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 7 && castlingRights[0] && move.piece.isWhite) {
+                castlingRights[0] = false;
+            }
+            if((pieceBitboards[4] & 0b1UL << 7) == 0 && castlingRights[0]) {
+                castlingRights[0] = false;
+            }
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 0 && castlingRights[2] && !move.piece.isWhite) {
+                castlingRights[2] = false;
+            }
+            if((pieceBitboards[11] & 0b1UL << 56) == 0 && castlingRights[3]) {
+                castlingRights[3] = false;
+            }
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 7 && castlingRights[3] && !move.piece.isWhite) {
+                castlingRights[3] = false;
+            }
+            if((pieceBitboards[11] & 0b1UL << 63) == 0 && castlingRights[2]) {
+                castlingRights[2] = false;
             }
             // if it's a pawn move reset the 50 move count
             if(move.piece.type == PieceType.Pawn) {
@@ -308,7 +344,6 @@ namespace Chess {
         }
         public readonly int[] directionalOffsets = {8, -8, -1, 1, 7, -7, 9, -9};
         public int[,,] squaresToEdge = new int[8,8,8];
-        // This is going to be the start of my move detection script, go watch sebastian lague's video again it'll be useful.
         public readonly void GenerateMoveData() {
             for(int rank = 0; rank < 8; rank++) {
                 for(int file = 0; file < 8; file++) {
@@ -346,17 +381,53 @@ namespace Chess {
         public readonly Move[] GetLegalMoves() {
             List<Move> moves = new();
             // detect possible castles
-            if(castlingRights[0] && (occupiedBitboard & 0b01100000) == 0) {
+            if(castlingRights[0] && (occupiedBitboard & 0x60) == 0) {
                 moves.Add(new Move("e1g1", this));
             }
-            if(castlingRights[1] && (occupiedBitboard & 0b00001110) == 0) {
+            if(castlingRights[1] && (occupiedBitboard & 0xE) == 0) {
                 moves.Add(new Move("e1b1", this));
             }
-            if(castlingRights[2] && (occupiedBitboard & (0b01100000 << 56)) == 0) {
+            if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0) {
                 moves.Add(new Move("e8g8", this));
             }
-            if(castlingRights[3] && (occupiedBitboard & (0b00001110 << 55)) == 0) {
+            if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0) {
                 moves.Add(new Move("e8b8", this));
+            }
+
+            // rest of moves
+            foreach(Square square in squares) {
+                Piece piece = square.piece;
+                if(piece.isWhite == isWhiteToMove) {
+                    if(piece.isBishop || piece.isQueen || piece.isRook) {
+                        foreach(Move move in GenerateSlidingMoves(square, piece)) {
+                            moves.Add(move);
+                        }
+                    }
+                }
+            }
+            return moves.ToArray();
+        }
+        readonly Move[] GenerateSlidingMoves(Square square, Piece piece) {
+            List<Move> moves = new();
+            int startDirIndex = piece.isBishop ? 4 : 0;
+            int endDirIndex = piece.isRook ? 4 : 8;
+            for(int directionIndex = startDirIndex; directionIndex < endDirIndex; directionIndex++) {
+                for(int n = 0; n < squaresToEdge[square.rank, square.file, directionIndex]; n++) {
+                    int targetSquareRank = square.rank + directionalOffsets[directionIndex] * (n + 1);
+                    int targetSquareFile = square.file + directionalOffsets[directionIndex] * (n + 1);
+                    if(targetSquareRank > -1 && targetSquareRank < 8 && targetSquareFile > -1 && targetSquareFile < 8) {
+                        if(squares[targetSquareRank, targetSquareFile].piece.isWhite == piece.isWhite) {
+                            break;
+                        }
+                        moves.Add(new Move(BoardFunctions.NameFromSquareLocation(square.rank, square.file, targetSquareRank, targetSquareFile), this));
+
+                        if(squares[targetSquareRank, targetSquareFile].piece.isWhite != piece.isWhite) {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
             }
             return moves.ToArray();
         }

@@ -11,7 +11,6 @@ namespace Chess {
         public bool isCastle;
         public int castleType;
         public bool isEnPassant;
-        public int enPassantDirection;
         public Square enPassantSquare;
         public Move(string n, Board board) {
             name = n;
@@ -44,7 +43,6 @@ namespace Chess {
             } else if(piece.isPawn && startSquare.rank != targetSquare.rank) {
                 // en passant detection
                 isEnPassant = true;
-                enPassantDirection = targetSquare.rank - startSquare.rank;  
                 enPassantSquare = board.GetSquareFromPosition(targetSquare.rank - (piece.isWhite ? 1 : -1), targetSquare.file);
             }
             // promotion detection
