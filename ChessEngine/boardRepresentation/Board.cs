@@ -12,6 +12,7 @@ namespace Chess {
         public bool canEnPassant;
         public ulong occupiedBitboard = 0;
         public ulong[] pieceBitboards = new ulong[14];
+        // first is white, second is black
         public ulong[] attackBitboards = new ulong[2];
         public ulong whiteBitboard = 0;
         public ulong blackBitboard = 0;
@@ -106,7 +107,6 @@ namespace Chess {
             plyCount = int.Parse(parts[5]) * 2 - (isWhiteToMove ? 0 : 1);
             UpdateBitboards(1);
             InitializeZobrist();
-            GenerateMoveData();
         }
         public readonly int PieceIndexForHash(Piece p) {
             return (int)p.type + (p.isWhite ? 0 : 6);
@@ -342,26 +342,6 @@ namespace Chess {
         public readonly Square GetSquareFromPosition(int r, int f) {
             return squares[r, f];
         }
-        public readonly int[] directionalOffsets = {8, -8, -1, 1, 7, -7, 9, -9};
-        public int[,,] squaresToEdge = new int[8,8,8];
-        public readonly void GenerateMoveData() {
-            for(int rank = 0; rank < 8; rank++) {
-                for(int file = 0; file < 8; file++) {
-                    int north = 7 - rank;
-                    int south = rank;
-                    int west = file;
-                    int east = 7 - file;
-                    squaresToEdge[rank, file, 0] = north;
-                    squaresToEdge[rank, file, 1] = south;
-                    squaresToEdge[rank, file, 2] = west;
-                    squaresToEdge[rank, file, 3] = east;
-                    squaresToEdge[rank, file, 4] = Math.Min(north, west);
-                    squaresToEdge[rank, file, 5] = Math.Min(south, east);
-                    squaresToEdge[rank, file, 6] = Math.Min(north, east);
-                    squaresToEdge[rank, file, 7] = Math.Min(south, west);
-                }
-            }
-        }
         public void UpdateBitboards(int type) {
             // if type = 1, it's a full regeneration
             // if type = 2, a singular move happened.
@@ -378,6 +358,11 @@ namespace Chess {
                 blackBitboard |= pieceBitboards[8] | pieceBitboards[9] | pieceBitboards[10] | pieceBitboards[11] | pieceBitboards[12] | pieceBitboards[13];
             }
         }
+        // north east south west northeast northwest southwest southeast.
+        readonly int[] directionOffsetsRank = {1, 0, -1, 0, 1, 1, -1, -1};
+        readonly int[] directionOffsetsFile = {0, 1, 0, -1, 1, -1, -1, 1};
+        readonly int[] knightOffsetsRank = {2, 2, 1, -1, -2, -2, 1, -1};
+        readonly int[] knightOffsetsFile = {1, -1, -2, -2, 1, -1, 2, 2};
         public readonly Move[] GetLegalMoves() {
             List<Move> moves = new();
             // detect possible castles
@@ -393,42 +378,95 @@ namespace Chess {
             if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0) {
                 moves.Add(new Move("e8b8", this));
             }
-
-            // rest of moves
-            foreach(Square square in squares) {
-                Piece piece = square.piece;
-                if(piece.isWhite == isWhiteToMove) {
-                    if(piece.isBishop || piece.isQueen || piece.isRook) {
-                        foreach(Move move in GenerateSlidingMoves(square, piece)) {
-                            moves.Add(move);
+            // other pieces
+            for(int rank = 0; rank < 8; rank++) {
+                for(int file = 0; file < 8; file++) {
+                    Square currentSquare = squares[rank, file];
+                    Piece currentPiece = currentSquare.piece;
+                    if(currentPiece.isWhite == isWhiteToMove && currentPiece.type != PieceType.None) {
+                        // long slidey piece moves
+                        if(currentPiece.isBishop || currentPiece.isRook || currentPiece.isQueen) {
+                            int startDirection = currentPiece.isBishop ? 4 : 0;
+                            int endDirection = currentPiece.isRook ? 4 : 8;
+                            for(int directionIndex = startDirection; directionIndex < endDirection; directionIndex++) {
+                                for(int i = 1; i < 8; i++) {
+                                    int targetRank = rank + directionOffsetsRank[directionIndex] * i;
+                                    int targetFile = file + directionOffsetsFile[directionIndex] * i;
+                                    if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8) {
+                                        Square targetSquare = squares[targetRank, targetFile];
+                                        if(targetSquare.piece.isWhite == isWhiteToMove && !targetSquare.piece.isNull) {
+                                            break;
+                                        }
+                                        attackBitboards[isWhiteToMove ? 1 : 0] += ((ulong)1) << (targetRank * 8 + targetFile);
+                                        moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, targetSquare.rank, targetSquare.file), this));
+                                        if(targetSquare.piece.isWhite != isWhiteToMove && !targetSquare.piece.isNull) {
+                                            break;
+                                        }
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        // Knights
+                        if(currentPiece.isKnight) {
+                            for(int directionIndex = 0; directionIndex < 8; directionIndex++) {
+                                int targetRank = rank + knightOffsetsRank[directionIndex];
+                                int targetFile = file + knightOffsetsFile[directionIndex];
+                                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8) {
+                                    if(squares[targetRank, targetFile].piece.type != PieceType.None) {
+                                        if(squares[targetRank, targetFile].piece.isWhite != isWhiteToMove) {
+                                            moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, targetRank, targetFile), this));
+                                        }
+                                    } else {
+                                        moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, targetRank, targetFile), this));
+                                    }
+                                }
+                            }
+                        }
+                        // Pawns
+                        if(currentPiece.isPawn) {
+                            if(squares[rank + (isWhiteToMove ? 1 : -1), file].piece.type == PieceType.None) {
+                                if(currentSquare.rank == (currentPiece.isWhite ? 1 : 6) && squares[rank + 2, file].piece.type == PieceType.None) {
+                                    moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, rank+(isWhiteToMove ? 2 : -2), file), this));
+                                }
+                                moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, rank+(isWhiteToMove ? 1 : -1), file), this));
+                            }
+                            // captures
+                            if(rank > 0 && rank < 7 && file > 0 && file < 7) {
+                                if(squares[rank + (isWhiteToMove ? 1 : -1), file + 1].piece.type != PieceType.None) {
+                                    moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, rank+(isWhiteToMove ? 1 : -1), file + 1), this));
+                                }
+                                if(squares[rank + (isWhiteToMove ? 1 : -1), file - 1].piece.type != PieceType.None) {
+                                    moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, rank+(isWhiteToMove ? 1 : -1), file - 1), this));
+                                }
+                            }
+                            // En Passant
+                        }
+                        // King
+                        if(currentPiece.isKing) {
+                            for(int directionIndex = 0; directionIndex < 8; directionIndex++) {
+                                int targetRank = rank + directionOffsetsRank[directionIndex];
+                                int targetFile = file + directionOffsetsFile[directionIndex];
+                                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8) {
+                                    Square targetSquare = squares[targetRank, targetFile];
+                                    if(targetSquare.piece.isWhite == isWhiteToMove && !targetSquare.piece.isNull) {
+                                        break;
+                                    }
+                                    attackBitboards[isWhiteToMove ? 1 : 0] += ((ulong)1) << (targetRank * 8 + targetFile);
+                                    moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, targetSquare.rank, targetSquare.file), this));
+                                    if(targetSquare.piece.isWhite != isWhiteToMove && !targetSquare.piece.isNull) {
+                                        break;
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
             }
-            return moves.ToArray();
-        }
-        readonly Move[] GenerateSlidingMoves(Square square, Piece piece) {
-            List<Move> moves = new();
-            int startDirIndex = piece.isBishop ? 4 : 0;
-            int endDirIndex = piece.isRook ? 4 : 8;
-            for(int directionIndex = startDirIndex; directionIndex < endDirIndex; directionIndex++) {
-                for(int n = 0; n < squaresToEdge[square.rank, square.file, directionIndex]; n++) {
-                    int targetSquareRank = square.rank + directionalOffsets[directionIndex] * (n + 1);
-                    int targetSquareFile = square.file + directionalOffsets[directionIndex] * (n + 1);
-                    if(targetSquareRank > -1 && targetSquareRank < 8 && targetSquareFile > -1 && targetSquareFile < 8) {
-                        if(squares[targetSquareRank, targetSquareFile].piece.isWhite == piece.isWhite) {
-                            break;
-                        }
-                        moves.Add(new Move(BoardFunctions.NameFromSquareLocation(square.rank, square.file, targetSquareRank, targetSquareFile), this));
 
-                        if(squares[targetSquareRank, targetSquareFile].piece.isWhite != piece.isWhite) {
-                            break;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-            }
             return moves.ToArray();
         }
     }
