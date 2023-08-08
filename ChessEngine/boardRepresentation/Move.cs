@@ -40,7 +40,7 @@ namespace Chess {
             if(targetSquare.piece.type != PieceType.None) {
                 isCapture = true;
                 capturedPiece = targetSquare.piece;
-            } else if(piece.isPawn && startSquare.rank != targetSquare.rank) {
+            } else if(piece.IsPawn && startSquare.file != targetSquare.file) {
                 // en passant detection
                 isEnPassant = true;
                 enPassantSquare = board.GetSquareFromPosition(targetSquare.rank - (piece.isWhite ? 1 : -1), targetSquare.file);

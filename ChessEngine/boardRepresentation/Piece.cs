@@ -5,13 +5,13 @@ namespace Chess {
         public bool isWhite;
         public PieceType type;
 
-        public bool isNull => type is PieceType.None;
-        public bool isRook => type is PieceType.Rook;
-        public bool isKnight => type is PieceType.Knight;
-        public bool isBishop => type is PieceType.Bishop;
-        public bool isQueen => type is PieceType.Queen;
-        public bool isKing => type is PieceType.King;
-        public bool isPawn => type is PieceType.Pawn;
+        public readonly bool IsNull => type is PieceType.None;
+        public readonly bool IsRook => type is PieceType.Rook;
+        public readonly bool IsKnight => type is PieceType.Knight;
+        public readonly bool IsBishop => type is PieceType.Bishop;
+        public readonly bool IsQueen => type is PieceType.Queen;
+        public readonly bool IsKing => type is PieceType.King;
+        public readonly bool IsPawn => type is PieceType.Pawn;
         public int rank;
         public int file;
         public int index;

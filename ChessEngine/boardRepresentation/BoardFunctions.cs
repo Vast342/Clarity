@@ -18,6 +18,24 @@ namespace Chess {
             name += rank2 + 1;
             return name;
         }
+        public static string PromotionFromSquareLocation(int rank1, int file1, int rank2, int file2, PieceType promotionType) {
+            string name = "";
+            name += (char)(file1 + 'a');
+            name += rank1 + 1;
+            name += (char)(file2 + 'a');
+            name += rank2 + 1;
+            if(promotionType == PieceType.Knight) {
+                name += 'n';
+            } else if(promotionType == PieceType.Bishop) {
+                name += 'b';
+            } else if(promotionType == PieceType.Rook) {
+                name += 'r';
+            } else if(promotionType == PieceType.Queen) {
+                name += 'q';
+            }
+            return name;
+        }
+        
         public static Piece GetPromotionPiece(string name, Square target, Piece piece) {
             if(piece.type == PieceType.Pawn) {
                 if(name.Length < 4) {
