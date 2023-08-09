@@ -336,6 +336,99 @@ namespace Chess {
             isWhiteToMove = !isWhiteToMove;
             UpdateBitboards(2);
         }
+        public void UndoMove(Move move) {
+            // reset en passant rights
+            for(int i = 0; i < 16; i++) {
+                enPassantRights[i] = false;
+                canEnPassant = false;
+            }
+            // add to 50 move counter
+            fiftyMoveCounter--;
+            // castling logic
+            if(move.isCastle) {
+                if(move.castleType == 1) {
+                    BoardFunctions.SwapSquares(ref squares, 0, 4, 0, 6);
+                    BoardFunctions.SwapSquares(ref squares, 0, 7, 0, 5);
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
+                } else if(move.castleType == 2) {
+                    BoardFunctions.SwapSquares(ref squares, 0, 4, 0, 2);
+                    BoardFunctions.SwapSquares(ref squares, 0, 0, 0, 3);
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
+                } else if(move.castleType == 3) {
+                    BoardFunctions.SwapSquares(ref squares, 7, 4, 7, 6);
+                    BoardFunctions.SwapSquares(ref squares, 7, 7, 7, 5);
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
+                } else if(move.castleType == 4) {
+                    BoardFunctions.SwapSquares(ref squares, 7, 4, 7, 2);
+                    BoardFunctions.SwapSquares(ref squares, 7, 0, 7, 3);
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
+                }
+            } else if(move.isEnPassant) {
+                // does en passant
+                squares[move.enPassantSquare.rank, move.enPassantSquare.file] = new Square(move.enPassantSquare.rank, move.enPassantSquare.file, PieceType.None, false);
+                BoardFunctions.SwapSquares(ref squares, move.startSquare.rank, move.startSquare.file, move.targetSquare.rank, move.targetSquare.file);
+            } else {
+                // does a regular move
+                BoardFunctions.SwapSquares(ref squares, move.startSquare.rank, move.startSquare.file, move.targetSquare.rank, move.targetSquare.file);
+            }
+            // checks if it was a capture
+            if(move.isCapture && !move.isEnPassant) {
+                squares[move.targetSquare.rank, move.targetSquare.file].piece = new Piece(true, move.capturedPiece.type, move.startSquare.rank, move.startSquare.file);
+            }
+            if(move.isPromotion) {
+                squares[move.targetSquare.rank, move.targetSquare.file].piece = move.promotionPiece;
+            }
+            // if it's a king move that side can't castle anymore
+            if(move.piece.type == PieceType.King && move.piece.isWhite && !move.isCastle && (castlingRights[0] || castlingRights[1])) {
+                castlingRights[0] = false;
+                castlingRights[1] = false;
+            }
+            if(move.piece.type == PieceType.King && !move.piece.isWhite && !move.isCastle && (castlingRights[0] || castlingRights[1])) {
+                castlingRights[2] = false;
+                castlingRights[3] = false;
+            }
+            // rook move and rook detection (if it's moved off its starting square or has been captured it will revoke the castling rights)
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 0 && castlingRights[1] && move.piece.isWhite) {
+                castlingRights[1] = false;
+            }
+            if((pieceBitboards[4] & 0b1UL) == 0 && castlingRights[1]) {
+                castlingRights[1] = false;
+            }
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 7 && castlingRights[0] && move.piece.isWhite) {
+                castlingRights[0] = false;
+            }
+            if((pieceBitboards[4] & 0b1UL << 7) == 0 && castlingRights[0]) {
+                castlingRights[0] = false;
+            }
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 0 && castlingRights[2] && !move.piece.isWhite) {
+                castlingRights[2] = false;
+            }
+            if((pieceBitboards[11] & 0b1UL << 56) == 0 && castlingRights[3]) {
+                castlingRights[3] = false;
+            }
+            if(move.piece.type == PieceType.Rook && move.startSquare.file == 7 && castlingRights[3] && !move.piece.isWhite) {
+                castlingRights[3] = false;
+            }
+            if((pieceBitboards[11] & 0b1UL << 63) == 0 && castlingRights[2]) {
+                castlingRights[2] = false;
+            }
+            // if it's a pawn move reset the 50 move count
+            if(move.piece.type == PieceType.Pawn) {
+                fiftyMoveCounter = 0;
+                // update en passant rights
+                if(Math.Abs(move.startSquare.rank - move.targetSquare.rank) > 1) {
+                    enPassantRights[move.startSquare.file + (move.piece.isWhite ? 8 : 0)] = true;
+                    canEnPassant = true;
+                }
+            }
+            plyCount++;
+            isWhiteToMove = !isWhiteToMove;
+            UpdateBitboards(2);
+        }
         public readonly Square GetSquareFromIndex(int i) {
             return squares[i >> 3, i & 7];
         }
@@ -380,6 +473,7 @@ namespace Chess {
             }
             // other pieces
             for(int rank = 0; rank < 8; rank++) {
+                attackBitboards[isWhiteToMove ? 1 : 0] = 0;
                 for(int file = 0; file < 8; file++) {
                     Square currentSquare = squares[rank, file];
                     Piece currentPiece = currentSquare.piece;
@@ -397,7 +491,6 @@ namespace Chess {
                                         if(targetSquare.piece.isWhite == isWhiteToMove && !targetSquare.piece.IsNull) {
                                             break;
                                         }
-                                        attackBitboards[isWhiteToMove ? 1 : 0] += ((ulong)1) << (targetRank * 8 + targetFile);
                                         moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, targetSquare.rank, targetSquare.file), this));
                                         if(targetSquare.piece.isWhite != isWhiteToMove && !targetSquare.piece.IsNull) {
                                             break;
@@ -468,7 +561,6 @@ namespace Chess {
                                     if(targetSquare.piece.isWhite == isWhiteToMove && !targetSquare.piece.IsNull) {
                                         break;
                                     }
-                                    attackBitboards[isWhiteToMove ? 1 : 0] += ((ulong)1) << (targetRank * 8 + targetFile);
                                     moves.Add(new Move(BoardFunctions.NameFromSquareLocation(rank, file, targetSquare.rank, targetSquare.file), this));
                                     if(targetSquare.piece.isWhite != isWhiteToMove && !targetSquare.piece.IsNull) {
                                         break;
@@ -481,7 +573,6 @@ namespace Chess {
                     }
                 }
             }
-
             return moves.ToArray();
         }
     }
