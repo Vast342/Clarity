@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "f:\\ChessEngine\\ChessEngine\\ChessEngine.csproj",
+      "projectUniqueName": "f:\\Chess-Engine-Refactored\\ChessEngine\\ChessEngine.csproj",
       "projectName": "ChessEngine",
-      "projectPath": "f:\\ChessEngine\\ChessEngine\\ChessEngine.csproj",
+      "projectPath": "f:\\Chess-Engine-Refactored\\ChessEngine\\ChessEngine.csproj",
       "packagesPath": "C:\\Users\\Joseph\\.nuget\\packages\\",
-      "outputPath": "f:\\ChessEngine\\ChessEngine\\obj\\",
+      "outputPath": "f:\\Chess-Engine-Refactored\\ChessEngine\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Joseph\\AppData\\Roaming\\NuGet\\NuGet.Config"
