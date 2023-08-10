@@ -14,6 +14,7 @@ namespace Chess {
     public class Board {
         // board specific valus
         public byte[] squares = new byte[64];
+        public byte[] kingSquares = new byte[2];
         public int colorToMove = 1;
         public ulong occupiedBitboard = 0;
         // bitboards of the entire color, 0 is black 1 is white
@@ -39,6 +40,7 @@ namespace Chess {
             LoadFenToPosition(fen);
             MoveData();
             UpdateBitboards();
+            InitializeZobrist();
         }
         /// <summary>
         /// Loads the information contained within a string of Forsyth–Edwards Notation into the current board instance's values.
@@ -83,9 +85,11 @@ namespace Chess {
                         i++;
                     } else if(c == 'k') {
                         squares[i] = Piece.King | Piece.Black;
+                        kingSquares[1] = (byte)i;
                         i++;
                     } else if(c == 'K') {
                         squares[i] = Piece.King | Piece.White;
+                        kingSquares[1] = (byte)i;
                         i++;
                     } else {
                         // for anyone wondering about this line, it's basically char.GetNumericValue but a bit simpler.
@@ -114,6 +118,7 @@ namespace Chess {
         /// Outputs the fen string of the current position
         /// </summary>
         /// <returns>the fen string</returns>
+        // the voices are back but FUCK IT, FEN PARSER
         public string GetFenString() {
             string fen = "";
 
@@ -233,6 +238,20 @@ namespace Chess {
         }
         public List<Move> GetLegalMoves() {
             List<Move> moves = new();
+            // castlingi;
+            if(castlingRights[0] && (occupiedBitboard & 0x60) == 0) {
+                moves.Add(new Move(4, 6, 0));
+            }
+            if(castlingRights[1] && (occupiedBitboard & 0xE) == 0) {
+                moves.Add(new Move(4, 2, 0));
+            }
+            if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0) {
+                moves.Add(new Move(60, 62, 0));
+            }
+            if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0) {
+                moves.Add(new Move(60, 58, 0));
+            }
+            // the rest of the pieces
             for(int startSquare = 0; startSquare < 64; startSquare++) {
                 byte currentPiece = squares[startSquare];
                 // checks if it's the right color
@@ -249,7 +268,7 @@ namespace Chess {
                                 if((targetPiece >> 3) == colorToMove) {
                                     break;
                                 }
-                                moves.Add(new Move(startSquare, targetSquareIndex));
+                                moves.Add(new Move(startSquare, targetSquareIndex, 0));
                                 // the piece at the end of the line can be captured, you just added the capture to the list, end the cycle
                                 if((targetPiece >> 3) != colorToMove) {
                                     break;
@@ -258,32 +277,44 @@ namespace Chess {
                         }
                     } else if((currentPiece & 0b0111) == 1) {
                         if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == 0) {
-                            moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0]));
+                            moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0], 0));
+                            if(startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] >> 3 == (colorToMove == 1 ? 7 : 0)) {
+                                for(int type = 2; type < 6; type++) {
+                                    moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0], type));
+                                }
+                            }
                             if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2] == 0 && startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0] * 2));
+                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0] * 2, 0));
                             }
                             if(startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] > -1 && startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] < 64) {
-                                if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]] >> 3 != colorToMove) {
-                                    moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 4 : 5]));
+                                if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]] >> 3 != colorToMove || squares[startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]] >> 3 == enPassantIndex) {
+                                    moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 4 : 5], 0));
+                                }
+                                if(startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] >> 3 == (colorToMove == 1 ? 7 : 0)) {
+                                    for(int type = 2; type < 6; type++) {
+                                        moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4], type));
+                                    }
                                 }
                             }
                             if(startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6] > -1 && startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6] < 64) {
-                                if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6]] >> 3 != colorToMove) {
-                                    moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 6 : 7]));
+                                if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6]] >> 3 != colorToMove || squares[startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6]] >> 3 == enPassantIndex) {
+                                    moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 6 : 7], 0));
+                                }
+                                if(startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6] >> 3 == (colorToMove == 1 ? 7 : 0)) {
+                                    for(int type = 2; type < 6; type++) {
+                                        moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6], type));
+                                    }
                                 }
                             }
                         }
                     } else if((currentPiece & 0b0111) == 2) {
                         // for knight moves I am considering the board using a rank and file so I can determine if a move would end up off of the board or not.
                         for(byte direction = 0; direction < 8; direction++) {
-                            int startRank = startSquare >> 3;
-                            int startFile = startSquare & 7;
-                            int targetRank = startRank + knightOffsetsRank[direction];
-                            int targetFile = startFile + knightOffsetsFile[direction];
+                            int targetRank = (startSquare >> 3) + knightOffsetsRank[direction];
+                            int targetFile = (startSquare & 7) + knightOffsetsFile[direction];
                             if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && squares[targetRank * 8 + targetFile] == 0) {
-                                moves.Add(new Move(startSquare, targetRank * 8 + targetFile));
+                                moves.Add(new Move(startSquare, targetRank * 8 + targetFile, 0));
                             }
-
                         }
 
                     } else if((currentPiece & 0b0111) == 6) {
@@ -292,7 +323,7 @@ namespace Chess {
                             if(targetSquareIndex < 64 && targetSquareIndex > -1) {
                                 byte targetPiece = squares[targetSquareIndex];  
                                 if((targetPiece >> 3) != colorToMove) {
-                                    moves.Add(new Move(startSquare, targetSquareIndex));
+                                    moves.Add(new Move(startSquare, targetSquareIndex, 0));
                                 }
                             }
                         }
@@ -301,6 +332,9 @@ namespace Chess {
             }
             return moves;
         }
+        /// <summary>
+        /// initializes a table used later for zobrist hashing, done automatically if you create the board using a fen string.
+        /// </summary>
         public void InitializeZobrist() {
             var rng = new Random();
             for(int i = 0; i < 64; i++) {
@@ -309,6 +343,10 @@ namespace Chess {
                 }
             }
         }
+        /// <summary>
+        /// The function to generate a zobrist hash of the current position
+        /// </summary>
+        /// <returns>The zobrist hash</returns>
         public ulong CreateHash() {
             ulong hash = 0;
             for(int i = 0; i < 64; i++) {
@@ -337,32 +375,82 @@ namespace Chess {
                 if(squares[index] != 0) {
                     coloredPieceBitboards[squares[index] >> 3, (squares[index] & 7) - 1] |= (ulong)1 << index; 
                 }
+                if(squares[index] == 6 || squares[index] == 14) {
+                    kingSquares[squares[index] == 14 ? 1 : 0] = (byte)index;
+                } 
             }
             coloredBitboards[0] = coloredPieceBitboards[0,0] | coloredPieceBitboards[0,1] | coloredPieceBitboards[0,2] | coloredPieceBitboards[0,3] | coloredPieceBitboards[0,4] | coloredPieceBitboards[0,5];
             coloredBitboards[1] = coloredPieceBitboards[1,0] | coloredPieceBitboards[1,1] | coloredPieceBitboards[1,2] | coloredPieceBitboards[1,3] | coloredPieceBitboards[1,4] | coloredPieceBitboards[1,5];
             occupiedBitboard = coloredBitboards[0] | coloredBitboards[1];
         }
+        public bool SquareIsAttackedByOpponent(int square) {
+            bool isCheck = false;
+            // orthagonal
+            for(int direction = 0; direction < 4; direction++) {
+                for(byte i = 0; i < squaresToEdge[square, direction]; i++) {
+                    byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
+                    byte targetPiece = squares[targetSquareIndex];
+                    if(targetPiece >> 3 == colorToMove) {
+                        break;
+                    }
+                    if((targetPiece & 7) == 3 || (targetPiece & 7) == 5) {
+                        isCheck = true;
+                        break;
+                    }
+                }
+            }
+            // diagonals
+            for(int direction = 4; direction < 8; direction++) {
+                // pawns
+                if(squaresToEdge[kingSquares[colorToMove], direction] > 0) {
+                    if((direction & 1) == colorToMove) {
+                        if(squares[square + directionalOffsets[direction]] == (Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black))) {
+                            isCheck = true;
+                            break;
+                        }
+                    }
+                }
+                for(byte i = 0; i < squaresToEdge[square, direction]; i++) {
+                    byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
+                    byte targetPiece = squares[targetSquareIndex];
+                    if(((targetPiece & 7) == 4 || (targetPiece & 7) == 5) && targetPiece >> 3 != colorToMove) {
+                        isCheck = true;
+                        break;
+                    }
+                }
+            }
+            return isCheck;
+        }
+        public bool IsInCheck() {
+            return SquareIsAttackedByOpponent(kingSquares[colorToMove]);
+        }
     }
     public struct Move {
         public int startSquare;
         public int endSquare;
+        public int promotionType;
         /// <summary>
         /// Makes a new move with the starting and ending squares.
         /// </summary>
         /// <param name="start">Starting square of the move</param>
         /// <param name="end">Ending square of the move</param>
-        public Move(int start, int end) {
+        /// <param name="pType">The promotion piece type, if any</param>
+        public Move(int start, int end, int pType) {
             startSquare = start;
             endSquare = end;
+            promotionType = pType;
         }
         public string ConvertToLongAlgebraic() {
-            string algebraicName = "";
             int startRank = startSquare >> 3;
             int startFile = startSquare & 7;
             int endRank = endSquare >> 3;
             int endFile = endSquare & 7;
-
-            return algebraicName;
+            string name = "";
+            name += (char)(startFile + 'a');
+            name += startRank + 1;
+            name += (char)(endFile + 'a');
+            name += endRank + 1;
+            return name;
         }
     }
-}
+} 

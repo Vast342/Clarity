@@ -87,5 +87,28 @@ public class Test1 {
         } else {
             Console.WriteLine("Fen encoder test failed, outputted " + board.GetFenString());
         }
+        if(board.IsInCheck()) {
+            Console.WriteLine("Check test 1 failed");
+        } else {
+            Console.WriteLine("Check test 1 passed");
+        }
+        Board board2 = new("rnbqkbnr/pp3Bpp/3p4/2p1p3/4P3/5Q2/PPPP1PPP/RNB1K1NR b KQkq - 0 4");
+        if(board2.IsInCheck()) {
+            Console.WriteLine("Bishop check test passed");
+        } else {
+            Console.WriteLine("Bishop check test failed");
+        }
+        Board board3 = new("rnbqkbnr/p3pPpp/8/1ppp4/8/8/PPPP1PPP/RNBQKBNR b KQkq - 0 4");
+        if(board3.IsInCheck()) {
+            Console.WriteLine("Pawn check test passed");
+        } else {
+            Console.WriteLine("Pawn check test failed");
+        }
+        Board board4 = new("rnbqkbnr/ppppp1pp/8/5p1Q/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 1 2");
+        if(board4.IsInCheck()) {
+            Console.WriteLine("Queen check test passed");
+        } else {
+            Console.WriteLine("Queen check test failed");
+        }
     }
 }
