@@ -17,6 +17,7 @@ namespace Chess {
         public byte[] kingSquares = new byte[2];
         public int colorToMove = 1;
         public ulong occupiedBitboard = 0;
+        public ulong emptyBitboard = 0;
         // bitboards of the entire color, 0 is black 1 is white
         public ulong[] coloredBitboards = new ulong[2];
         // bitboards of specific pieces of specific color, using the numbers above.
@@ -25,7 +26,7 @@ namespace Chess {
         public int enPassantIndex = 0;
         // white kingside, white queenside, black kingside, black kingside
         public bool[] castlingRights = new bool[4];
-        public int plyCount;
+        public int plyCount = 0;
         public int fiftyMoveCounter;
         // random values needed later
         private readonly static ulong[,] zobTable = new ulong[64,15];
@@ -89,7 +90,7 @@ namespace Chess {
                         i++;
                     } else if(c == 'K') {
                         squares[i] = Piece.King | Piece.White;
-                        kingSquares[1] = (byte)i;
+                        kingSquares[0] = (byte)i;
                         i++;
                     } else {
                         // for anyone wondering about this line, it's basically char.GetNumericValue but a bit simpler.
@@ -113,6 +114,13 @@ namespace Chess {
                     }
                 }
             }
+            // en passant rules
+            if(parts[3] != "-") {
+                char[] characters = parts[3].ToCharArray();
+                enPassantIndex = ((characters[0] - 'a') * 8) + characters[1];
+            }
+            fiftyMoveCounter = int.Parse(parts[4]);
+            plyCount = int.Parse(parts[5]);
         }
         /// <summary>
         /// Outputs the fen string of the current position
@@ -180,7 +188,7 @@ namespace Chess {
             fen += ' ';
             fen += colorToMove == 1 ? 'w' : 'b';
 
-            // castling, nothing yet
+            // castling
             bool thingAdded = false;
             fen += ' ';
             if(castlingRights[0]) {
@@ -205,7 +213,16 @@ namespace Chess {
 
             // En Passant (nothing yet)
             fen += ' ';
-            fen += '-';
+            if(enPassantIndex != -1) {
+                fen += (char)((enPassantIndex & 7) + 'a');
+                if(enPassantIndex < 23) {
+                    fen += '3';
+                } else {
+                    fen += '6';
+                }
+            } else {
+                fen += '-';
+            }
 
             // 50 move counter
             fen += ' ';
@@ -355,10 +372,74 @@ namespace Chess {
             return hash;
         }
         public void MakeMove(Move move) {
-
-        }
-        public void UndoMove(Move move) {
-
+            if(move.endSquare > -1 && move.endSquare < 64 && move.startSquare > -1 && move.startSquare < 64) {
+                if(colorToMove != 1) {
+                    fiftyMoveCounter++;
+                }
+                enPassantIndex = -1;
+                // fifty move counter
+                if(squares[move.endSquare] != 0 || (squares[move.startSquare] & 7) == Piece.Pawn) {
+                    fiftyMoveCounter = 0;
+                }
+                // king square updates
+                if((squares[move.startSquare] & 7) == Piece.King) {
+                    kingSquares[colorToMove] = (byte)move.endSquare;
+                    castlingRights[colorToMove == 1 ? 0 : 2] = false;
+                    castlingRights[colorToMove == 1 ? 1 : 3] = false;
+                }
+                // for each start one set the start square to 0
+                if(castlingRights[0] && move.startSquare == 4 && move.endSquare == 6) {
+                    // castling 1
+                    // switch 4 with 6 and 7 with 5
+                    squares[6] = squares[4];
+                    squares[4] = 0;
+                    squares[7] = squares[5];
+                    squares[5] = 0;
+                } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
+                    // castling 2
+                    // switch 4 with 2 and 0 with 3
+                    squares[6] = squares[4];
+                    squares[4] = 0;
+                    squares[7] = squares[5];
+                    squares[5] = 0;
+                } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
+                    // castling 3
+                    // switch 60 with 62 and 63 with 61
+                    squares[6] = squares[4];
+                    squares[4] = 0;
+                    squares[7] = squares[5];
+                    squares[5] = 0;
+                } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
+                    // castling 4
+                    // switch 60 with 58 and 56 with 59
+                    squares[6] = squares[4];
+                    squares[4] = 0;
+                    squares[7] = squares[5];
+                    squares[5] = 0;
+                } else if(move.endSquare != 0 && move.endSquare == enPassantIndex) {
+                    // en passant
+                    // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
+                    squares[move.endSquare] = squares[move.startSquare];
+                    squares[move.startSquare] = 0;
+                    squares[move.endSquare + (colorToMove == 1 ? -8 : 8)] = 0;
+                } else {
+                    // move normally
+                    // switch first square with second
+                    if((squares[move.startSquare] & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
+                        // its a double move, make the first square the en passant index
+                        enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
+                    }
+                    squares[move.endSquare] = squares[move.startSquare];
+                    squares[move.startSquare] = 0;
+                }
+                // promotions
+                if(move.promotionType != 0) {
+                    squares[move.endSquare] = (byte)move.promotionType;
+                }
+                colorToMove = colorToMove == 1 ? 0 : 1;
+                plyCount++;
+                UpdateBitboards();
+            }
         }
         /// <summary>
         /// Updates the bitboards
@@ -382,47 +463,11 @@ namespace Chess {
             coloredBitboards[0] = coloredPieceBitboards[0,0] | coloredPieceBitboards[0,1] | coloredPieceBitboards[0,2] | coloredPieceBitboards[0,3] | coloredPieceBitboards[0,4] | coloredPieceBitboards[0,5];
             coloredBitboards[1] = coloredPieceBitboards[1,0] | coloredPieceBitboards[1,1] | coloredPieceBitboards[1,2] | coloredPieceBitboards[1,3] | coloredPieceBitboards[1,4] | coloredPieceBitboards[1,5];
             occupiedBitboard = coloredBitboards[0] | coloredBitboards[1];
-        }
-        public bool SquareIsAttackedByOpponent(int square) {
-            bool isCheck = false;
-            // orthagonal
-            for(int direction = 0; direction < 4; direction++) {
-                for(byte i = 0; i < squaresToEdge[square, direction]; i++) {
-                    byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
-                    byte targetPiece = squares[targetSquareIndex];
-                    if(targetPiece >> 3 == colorToMove) {
-                        break;
-                    }
-                    if((targetPiece & 7) == 3 || (targetPiece & 7) == 5) {
-                        isCheck = true;
-                        break;
-                    }
-                }
-            }
-            // diagonals
-            for(int direction = 4; direction < 8; direction++) {
-                // pawns
-                if(squaresToEdge[kingSquares[colorToMove], direction] > 0) {
-                    if((direction & 1) == colorToMove) {
-                        if(squares[square + directionalOffsets[direction]] == (Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black))) {
-                            isCheck = true;
-                            break;
-                        }
-                    }
-                }
-                for(byte i = 0; i < squaresToEdge[square, direction]; i++) {
-                    byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
-                    byte targetPiece = squares[targetSquareIndex];
-                    if(((targetPiece & 7) == 4 || (targetPiece & 7) == 5) && targetPiece >> 3 != colorToMove) {
-                        isCheck = true;
-                        break;
-                    }
-                }
-            }
-            return isCheck;
+            emptyBitboard = ~occupiedBitboard;
         }
         public bool IsInCheck() {
-            return SquareIsAttackedByOpponent(kingSquares[colorToMove]);
+
+            return false;
         }
     }
     public struct Move {

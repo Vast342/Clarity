@@ -110,5 +110,29 @@ public class Test1 {
         } else {
             Console.WriteLine("Queen check test failed");
         }
+        Board board5 = new("rnbqkbnr/ppN2ppp/4p3/3p4/8/8/PPPPPPPP/R1BQKBNR b KQkq - 0 3");
+        if(board5.IsInCheck()) {
+            Console.WriteLine("Knight check test passed");
+        } else {
+            Console.WriteLine("Knight check test failed");
+        }
+        Board board6 = new("rnbqkbnr/pppp3p/6p1/6N1/8/4R2B/PPPPPK2/RNBQ4 b kq - 1 10");
+        if(board6.IsInCheck()) {
+            Console.WriteLine("Rook check test passed");
+        } else {
+            Console.WriteLine("Rook check test failed");
+        }
+        Board board7 = new("rnbqkbnr/ppp2Qpp/8/3pp3/4P3/8/PPPP1PPP/RNB1KBNR b KQkq - 0 3");
+        if(board7.IsInCheck()) {
+            Console.WriteLine("Queen check test 2 passed");
+        } else {
+            Console.WriteLine("Queen check test 2 failed");
+        }
+        board.MakeMove(new Move(12, 28, 0));
+        if(board.GetFenString() == "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1") {
+            Console.WriteLine("Moves test passed");
+        } else {
+            Console.WriteLine("Moves test failed, outputted " + board.GetFenString());
+        }
     }
 }
