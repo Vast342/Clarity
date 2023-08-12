@@ -128,11 +128,18 @@ public class Test1 {
         } else {
             Console.WriteLine("Queen check test 2 failed");
         }
-        board.MakeMove(new Move(12, 28, 0));
+        Move move = new Move(12, 28, 0, new(board));
+        board.MakeMove(move);
         if(board.GetFenString() == "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1") {
             Console.WriteLine("Moves test passed");
         } else {
             Console.WriteLine("Moves test failed, outputted " + board.GetFenString());
+        }
+        board.UndoMove(move);
+        if(board.GetFenString() == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+            Console.WriteLine("Undo test passed");
+        } else {
+            Console.WriteLine("Undo test failed, outputted " + board.GetFenString());
         }
     }
 }
