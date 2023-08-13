@@ -13,16 +13,23 @@ namespace Chess {
     }
     public struct BoardState {
         public byte[] squares = new byte[64];
-        public byte[] kingSquares;  
+        public byte[] kingSquares = new byte[2];  
         public int enPassantIndex;
-        public bool[] castlingRights;
+        public bool[] castlingRights = new bool[4];
         public int fiftyMoveCounter;
         public BoardState(Board board) {
             Array.Copy(board.squares, squares, 64);
-            kingSquares = board.kingSquares;
+            Array.Copy(board.kingSquares, kingSquares, 2);
             enPassantIndex = board.enPassantIndex;
-            castlingRights = board.castlingRights;
+            Array.Copy(board.castlingRights, castlingRights, 4);
             fiftyMoveCounter = board.fiftyMoveCounter;
+        }
+        public BoardState(BoardState state) {
+            Array.Copy(state.squares, squares, 64);
+            Array.Copy(state.kingSquares, kingSquares, 2);
+            enPassantIndex = state.enPassantIndex;
+            Array.Copy(state.castlingRights, castlingRights, 4);
+            fiftyMoveCounter = state.fiftyMoveCounter;
         }
     }
     public class Board {
@@ -48,10 +55,10 @@ namespace Chess {
         public static readonly int[] knightOffsetsRank = {2, 2, -2, -2, 1, -1, 1, -1};
         public static readonly int[] knightOffsetsFile = {1, -1, 1, -1, 2, 2, -2, -2};
         public void ReadBoardState(BoardState state) {
-            squares = state.squares;
-            kingSquares = state.kingSquares;
+            Array.Copy(state.squares, squares, 64);
+            Array.Copy(state.kingSquares, kingSquares, 2);
             enPassantIndex = state.enPassantIndex;
-            castlingRights = state.castlingRights;
+            Array.Copy(state.castlingRights, castlingRights, 4);
             fiftyMoveCounter = state.fiftyMoveCounter;
         }
         /// <summary>
@@ -64,21 +71,11 @@ namespace Chess {
             UpdateBitboards();
             InitializeZobrist();
         }
-        public Board(BoardState state) {
-            ReadBoardState(state);
-        }
-        public Board(Board board) {
-            squares = board.squares;
-            kingSquares = board.kingSquares;
-            colorToMove = board.colorToMove;
-            occupiedBitboard = board.occupiedBitboard;
-            emptyBitboard = board.emptyBitboard;
-            coloredBitboards = board.coloredBitboards;
-            coloredPieceBitboards = board.coloredPieceBitboards;
-            enPassantIndex = board.enPassantIndex;
-            castlingRights = board.castlingRights;
-            plyCount = board.plyCount;
-            fiftyMoveCounter = board.fiftyMoveCounter;
+        public Board(bool isStartPos) {
+            LoadFenToPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            MoveData();
+            UpdateBitboards();
+            InitializeZobrist();
         }
         /// <summary>
         /// Loads the information contained within a string of Forsyth–Edwards Notation into the current board instance's values.
@@ -154,10 +151,11 @@ namespace Chess {
             // en passant rules
             if(parts[3] != "-") {
                 char[] characters = parts[3].ToCharArray();
-                enPassantIndex = ((characters[0] - 'a') * 8) + characters[1];
+                enPassantIndex = characters[0] - 'a' + (characters[1] - 1) * 8;
+                Console.WriteLine(enPassantIndex);
             }
             fiftyMoveCounter = int.Parse(parts[4]);
-            plyCount = int.Parse(parts[5]);
+            plyCount = int.Parse(parts[5]) * 2 - colorToMove;
         }
         /// <summary>
         /// Outputs the fen string of the current position
@@ -332,14 +330,14 @@ namespace Chess {
                         }
                     } else if((currentPiece & 0b0111) == 1) {
                         if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == 0) {
-                            moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0], 0, state));
+                            moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], 0, state));
                             if(startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] >> 3 == (colorToMove == 1 ? 7 : 0)) {
                                 for(int type = 2; type < 6; type++) {
-                                    moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0], type, state));
+                                    moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], type, state));
                                 }
                             }
                             if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2] == 0 && startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 1 : 0] * 2, 0, state));
+                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2, 0, state));
                             }
                             if(startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] > -1 && startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] < 64) {
                                 if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]] >> 3 != colorToMove || squares[startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]] >> 3 == enPassantIndex) {
@@ -384,6 +382,18 @@ namespace Chess {
                         }
                     }
                 }
+            }
+            // legal check
+            List<Move> illegalMoves = new();
+            colorToMove = colorToMove == 1 ? 0 : 1;
+            foreach(Move move in moves) {
+                MakeMove(move);
+                if(IsInCheck()) illegalMoves.Add(move);
+                UndoMove(move);
+            }
+            colorToMove = colorToMove == 1 ? 0 : 1;
+            foreach(Move move in illegalMoves) {
+                moves.Remove(move);
             }
             return moves;
         }
@@ -582,7 +592,7 @@ namespace Chess {
             startSquare = start;
             endSquare = end;
             promotionType = pType;
-            state = s;
+            state = new(s);
         }
         public string ConvertToLongAlgebraic() {
             int startRank = startSquare >> 3;

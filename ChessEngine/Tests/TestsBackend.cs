@@ -1,7 +1,7 @@
 using Chess;
 
 public class Test1 {
-    public static void Main() {
+    public static void Mains() {
         Console.WriteLine("IT'S ALIVE!!!");
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         List<Move> moves = board.GetLegalMoves();
@@ -87,6 +87,7 @@ public class Test1 {
         } else {
             Console.WriteLine("Fen encoder test failed, outputted " + board.GetFenString());
         }
+    
         if(board.IsInCheck()) {
             Console.WriteLine("Check test 1 failed");
         } else {
@@ -140,6 +141,18 @@ public class Test1 {
             Console.WriteLine("Undo test passed");
         } else {
             Console.WriteLine("Undo test failed, outputted " + board.GetFenString());
+        }
+        foreach(Move move1 in moves) {
+            Console.WriteLine("Testing Move " + move1.ConvertToLongAlgebraic());
+            board.MakeMove(move1);
+            Console.WriteLine("Resulting FEN is " + board.GetFenString());
+            board.UndoMove(move1);
+            if(board.GetFenString() == "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+                Console.WriteLine("Final Fen String Is Proper");
+            } else {
+                Console.WriteLine("Undo failed, outputted " + board.GetFenString() + " after undoing move " + move1.ConvertToLongAlgebraic());
+                break;
+            }
         }
     }
 }
