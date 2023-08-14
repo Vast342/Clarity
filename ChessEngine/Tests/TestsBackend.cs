@@ -1,7 +1,7 @@
 using Chess;
 
-public class Test1 {
-    public static void Mains() {
+public class Tests {
+    public static void BackendTests() {
         Console.WriteLine("IT'S ALIVE!!!");
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         List<Move> moves = board.GetLegalMoves();

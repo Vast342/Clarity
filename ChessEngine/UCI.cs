@@ -1,16 +1,36 @@
-using System.Xml;
-
 public class UCI {
-    public static bool uci = false;
     static void Main() {
         while(true) {
             string entry = Console.ReadLine();
+            string command = entry.Split(' ')[0];
             if(entry == "uci") {
-                uci = true;
+                Console.WriteLine("id name Vast-Test-V1");
+                Console.WriteLine("id author Vast");
                 Console.WriteLine("uciok");
             }
-            if(entry == "quit") {
+            if(command == "quit") {
                 return;
+            }
+            if(command == "isready") {
+                TestBot.Initialize();
+                Console.WriteLine("readyok");
+            }
+            if(command == "ucinewgame") {
+                TestBot.NewGame();
+            }
+            if(command == "position") {
+                TestBot.LoadPosition(entry);
+            }
+            if(command == "test") {
+                if(entry.Split(' ')[1] == "board-rep") {
+                    Tests.BackendTests();
+                }
+            }
+            if(command == "go") {
+                TestBot.Think();
+            }
+            if(command == "get-fen") {
+                TestBot.GetFen();
             }
         }
     }

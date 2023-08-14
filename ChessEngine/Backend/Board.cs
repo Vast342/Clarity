@@ -152,7 +152,6 @@ namespace Chess {
             if(parts[3] != "-") {
                 char[] characters = parts[3].ToCharArray();
                 enPassantIndex = characters[0] - 'a' + (characters[1] - 1) * 8;
-                Console.WriteLine(enPassantIndex);
             }
             fiftyMoveCounter = int.Parse(parts[4]);
             plyCount = int.Parse(parts[5]) * 2 - colorToMove;
@@ -161,7 +160,6 @@ namespace Chess {
         /// Outputs the fen string of the current position
         /// </summary>
         /// <returns>the fen string</returns>
-        // the voices are back but FUCK IT, FEN PARSER
         public string GetFenString() {
             string fen = "";
 
@@ -250,7 +248,7 @@ namespace Chess {
             fen += ' ';
             if(enPassantIndex != 64) {
                 fen += (char)((enPassantIndex & 7) + 'a');
-                if(enPassantIndex < 23) {
+                if(enPassantIndex < 25) {
                     fen += '3';
                 } else {
                     fen += '6';
@@ -365,7 +363,7 @@ namespace Chess {
                         for(byte direction = 0; direction < 8; direction++) {
                             int targetRank = (startSquare >> 3) + knightOffsetsRank[direction];
                             int targetFile = (startSquare & 7) + knightOffsetsFile[direction];
-                            if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && squares[targetRank * 8 + targetFile] == 0) {
+                            if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && (squares[targetRank * 8 + targetFile] == 0 || squares[targetRank * 8 + targetFile] >> 3 != colorToMove)) {
                                 moves.Add(new Move(startSquare, targetRank * 8 + targetFile, 0, state));
                             }
                         }
@@ -385,13 +383,11 @@ namespace Chess {
             }
             // legal check
             List<Move> illegalMoves = new();
-            colorToMove = colorToMove == 1 ? 0 : 1;
             foreach(Move move in moves) {
                 MakeMove(move);
                 if(IsInCheck()) illegalMoves.Add(move);
                 UndoMove(move);
             }
-            colorToMove = colorToMove == 1 ? 0 : 1;
             foreach(Move move in illegalMoves) {
                 moves.Remove(move);
             }
@@ -482,7 +478,7 @@ namespace Chess {
                 }
                 // promotions
                 if(move.promotionType != 0) {
-                    squares[move.endSquare] = (byte)move.promotionType;
+                    squares[move.endSquare] = (byte)(move.promotionType + colorToMove * 8);
                 }
                 colorToMove = colorToMove == 1 ? 0 : 1;
                 plyCount++;
@@ -605,6 +601,20 @@ namespace Chess {
             name += (char)(endFile + 'a');
             name += endRank + 1;
             return name;
+        }
+        public Move(string longAlgebraicForm, Board board) {
+            char[] chars = longAlgebraicForm.ToCharArray();
+            int startRank = chars[1] - '1';
+            int startFile = chars[0] - 'a';
+            int endRank = chars[3] - '1';
+            int endFile = chars[2] - 'a';
+            if(chars.Length > 4) {
+                promotionType = chars[4];
+            }
+            startSquare = startRank * 8 + startFile;
+            endSquare = endRank * 8 + endFile;
+
+            state = new(board);
         }
     }
 } 
