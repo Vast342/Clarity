@@ -5,12 +5,12 @@ public class TestBot {
     public static Board board;
     public static List<String> moves = new();
     public static Move bestMove;
-    public static int[] nodeCounts = new int[5];
+    public static int[] nodeCounts = new int[20];
     public static void Initialize() {
 
     }
     public static void NewGame() {
-        board = null;
+        board = new("8/8/8/8/8/8/8/8 w - - 0 0");
         moves.Clear();
     }
     public static void LoadPosition(string position) {
@@ -43,11 +43,6 @@ public class TestBot {
         moves.Add(bestMove.ConvertToLongAlgebraic());
         board.MakeMove(bestMove);
         Console.WriteLine("bestmove " + bestMove.ConvertToLongAlgebraic());
-        Console.WriteLine(nodeCounts[4]);
-        Console.WriteLine(nodeCounts[3]);
-        Console.WriteLine(nodeCounts[2]);
-        Console.WriteLine(nodeCounts[1]);
-        Console.WriteLine(nodeCounts[0]);
     }
     public static int[] pieceValues = {100, 310, 330, 500, 1000, 100000};
     public static int Evaluate(List<Move> moves) {
@@ -69,6 +64,7 @@ public class TestBot {
             return 0;
         }
         if(depth == 0) return Evaluate(moves);
+        int i = 0;
         foreach(Move move in moves) {
             board.MakeMove(move);
             int score = -Negamax(-beta, -alpha, depth - 1);
@@ -82,6 +78,7 @@ public class TestBot {
                 }
                 alpha = score;
             }
+            i++;
         }
         return alpha;
     }

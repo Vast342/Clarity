@@ -155,4 +155,76 @@ public class Tests {
             }
         }
     }
+    public static void MoveGenTests() {
+        Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        List<Move> moves = board.GetLegalMoves();
+        if(moves.Count == 20) {
+            Console.WriteLine("Move count test passed");
+        } else {
+            Console.WriteLine("Move count test Failed, outputted " + moves.Count + " legal moves");
+        }
+        int i = 0;
+        int[] counts = new int[moves.Count];
+        Console.WriteLine("perft 2");
+        foreach(Move move in moves) {
+
+            board.MakeMove(move);
+            foreach(Move move2 in board.GetLegalMoves()) {
+                counts[i]++;
+            }
+            board.UndoMove(move);
+            if(board.GetFenString() != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+                Console.WriteLine("Undo failed");
+                break;
+            }
+            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + counts[i]);
+            i++;
+        }
+        i = 0;
+        counts = new int[moves.Count];
+        Console.WriteLine("perft 3");
+        foreach(Move move in moves) {
+
+            board.MakeMove(move);
+            foreach(Move move2 in board.GetLegalMoves()) {
+                board.MakeMove(move2);
+                foreach(Move move3 in board.GetLegalMoves()) {
+                    counts[i]++;
+                }
+                board.UndoMove(move2);
+            }
+            board.UndoMove(move);
+            if(board.GetFenString() != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+                Console.WriteLine("Undo failed");
+                break;
+            }
+            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + counts[i]);
+            i++;
+        }
+        i = 0;
+        counts = new int[moves.Count];
+        Console.WriteLine("perft 4");
+        foreach(Move move in moves) {
+
+            board.MakeMove(move);
+            foreach(Move move2 in board.GetLegalMoves()) {
+                board.MakeMove(move2);
+                foreach(Move move3 in board.GetLegalMoves()) {
+                    board.MakeMove(move3);
+                    foreach(Move move4 in board.GetLegalMoves()) {
+                        counts[i]++;
+                    } 
+                    board.UndoMove(move3);
+                }
+                board.UndoMove(move2);
+            }
+            board.UndoMove(move);
+            if(board.GetFenString() != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
+                Console.WriteLine("Undo failed");
+                break;
+            }
+            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + counts[i]);
+            i++;
+        }
+    }
 }

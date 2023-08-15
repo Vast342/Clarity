@@ -24,6 +24,8 @@ public class UCI {
             if(command == "test") {
                 if(entry.Split(' ')[1] == "board-rep") {
                     Tests.BackendTests();
+                } else if(entry.Split(' ')[1] == "move-gen") {
+                    Tests.MoveGenTests();
                 }
             }
             if(command == "go") {
