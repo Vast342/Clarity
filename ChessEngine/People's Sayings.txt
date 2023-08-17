@@ -1,3 +1,0 @@
-
-I’m out walking in the phx heat and can’t really parse this at the moment. But don’t lose hope! It can take several months to write a good move generator… And potentially several weeks of debugging even after things are working for position 1. Even years after everything is working, you may still find a position where the move gen fails. (That’s why you ask other authors for positions to test with)
-Ellie M, developer of Homura https://github.com/RedBedHed/Homura
