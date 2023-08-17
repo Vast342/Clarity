@@ -1,8 +1,9 @@
 using System.Numerics;
 using Chess;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 public class TestBot {
-    public static Board board;
+    public static Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
     public static List<String> moves = new();
     public static Move bestMove;
     public static int[] nodeCounts = new int[20];
@@ -82,7 +83,22 @@ public class TestBot {
         }
         return alpha;
     }
+    public static void OrderMoves(ref List<Move> moves) {
+        int[] scores = new int[moves.Count];
+        for(int i = 0; i < moves.Count; i++) {
+            if(moves[i].IsCapture(board)) {
+                scores[i] = pieceValues[Piece.GetType(board.squares[moves[i].endSquare])] - pieceValues[Piece.GetType(board.squares[moves[i].startSquare])];
+            }
+        }
+        Move[] sortedMoves = moves.ToArray();
+        Array.Sort(scores, sortedMoves);
+        Array.Reverse(sortedMoves);
+        moves = sortedMoves.ToList();
+    }
     public static void GetFen() {
         Console.WriteLine(board.GetFenString());
+    }
+    public static void ComputeMasks() {
+        board.GenerateMasks();
     }
 }

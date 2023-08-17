@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Chess {
     public static class Piece {
         public const byte None = 0;
@@ -57,7 +59,7 @@ namespace Chess {
         public int fiftyMoveCounter;
         // random values needed later
         private readonly static ulong[,] zobTable = new ulong[64,15];
-        public static readonly int[] directionalOffsets = {8, -8, -1, 1, 7, -7, 9, -9};
+        public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
         public static readonly int[] knightOffsetsRank = {2, 2, -2, -2, 1, -1, 1, -1};
         public static readonly int[] knightOffsetsFile = {1, -1, 1, -1, 2, 2, -2, -2};
         public void ReadBoardState(BoardState state) {
@@ -73,13 +75,7 @@ namespace Chess {
         /// <param name="fen">The fen string in question.</param>
         public Board(string fen) {
             LoadFenToPosition(fen);
-            MoveData();
-            UpdateBitboards();
-            InitializeZobrist();
-        }
-        public Board(bool isStartPos) {
-            LoadFenToPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-            MoveData();
+            //GenerateMasks();
             UpdateBitboards();
             InitializeZobrist();
         }
@@ -157,8 +153,9 @@ namespace Chess {
             // en passant rules
             if(parts[3] != "-") {
                 char[] characters = parts[3].ToCharArray();
-                enPassantIndex = characters[0] - 'a' + (characters[1] - 1) * 8;
+                enPassantIndex = characters[0] - 'a' + (characters[1] - '1') * 8;
             }
+            // counters 
             fiftyMoveCounter = int.Parse(parts[4]);
             plyCount = int.Parse(parts[5]) * 2 - colorToMove;
         }
@@ -273,22 +270,31 @@ namespace Chess {
             return fen;
         }
         public static readonly byte[,] squaresToEdge = new byte[64,8];
-        static void MoveData() {
+        public static ulong[,] movementMasks = new ulong[64,8];
+        public void GenerateMasks() {
             for(byte file = 0; file < 8; file++) {
                 for(byte rank = 0; rank < 8; rank++) {
                     byte north = (byte)(7 - rank);
                     byte south = rank;
-                    byte west = file;
                     byte east = (byte)(7 - file);
+                    byte west = file;
                     byte index = (byte)(rank * 8 + file);
                     squaresToEdge[index, 0] = north;
                     squaresToEdge[index, 1] = south;
-                    squaresToEdge[index, 2] = west;
-                    squaresToEdge[index, 3] = east;
+                    squaresToEdge[index, 2] = east;
+                    squaresToEdge[index, 3] = west;
                     squaresToEdge[index, 4] = Math.Min(north, west);
                     squaresToEdge[index, 5] = Math.Min(south, east);
                     squaresToEdge[index, 6] = Math.Min(north, east);
                     squaresToEdge[index, 7] = Math.Min(south, west);
+                }
+            }
+            for(int square = 0; square < 64; square++) {
+                for(int direction = 0; direction < 8; direction++) {
+                    for(int i = 0; i < squaresToEdge[square, direction]; i++) {
+                        int targetSquareIndex = square + directionalOffsets[direction] * (i + 1);
+                        movementMasks[square, direction] |= ((ulong)1) << targetSquareIndex;
+                    }
                 }
             }
         }
@@ -315,23 +321,8 @@ namespace Chess {
                 if(Piece.GetColor(currentPiece) == colorToMove) {
                     // a check if it's a sliding piece
                     if(Piece.GetType(currentPiece) == Piece.Bishop || Piece.GetType(currentPiece) == Piece.Rook || Piece.GetType(currentPiece) == Piece.Queen) {
-                        byte startDirection = (byte)(Piece.GetType(currentPiece) == Piece.Bishop ? 4 : 0);
-                        byte endDirection = (byte)(Piece.GetType(currentPiece) == Piece.Rook ? 4 : 8);
-                        for(byte direction = startDirection; direction < endDirection; direction++) {
-                            for(byte i = 0; i < squaresToEdge[startSquare, direction]; i++) {
-                                byte targetSquareIndex = (byte)(startSquare + directionalOffsets[direction] * (i + 1));
-                                byte targetPiece = squares[targetSquareIndex];
-                                // can't capture the piece at the end of the line, end the cycle
-                                if(Piece.GetColor(targetPiece) == colorToMove && targetPiece != Piece.None) {
-                                    break;
-                                }
-                                moves.Add(new Move(startSquare, targetSquareIndex, 0, state));
-                                // the piece at the end of the line can be captured, you just added the capture to the list, end the cycle
-                                if(Piece.GetColor(targetPiece) != colorToMove && targetPiece != Piece.None) {
-                                    break;
-                                }
-                            }
-                        }
+                        // classical approach movegen
+                        GetSlidingAttacks(startSquare, ref moves);
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == Piece.None) {
                             moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], 0, state));
@@ -400,6 +391,32 @@ namespace Chess {
             colorToMove = colorToMove == 1 ? 0 : 1;
             return legalMoves;
         }
+        public void GetSlidingAttacks(int startSquare, ref List<Move> moves) {
+            ulong totalAttacks = 0;
+            int startDirection = Piece.GetType(squares[startSquare]) == Piece.Bishop ? 4 : 0;
+            int endDirection = Piece.GetType(squares[startSquare]) == Piece.Rook ? 4 : 8;
+            for(int direction = startDirection; direction < endDirection; direction++) {
+                if(squaresToEdge[startSquare, direction] > 0) {
+                    ulong attacks = movementMasks[startSquare, direction];
+                    ulong potentialBlockers = occupiedBitboard & attacks;
+                    if(potentialBlockers != 0) {
+                        if((direction & 1) == 0) {
+                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
+                            attacks ^= movementMasks[firstBlocker, direction];
+                        } else {
+                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
+                            attacks ^= movementMasks[63-firstBlocker, direction];
+                        }
+                    }
+                    totalAttacks |= attacks;
+                }
+            }
+            for(int i = 0; i < 64; i++) {
+                if((totalAttacks & (((ulong)1) << (i))) != 0 && Piece.GetColor(squares[i]) != colorToMove) {
+                    moves.Add(new Move(startSquare, i, 0, new(this)));
+                }
+            }
+        }
         /// <summary>
         /// initializes a table used later for zobrist hashing, done automatically if you create the board using a fen string.
         /// </summary>
@@ -427,16 +444,9 @@ namespace Chess {
                 if(colorToMove != 1) {
                     fiftyMoveCounter++;
                 }
-                enPassantIndex = 64;
                 // fifty move counter
                 if(squares[move.endSquare] != 0 || (squares[move.startSquare] & 7) == Piece.Pawn) {
                     fiftyMoveCounter = 0;
-                }
-                // king square updates
-                if((squares[move.startSquare] & 7) == Piece.King) {
-                    kingSquares[colorToMove] = (byte)move.endSquare;
-                    castlingRights[colorToMove == 1 ? 0 : 2] = false;
-                    castlingRights[colorToMove == 1 ? 1 : 3] = false;
                 }
                 // for each start one set the start square to 0
                 if(castlingRights[0] && move.startSquare == 4 && move.endSquare == 6) {
@@ -444,41 +454,52 @@ namespace Chess {
                     // switch 4 with 6 and 7 with 5
                     squares[6] = squares[4];
                     squares[4] = 0;
-                    squares[7] = squares[5];
-                    squares[5] = 0;
+                    squares[5] = squares[7];
+                    squares[7] = 0;
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
                 } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
-                    // castling 2
+                    // castling 
                     // switch 4 with 2 and 0 with 3
-                    squares[6] = squares[4];
+                    squares[2] = squares[4];
                     squares[4] = 0;
-                    squares[7] = squares[5];
-                    squares[5] = 0;
+                    squares[3] = squares[0];
+                    squares[0] = 0;
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
                 } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
                     // castling 3
                     // switch 60 with 62 and 63 with 61
-                    squares[6] = squares[4];
-                    squares[4] = 0;
-                    squares[7] = squares[5];
-                    squares[5] = 0;
+                    squares[62] = squares[60];
+                    squares[60] = 0;
+                    squares[61] = squares[63];
+                    squares[63] = 0;
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
                 } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
                     // castling 4
                     // switch 60 with 58 and 56 with 59
-                    squares[6] = squares[4];
+                    squares[58] = squares[60];
                     squares[4] = 0;
-                    squares[7] = squares[5];
-                    squares[5] = 0;
+                    squares[59] = squares[56];
+                    squares[56] = 0;
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
                 } else if(move.endSquare != 0 && move.endSquare == enPassantIndex) {
                     // en passant
                     // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
                     squares[move.endSquare] = squares[move.startSquare];
                     squares[move.startSquare] = 0;
                     squares[move.endSquare + (colorToMove == 1 ? -8 : 8)] = 0;
+                    enPassantIndex = 64;
                 } else {
                     // move normally
                     // switch first square with second
                     if((squares[move.startSquare] & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
                         // its a double move, make the first square the en passant index
                         enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
+                    } else {
+                        enPassantIndex = 64;
                     }
                     squares[move.endSquare] = squares[move.startSquare];
                     squares[move.startSquare] = 0;
@@ -486,6 +507,12 @@ namespace Chess {
                 // promotions
                 if(move.promotionType != 0) {
                     squares[move.endSquare] = (byte)(move.promotionType + colorToMove * 8);
+                }
+                // king square updates
+                if(Piece.GetColor(squares[move.startSquare]) == Piece.King) {
+                    kingSquares[colorToMove] = (byte)move.endSquare;
+                    castlingRights[colorToMove == 1 ? 0 : 2] = false;
+                    castlingRights[colorToMove == 1 ? 1 : 3] = false;
                 }
                 colorToMove = colorToMove == 1 ? 0 : 1;
                 plyCount++;
@@ -529,11 +556,11 @@ namespace Chess {
                 for(byte i = 0; i < squaresToEdge[square, direction]; i++) {
                     byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
                     byte targetPiece = squares[targetSquareIndex];
-                    if(targetPiece != 0 && targetPiece >> 3 == colorToMove) {
-                        if(targetPiece >> 3 == colorToMove) {
+                    if(targetPiece != 0) {
+                        if(Piece.GetColor(targetPiece) == colorToMove) {
                             break;
                         }
-                        if((targetPiece & 7) == Piece.Rook || (targetPiece & 7) == Piece.Queen) {
+                        if(Piece.GetType(targetPiece) == Piece.Rook || Piece.GetType(targetPiece) == Piece.Queen && Piece.GetColor(targetPiece) != colorToMove) {
                             isCheck = true;
                             break;
                         }
@@ -541,7 +568,7 @@ namespace Chess {
                 }
                 int targetRank = (square >> 3) + knightOffsetsRank[direction];
                 int targetFile = (square & 7) + knightOffsetsFile[direction];
-                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && (squares[targetRank * 8 + targetFile] & 7) == Piece.Knight && (squares[targetRank * 8 + targetFile] >> 3) != colorToMove) {
+                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && Piece.GetType(squares[targetRank * 8 + targetFile]) == Piece.Knight && Piece.GetColor(squares[targetRank * 8 + targetFile]) != colorToMove) {
                     isCheck = true;
                     break;
                 }
@@ -561,7 +588,7 @@ namespace Chess {
                     byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
                     byte targetPiece = squares[targetSquareIndex];
                     if(targetPiece != 0) {
-                        if(((targetPiece & 7) == Piece.Bishop || (targetPiece & 7) == Piece.Queen) && targetPiece >> 3 != colorToMove) {
+                        if((Piece.GetType(targetPiece) == Piece.Bishop || Piece.GetType(targetPiece) == Piece.Queen) && Piece.GetColor(targetPiece) != colorToMove) {
                             isCheck = true;
                             break;
                         }
@@ -569,7 +596,7 @@ namespace Chess {
                 }
                 int targetRank = (square >> 3) + knightOffsetsRank[direction];
                 int targetFile = (square & 7) + knightOffsetsFile[direction];
-                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && (squares[targetRank * 8 + targetFile] & 7) == Piece.Knight && (squares[targetRank * 8 + targetFile] >> 3) != colorToMove) {
+                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && Piece.GetType(squares[targetRank * 8 + targetFile]) == Piece.Knight && Piece.GetColor(squares[targetRank * 8 + targetFile]) != colorToMove) {
                     isCheck = true;
                     break;
                 }
@@ -622,6 +649,9 @@ namespace Chess {
             endSquare = endRank * 8 + endFile;
 
             state = new(board);
+        }
+        public bool IsCapture(Board board) {
+            return board.squares[endSquare] != Piece.None;
         }
     }
 } 

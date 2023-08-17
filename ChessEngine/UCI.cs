@@ -1,10 +1,11 @@
 public class UCI {
     static void Main() {
+        TestBot.ComputeMasks();
         while(true) {
-            string entry = Console.ReadLine();
+            string? entry = Console.ReadLine();
             string command = entry.Split(' ')[0];
             if(entry == "uci") {
-                Console.WriteLine("id name Vast-Test-V1");
+                Console.WriteLine("id name I-don");
                 Console.WriteLine("id author Vast");
                 Console.WriteLine("uciok");
             }
@@ -26,6 +27,10 @@ public class UCI {
                     Tests.BackendTests();
                 } else if(entry.Split(' ')[1] == "move-gen") {
                     Tests.MoveGenTests();
+                } else if(entry.Split(' ')[1] == "move-masks") {
+                    Tests.MoveMaskTests();
+                } else if(entry.Split(' ')[1] == "outliers") {
+                    Tests.OutlierTests();
                 }
             }
             if(command == "go") {
