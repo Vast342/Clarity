@@ -13,4 +13,4 @@ test: performs a specific group of tests. accepts move-gen, board-rep, and outli
 
 get-fen: Outputs the current position of the board as a fen string, just to check if a move was made properly.
 
-perft <depth> <fen / startpos> <isSplit>: The most complicated one. It can perform a perft test at various depths, and from various positions. depth is the depth of the perft test, the second field is either the fen string of the position or the word startpos, and if the last field is the word split it will divide the result by move, otherwise it can be left blank. Currently if it is not split it is broken.
+perft <depth> <fen / startpos> <isSplit>: The most complicated one. It can perform a perft test at various depths, and from various positions. depth is the depth of the perft test, the second field is either the fen string of the position or the word startpos, and if the last field is the word split it will divide the result by move, otherwise it can be left blank for the total nodes explored.

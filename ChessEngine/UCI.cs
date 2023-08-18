@@ -46,7 +46,7 @@ public class UCI {
                             Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
                         }
                     } else {
-                        Console.WriteLine(Tests.Perft(int.Parse(segments[1]) - 1,  new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")));
+                        Console.WriteLine(Tests.Perft(int.Parse(segments[1]),  new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")));
                     }
                 } else {
                     if(segments.Length > 8) {
@@ -58,7 +58,7 @@ public class UCI {
                             Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
                         } 
                     } else {
-                        Console.WriteLine(Tests.Perft(int.Parse(segments[1]) - 1,  new Board(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7])));
+                        Console.WriteLine(Tests.Perft(int.Parse(segments[1]),  new Board(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7])));
                     }
                 }
             }
