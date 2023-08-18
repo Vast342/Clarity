@@ -278,74 +278,9 @@ public class Tests {
             Console.WriteLine("Move count test Failed, outputted " + moves.Count + " legal moves");
             Console.ResetColor();
         }
-        int i = 0;
-        int[] counts = new int[moves.Count];
-        Console.WriteLine("perft 2");
         foreach(Move move in moves) {
-
-            board.MakeMove(move);
-            foreach(Move move2 in board.GetLegalMoves()) {
-                counts[i]++;
-            }
-            board.UndoMove(move);
-            if(board.GetFenString() != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Undo failed");
-                Console.ResetColor();
-                break;
-            }
-            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + counts[i]);
-            i++;
-        }
-        i = 0;
-        counts = new int[moves.Count];
-        Console.WriteLine("perft 3");
-        foreach(Move move in moves) {
-
-            board.MakeMove(move);
-            foreach(Move move2 in board.GetLegalMoves()) {
-                board.MakeMove(move2);
-                foreach(Move move3 in board.GetLegalMoves()) {
-                    counts[i]++;
-                }
-                board.UndoMove(move2);
-            }
-            board.UndoMove(move);
-            if(board.GetFenString() != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Undo failed");
-                Console.ResetColor();
-                break;
-            }
-            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + counts[i]);
-            i++;
-        }
-        i = 0;
-        counts = new int[moves.Count];
-        Console.WriteLine("perft 4");
-        foreach(Move move in moves) {
-
-            board.MakeMove(move);
-            foreach(Move move2 in board.GetLegalMoves()) {
-                board.MakeMove(move2);
-                foreach(Move move3 in board.GetLegalMoves()) {
-                    board.MakeMove(move3);
-                    foreach(Move move4 in board.GetLegalMoves()) {
-                        counts[i]++;
-                    } 
-                    board.UndoMove(move3);
-                }
-                board.UndoMove(move2);
-            }
-            board.UndoMove(move);
-            if(board.GetFenString() != "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1") {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Undo failed");
-                Console.ResetColor();
-                break;
-            }
-            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + counts[i]);
-            i++;
+            int results = Perft(2, board);
+            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + results);
         }
     }
     public static void MoveMaskTests() {
@@ -379,5 +314,20 @@ public class Tests {
         BQCBoard.MakeMove(new Move("e8c8", BQCBoard));
         Console.WriteLine(BQCBoard.GetFenString());
 
+    }
+    public static int Perft(int depth, Board board) { 
+        List<Move> moves = board.GetLegalMoves();
+        int count = 0;
+        if(depth == 0) {
+            return 1;
+        }
+        int i = 0;
+        foreach(Move move in moves) {
+            board.MakeMove(move);
+            count += Perft(depth - 1, board);
+            board.UndoMove(move);
+            i++;
+        }
+        return count;
     }
 }

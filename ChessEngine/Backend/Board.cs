@@ -75,7 +75,6 @@ namespace Chess {
         /// <param name="fen">The fen string in question.</param>
         public Board(string fen) {
             LoadFenToPosition(fen);
-            //GenerateMasks();
             UpdateBitboards();
             InitializeZobrist();
         }
