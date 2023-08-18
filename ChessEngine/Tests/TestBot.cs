@@ -40,7 +40,7 @@ public class TestBot {
         bestMove = new Move(12, 28, 0, new(board));
         
         Negamax(-9999999, 9999999, 4);
-
+        
         moves.Add(bestMove.ConvertToLongAlgebraic());
         board.MakeMove(bestMove);
         Console.WriteLine("bestmove " + bestMove.ConvertToLongAlgebraic());
@@ -65,21 +65,20 @@ public class TestBot {
             return 0;
         }
         if(depth == 0) return Evaluate(moves);
-        int i = 0;
         foreach(Move move in moves) {
-            board.MakeMove(move);
-            int score = -Negamax(-beta, -alpha, depth - 1);
-            board.UndoMove(move);
-            if(score > beta) {
-                return beta;
-            }
-            if(score > alpha) {
-                if(depth == 4) {
-                    bestMove = move;
+            if(board.MakeMove(move)) {
+                int score = -Negamax(-beta, -alpha, depth - 1);
+                board.UndoMove(move);
+                if(score > beta) {
+                    return beta;
                 }
-                alpha = score;
+                if(score > alpha) {
+                    if(depth == 4) {
+                        bestMove = move;
+                    }
+                    alpha = score;
+                }
             }
-            i++;
         }
         return alpha;
     }

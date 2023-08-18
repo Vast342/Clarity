@@ -4,7 +4,7 @@ public class Tests {
     public static void BackendTests() {
         Console.WriteLine("IT'S ALIVE!!!");
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        Console.WriteLine("mask: " + BitOperations.TrailingZeroCount(Board.movementMasks[7, 3] & board.occupiedBitboard));
+        Console.WriteLine("mask: " + BitOperations.TrailingZeroCount(Board.slidingMasks[7, 3] & board.occupiedBitboard));
         List<Move> moves = board.GetLegalMoves();
         if(moves.Count == 20) {
             Console.ForegroundColor = ConsoleColor.Green;
@@ -287,15 +287,15 @@ public class Tests {
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         board.GenerateMasks();
         int index = 28;
-        Console.WriteLine(Convert.ToString(Board.movementMasks[index, 0] | Board.movementMasks[index, 1] | Board.movementMasks[index, 2] | Board.movementMasks[index, 3] | Board.movementMasks[index, 4] | Board.movementMasks[index, 5] | Board.movementMasks[index, 6] | Board.movementMasks[index, 7]), 2);
+        Console.WriteLine(Convert.ToString(Board.slidingMasks[index, 0] | Board.slidingMasks[index, 1] | Board.slidingMasks[index, 2] | Board.slidingMasks[index, 3] | Board.slidingMasks[index, 4] | Board.slidingMasks[index, 5] | Board.slidingMasks[index, 6] | Board.slidingMasks[index, 7]), 2);
         index = 27;
-        Console.WriteLine(Convert.ToString(Board.movementMasks[index, 0] | Board.movementMasks[index, 1] | Board.movementMasks[index, 2] | Board.movementMasks[index, 3] | Board.movementMasks[index, 4] | Board.movementMasks[index, 5] | Board.movementMasks[index, 6] | Board.movementMasks[index, 7]), 2);
+        Console.WriteLine(Convert.ToString(Board.slidingMasks[index, 0] | Board.slidingMasks[index, 1] | Board.slidingMasks[index, 2] | Board.slidingMasks[index, 3] | Board.slidingMasks[index, 4] | Board.slidingMasks[index, 5] | Board.slidingMasks[index, 6] | Board.slidingMasks[index, 7]), 2);
         index = 26;
-        Console.WriteLine(Convert.ToString(Board.movementMasks[index, 0] | Board.movementMasks[index, 1] | Board.movementMasks[index, 2] | Board.movementMasks[index, 3] | Board.movementMasks[index, 4] | Board.movementMasks[index, 5] | Board.movementMasks[index, 6] | Board.movementMasks[index, 7]), 2);
+        Console.WriteLine(Convert.ToString(Board.slidingMasks[index, 0] | Board.slidingMasks[index, 1] | Board.slidingMasks[index, 2] | Board.slidingMasks[index, 3] | Board.slidingMasks[index, 4] | Board.slidingMasks[index, 5] | Board.slidingMasks[index, 6] | Board.slidingMasks[index, 7]), 2);
         index = 25;
-        Console.WriteLine(Convert.ToString(Board.movementMasks[index, 0] | Board.movementMasks[index, 1] | Board.movementMasks[index, 2] | Board.movementMasks[index, 3] | Board.movementMasks[index, 4] | Board.movementMasks[index, 5] | Board.movementMasks[index, 6] | Board.movementMasks[index, 7]), 2);
+        Console.WriteLine(Convert.ToString(Board.slidingMasks[index, 0] | Board.slidingMasks[index, 1] | Board.slidingMasks[index, 2] | Board.slidingMasks[index, 3] | Board.slidingMasks[index, 4] | Board.slidingMasks[index, 5] | Board.slidingMasks[index, 6] | Board.slidingMasks[index, 7]), 2);
         index = 24;
-        Console.WriteLine(Convert.ToString(Board.movementMasks[index, 0] | Board.movementMasks[index, 1] | Board.movementMasks[index, 2] | Board.movementMasks[index, 3] | Board.movementMasks[index, 4] | Board.movementMasks[index, 5] | Board.movementMasks[index, 6] | Board.movementMasks[index, 7]), 2);
+        Console.WriteLine(Convert.ToString(Board.slidingMasks[index, 0] | Board.slidingMasks[index, 1] | Board.slidingMasks[index, 2] | Board.slidingMasks[index, 3] | Board.slidingMasks[index, 4] | Board.slidingMasks[index, 5] | Board.slidingMasks[index, 6] | Board.slidingMasks[index, 7]), 2);
     }
     public static void OutlierTests() {
         Board epBoard = new("rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3");
@@ -323,10 +323,11 @@ public class Tests {
         }
         int i = 0;
         foreach(Move move in moves) {
-            board.MakeMove(move);
-            count += Perft(depth - 1, board);
-            board.UndoMove(move);
-            i++;
+            if(board.MakeMove(move)) {
+                count += Perft(depth - 1, board);
+                board.UndoMove(move);
+                i++;
+            }
         }
         return count;
     }

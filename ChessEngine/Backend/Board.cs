@@ -269,7 +269,7 @@ namespace Chess {
             return fen;
         }
         public static readonly byte[,] squaresToEdge = new byte[64,8];
-        public static ulong[,] movementMasks = new ulong[64,8];
+        public static ulong[,] slidingMasks = new ulong[64,8];
         public void GenerateMasks() {
             for(byte file = 0; file < 8; file++) {
                 for(byte rank = 0; rank < 8; rank++) {
@@ -292,7 +292,7 @@ namespace Chess {
                 for(int direction = 0; direction < 8; direction++) {
                     for(int i = 0; i < squaresToEdge[square, direction]; i++) {
                         int targetSquareIndex = square + directionalOffsets[direction] * (i + 1);
-                        movementMasks[square, direction] |= ((ulong)1) << targetSquareIndex;
+                        slidingMasks[square, direction] |= ((ulong)1) << targetSquareIndex;
                     }
                 }
             }
@@ -325,35 +325,32 @@ namespace Chess {
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == Piece.None) {
                             moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], 0, state));
-                            if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2] == 0) {
+                            if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2] == Piece.None && startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
                                 moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2, 0, state));
                             }
                         }
                         // captures
-                        if(startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] > -1 && startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] < 64) {
-                            if((Piece.GetColor(squares[startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]]) != colorToMove && squares[startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]] != 0) || startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4] == enPassantIndex) {
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 4 : 5], 0, state));
+                        int startRank = startSquare >> 3;
+                        int startFile = startSquare & 7;
+                        // beware of the h2h4 a7a5 h4a5 glitch
+                        if(startFile > -1) {
+                            int targetIndex = startSquare + directionalOffsets[colorToMove == 1 ? 4 : 7];
+                            if((squares[targetIndex] != 0 && Piece.GetColor(squares[targetIndex]) != colorToMove && Math.Abs((targetIndex >> 3) - startRank) != 2 ) || targetIndex == enPassantIndex) {
+                                moves.Add(new Move(startSquare, targetIndex, 0, state));
                             }
                         }
-                        if(startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6] > -1 && startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6] < 64) {
-                            if((Piece.GetColor(squares[startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6]]) != colorToMove && squares[startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6]] != 0) || startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6] == enPassantIndex) {
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 6 : 7], 0, state));
+                        if(startFile < 8) {
+                            int targetIndex = startSquare + directionalOffsets[colorToMove == 1 ? 6 : 5];
+                            if((squares[targetIndex] != 0 && Piece.GetColor(squares[targetIndex]) != colorToMove && Math.Abs((targetIndex >> 3) - startRank) != 2) || (targetIndex == enPassantIndex && Math.Abs((targetIndex >> 3) - startRank) != 2)) {
+                                moves.Add(new Move(startSquare, targetIndex, 0, state));
                             }
                         }
+                        // promotion captures
+
                         // promotions
                         if(Piece.GetColor((byte)(startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1])) == (colorToMove == 1 ? 7 : 0)) {
                             for(int type = Piece.Knight; type < Piece.King; type++) {
                                 moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], type, state));
-                            }
-                        }
-                        if((startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4]) >> 3 == (colorToMove == 1 ? 7 : 0)) {
-                            for(int type = Piece.Knight; type < Piece.King; type++) {
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 5 : 4], type, state));
-                            }
-                        }
-                        if(startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6] >> 3 == (colorToMove == 1 ? 7 : 0)) {
-                            for(int type = 2; type < 6; type++) {
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 7 : 6], type, state));
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Knight) {
@@ -369,7 +366,7 @@ namespace Chess {
                     } else if(Piece.GetType(currentPiece) == Piece.King) {
                         for(byte direction = 0; direction < 8; direction++) {
                             int targetSquareIndex = startSquare + directionalOffsets[direction];
-                            if(targetSquareIndex < 64 && targetSquareIndex > -1) {
+                            if(squaresToEdge[startSquare, direction] != 0) {
                                 byte targetPiece = squares[targetSquareIndex];  
                                 if(Piece.GetColor(targetPiece) != colorToMove) {
                                     moves.Add(new Move(startSquare, targetSquareIndex, 0, state));
@@ -380,15 +377,14 @@ namespace Chess {
                 }
             }
             // legal check
-            List<Move> legalMoves = new();
-            colorToMove = colorToMove == 1 ? 0 : 1;
+/*            List<Move> legalMoves = new();
             foreach(Move move in moves) {
-                MakeMove(move); 
-                if(!IsInCheck()) legalMoves.Add(move);
-                UndoMove(move);
-            }
-            colorToMove = colorToMove == 1 ? 0 : 1;
-            return legalMoves;
+                if(MakeMove(move)) { 
+                    legalMoves.Add(move);
+                    UndoMove(move);
+                }
+            }*/
+            return moves;
         }
         public void GetSlidingAttacks(int startSquare, ref List<Move> moves) {
             ulong totalAttacks = 0;
@@ -396,15 +392,15 @@ namespace Chess {
             int endDirection = Piece.GetType(squares[startSquare]) == Piece.Rook ? 4 : 8;
             for(int direction = startDirection; direction < endDirection; direction++) {
                 if(squaresToEdge[startSquare, direction] > 0) {
-                    ulong attacks = movementMasks[startSquare, direction];
+                    ulong attacks = slidingMasks[startSquare, direction];
                     ulong potentialBlockers = occupiedBitboard & attacks;
                     if(potentialBlockers != 0) {
                         if((direction & 1) == 0) {
                             int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
-                            attacks ^= movementMasks[firstBlocker, direction];
+                            attacks ^= slidingMasks[firstBlocker, direction];
                         } else {
                             int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
-                            attacks ^= movementMasks[63-firstBlocker, direction];
+                            attacks ^= slidingMasks[63-firstBlocker, direction];
                         }
                     }
                     totalAttacks |= attacks;
@@ -438,7 +434,7 @@ namespace Chess {
             }
             return hash;
         }
-        public void MakeMove(Move move) {
+        public bool MakeMove(Move move) {
             if(move.endSquare > -1 && move.endSquare < 64 && move.startSquare > -1 && move.startSquare < 64) {
                 if(colorToMove != 1) {
                     fiftyMoveCounter++;
@@ -513,10 +509,18 @@ namespace Chess {
                     castlingRights[colorToMove == 1 ? 0 : 2] = false;
                     castlingRights[colorToMove == 1 ? 1 : 3] = false;
                 }
-                colorToMove = colorToMove == 1 ? 0 : 1;
                 plyCount++;
                 UpdateBitboards();
+                if(IsInCheck()) {
+                    UndoMove(move);
+                    colorToMove = colorToMove == 1 ? 0 : 1;
+                    return false;
+                } else {
+                    colorToMove = colorToMove == 1 ? 0 : 1;
+                    return true;
+                }
             }
+            return false;
         }
         public void UndoMove(Move move) {
             ReadBoardState(move.state); 
