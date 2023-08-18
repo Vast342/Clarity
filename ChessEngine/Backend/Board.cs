@@ -1,4 +1,5 @@
 using System.Numerics;
+using Microsoft.AspNetCore.Identity;
 
 namespace Chess {
     public static class Piece {
@@ -358,7 +359,7 @@ namespace Chess {
                         for(byte direction = 0; direction < 8; direction++) {
                             int targetRank = (startSquare >> 3) + knightOffsetsRank[direction];
                             int targetFile = (startSquare & 7) + knightOffsetsFile[direction];
-                            if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && (squares[targetRank * 8 + targetFile] == 0 || squares[targetRank * 8 + targetFile] >> 3 != colorToMove)) {
+                            if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && (squares[targetRank * 8 + targetFile] == Piece.None || Piece.GetColor(squares[targetRank * 8 + targetFile]) != colorToMove)) {
                                 moves.Add(new Move(startSquare, targetRank * 8 + targetFile, 0, state));
                             }
                         }
@@ -368,7 +369,7 @@ namespace Chess {
                             int targetSquareIndex = startSquare + directionalOffsets[direction];
                             if(squaresToEdge[startSquare, direction] != 0) {
                                 byte targetPiece = squares[targetSquareIndex];  
-                                if(Piece.GetColor(targetPiece) != colorToMove) {
+                                if(Piece.GetColor(targetPiece) != colorToMove || targetPiece == Piece.None) {
                                     moves.Add(new Move(startSquare, targetSquareIndex, 0, state));
                                 }
                             }
@@ -376,14 +377,7 @@ namespace Chess {
                     }
                 }
             }
-            // legal check
-/*            List<Move> legalMoves = new();
-            foreach(Move move in moves) {
-                if(MakeMove(move)) { 
-                    legalMoves.Add(move);
-                    UndoMove(move);
-                }
-            }*/
+            // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
             return moves;
         }
         public void GetSlidingAttacks(int startSquare, ref List<Move> moves) {
@@ -407,7 +401,7 @@ namespace Chess {
                 }
             }
             for(int i = 0; i < 64; i++) {
-                if((totalAttacks & (((ulong)1) << (i))) != 0 && Piece.GetColor(squares[i]) != colorToMove) {
+                if((totalAttacks & (((ulong)1) << (i))) != 0 && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
                     moves.Add(new Move(startSquare, i, 0, new(this)));
                 }
             }
@@ -552,28 +546,37 @@ namespace Chess {
             occupiedBitboard = coloredBitboards[0] | coloredBitboards[1];
             emptyBitboard = ~occupiedBitboard;
         }
+        // yes I know this has the 2 loops which is not as efficient but I tried to compress it into one and it didn't work so here it is
         public bool SquareIsAttackedByOpponent(int square) {
             bool isCheck = false;
             // orthagonal
             for(int direction = 0; direction < 4; direction++) {
-                for(byte i = 0; i < squaresToEdge[square, direction]; i++) {
-                    byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
-                    byte targetPiece = squares[targetSquareIndex];
-                    if(targetPiece != 0) {
-                        if(Piece.GetColor(targetPiece) == colorToMove) {
-                            break;
-                        }
-                        if(Piece.GetType(targetPiece) == Piece.Rook || Piece.GetType(targetPiece) == Piece.Queen && Piece.GetColor(targetPiece) != colorToMove) {
-                            isCheck = true;
-                            break;
+                if(squaresToEdge[square, direction] > 0) {
+                    ulong attacks = slidingMasks[square, direction];
+                    ulong potentialBlockers = occupiedBitboard & attacks;
+                    if(potentialBlockers != 0) {
+                        if((direction & 1) == 0) {
+                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
+                            if(Piece.GetColor(squares[firstBlocker]) == colorToMove && squares[firstBlocker] != Piece.None) {
+                                break;
+                            } else {
+                                if(Piece.GetType(squares[firstBlocker]) == Piece.Rook || Piece.GetType(squares[firstBlocker]) == Piece.Queen) {
+                                    isCheck = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
+                            if(Piece.GetColor(squares[63-firstBlocker]) == colorToMove && squares[63-firstBlocker] != Piece.None) {
+                                break;
+                            } else {
+                                if(Piece.GetType(squares[63-firstBlocker]) == Piece.Rook || Piece.GetType(squares[63-firstBlocker]) == Piece.Queen) {
+                                    isCheck = true;
+                                    break;
+                                }
+                            }
                         }
                     }
-                }
-                int targetRank = (square >> 3) + knightOffsetsRank[direction];
-                int targetFile = (square & 7) + knightOffsetsFile[direction];
-                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && Piece.GetType(squares[targetRank * 8 + targetFile]) == Piece.Knight && Piece.GetColor(squares[targetRank * 8 + targetFile]) != colorToMove) {
-                    isCheck = true;
-                    break;
                 }
             }
             // diagonals
@@ -581,22 +584,39 @@ namespace Chess {
                 // pawns
                 if(squaresToEdge[square, direction] > 0) {
                     if((direction & 1) != colorToMove) {
-                        if(squares[square + directionalOffsets[direction]] == (Piece.Pawn | (colorToMove == 0 ? Piece.White : Piece.Black))) {
+                        if(Piece.GetType(squares[square + directionalOffsets[direction]]) == Piece.Pawn && Piece.GetColor(squares[square + directionalOffsets[direction]]) != colorToMove) {
                             isCheck = true;
                             break;
                         }
                     }
-                }
-                for(byte i = 0; i < squaresToEdge[square, direction]; i++) {
-                    byte targetSquareIndex = (byte)(square + directionalOffsets[direction] * (i + 1));
-                    byte targetPiece = squares[targetSquareIndex];
-                    if(targetPiece != 0) {
-                        if((Piece.GetType(targetPiece) == Piece.Bishop || Piece.GetType(targetPiece) == Piece.Queen) && Piece.GetColor(targetPiece) != colorToMove) {
-                            isCheck = true;
-                            break;
+                    ulong attacks = slidingMasks[square, direction];
+                    ulong potentialBlockers = occupiedBitboard & attacks;
+                    if(potentialBlockers != 0) {
+                        if((direction & 1) == 0) {
+                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
+                            if(Piece.GetColor(squares[firstBlocker]) == colorToMove && squares[firstBlocker] != Piece.None) {
+                                break;
+                            } else {
+                                if(Piece.GetType(squares[firstBlocker]) == Piece.Bishop || Piece.GetType(squares[firstBlocker]) == Piece.Queen) {
+                                    isCheck = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
+                            if(Piece.GetColor(squares[63-firstBlocker]) == colorToMove && squares[63-firstBlocker] != Piece.None) {
+                                break;
+                            } else {
+                                if(Piece.GetType(squares[63-firstBlocker]) == Piece.Bishop || Piece.GetType(squares[63-firstBlocker]) == Piece.Queen) {
+                                    isCheck = true;
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
+            }
+            for(int direction = 0; direction < 8; direction++) {
                 int targetRank = (square >> 3) + knightOffsetsRank[direction];
                 int targetFile = (square & 7) + knightOffsetsFile[direction];
                 if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && Piece.GetType(squares[targetRank * 8 + targetFile]) == Piece.Knight && Piece.GetColor(squares[targetRank * 8 + targetFile]) != colorToMove) {
