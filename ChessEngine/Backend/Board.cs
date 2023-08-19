@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Xml.Schema;
 using Microsoft.AspNetCore.Identity;
 
 namespace Chess {
@@ -283,7 +284,17 @@ namespace Chess {
                     // a check if it's a sliding piece
                     if(Piece.GetType(currentPiece) == Piece.Bishop || Piece.GetType(currentPiece) == Piece.Rook || Piece.GetType(currentPiece) == Piece.Queen) {
                         // classical approach movegen
-                        GetSlidingAttacks(startSquare, ref moves);
+                        ulong total = 0;
+                        int startDirection = Piece.GetType(squares[startSquare]) == Piece.Bishop ? 4 : 0;
+                        int endDirection = Piece.GetType(squares[startSquare]) == Piece.Rook ? 4 : 8;
+                        for(int direction = startDirection; direction < endDirection; direction++) {
+                            total |= GetSlidingAttacks(startSquare, direction);
+                        }
+                        for(int i = 0; i < 64; i++) {
+                            if((total & (((ulong)1) << (i))) != 0 && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
+                                moves.Add(new Move(startSquare, i, 0, new(this)));
+                            }
+                        }
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == Piece.None) {
                             moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], 0, state));
@@ -293,23 +304,12 @@ namespace Chess {
                         }
                         // captures
                         // concept here is that you shift up and to the right and left(so directional offsets 4 and 6 as white and 5 and 7 as black) and then mask out the left or right files based on that
-                        // so like set up the current position as a bitboard
-                        ulong currentPos = ((ulong)1) << startSquare;
                         // looping through the directions
                         for(int direction = colorToMove == 1 ? 4 : 5; direction < (colorToMove == 1 ? 7 : 8); direction += 2) {
-                            // shift in the right direction
-                            ulong consideredAttack = currentPos << directionalOffsets[direction];
-                            // mask out the corresponding column
-                            if(direction == 4 || direction == 7) {
-                                // left shift, ignore rightmost file
-                                consideredAttack -= consideredAttack & 0b1000000010000000100000001000000010000000100000001000000010000000;
-                            } else if(direction == 5 || direction == 6) {
-                                // right shift, ignore leftmost file
-                                consideredAttack -= consideredAttack & 0b100000001000000010000000100000001000000010000000100000001;
-                            }           
+                            ulong results = GeneratePawnCaptures(startSquare, direction);
                             // convert to moves
                             for(int i = 0; i < 64; i++) {
-                                if((consideredAttack & ((ulong)1) << i) != 0 && ((Piece.GetColor(squares[i]) != colorToMove && squares[i] != 0) || i == enPassantIndex)) {
+                                if((results & ((ulong)1) << i) != 0 && ((Piece.GetColor(squares[i]) != colorToMove && squares[i] != 0) || i == enPassantIndex)) {
                                     if(i >> 3 == colorToMove * 7) {
                                         for(int type = Piece.Knight; type < Piece.King; type++) {
                                             moves.Add(new Move(startSquare, i, type, state));
@@ -320,9 +320,6 @@ namespace Chess {
                                 }
                             }
                         }
-                        // convert the attack bitboard into individual moves
-                        // promotion captures
-
                         // promotions
                         if(Piece.GetColor((byte)(startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1])) == (colorToMove == 1 ? 7 : 0)) {
                             for(int type = Piece.Knight; type < Piece.King; type++) {
@@ -355,31 +352,36 @@ namespace Chess {
             // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
             return moves;
         }
-        public void GetSlidingAttacks(int startSquare, ref List<Move> moves) {
-            ulong totalAttacks = 0;
-            int startDirection = Piece.GetType(squares[startSquare]) == Piece.Bishop ? 4 : 0;
-            int endDirection = Piece.GetType(squares[startSquare]) == Piece.Rook ? 4 : 8;
-            for(int direction = startDirection; direction < endDirection; direction++) {
-                if(squaresToEdge[startSquare, direction] > 0) {
-                    ulong attacks = slidingMasks[startSquare, direction];
-                    ulong potentialBlockers = occupiedBitboard & attacks;
-                    if(potentialBlockers != 0) {
-                        if((direction & 1) == 0) {
-                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
-                            attacks ^= slidingMasks[firstBlocker, direction];
-                        } else {
-                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
-                            attacks ^= slidingMasks[63-firstBlocker, direction];
-                        }
+        public ulong GetSlidingAttacks(int startSquare, int direction) {
+            if(squaresToEdge[startSquare, direction] > 0) {
+                ulong attacks = slidingMasks[startSquare, direction];
+                ulong potentialBlockers = occupiedBitboard & attacks;
+                if(potentialBlockers != 0) {
+                    if((direction & 1) == 0) {
+                        int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
+                        attacks ^= slidingMasks[firstBlocker, direction];
+                    } else {
+                        int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
+                        attacks ^= slidingMasks[63-firstBlocker, direction];
                     }
-                    totalAttacks |= attacks;
                 }
             }
-            for(int i = 0; i < 64; i++) {
-                if((totalAttacks & (((ulong)1) << (i))) != 0 && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
-                    moves.Add(new Move(startSquare, i, 0, new(this)));
-                }
-            }
+            return attacks;
+        }
+        public ulong GeneratePawnCaptures(int startSquare, int direction) {
+            // so like set up the current position as a bitboard
+            ulong currentPos = ((ulong)1) << startSquare;
+            // shift in the right direction
+            ulong consideredAttack = currentPos << directionalOffsets[direction];
+            // mask out the corresponding column
+            if(direction == 4 || direction == 7) {
+                // left shift, ignore rightmost file
+                consideredAttack -= consideredAttack & 0b1000000010000000100000001000000010000000100000001000000010000000;
+            } else if(direction == 5 || direction == 6) {
+                // right shift, ignore leftmost file
+                consideredAttack -= consideredAttack & 0b100000001000000010000000100000001000000010000000100000001;
+            }   
+            return consideredAttack;        
         }
         /// <summary>
         /// initializes a table used later for zobrist hashing, done automatically if you create the board using a fen string.

@@ -278,10 +278,6 @@ public class Tests {
             Console.WriteLine("Move count test Failed, outputted " + moves.Count + " legal moves");
             Console.ResetColor();
         }
-        foreach(Move move in moves) {
-            int results = Perft(2, board);
-            Console.WriteLine(move.ConvertToLongAlgebraic() + ": " + results);
-        }
     }
     public static void MoveMaskTests() {
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
