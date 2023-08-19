@@ -296,7 +296,7 @@ namespace Chess {
                         // so like set up the current position as a bitboard
                         ulong currentPos = ((ulong)1) << startSquare;
                         // looping through the directions
-                        for(int direction = colorToMove == 1 ? 4 : 5; direction < 8 ; direction += 2) {
+                        for(int direction = colorToMove == 1 ? 4 : 5; direction < (colorToMove == 1 ? 7 : 8); direction += 2) {
                             // shift in the right direction
                             ulong consideredAttack = currentPos << directionalOffsets[direction];
                             // mask out the corresponding column
@@ -309,7 +309,7 @@ namespace Chess {
                             }           
                             // convert to moves
                             for(int i = 0; i < 64; i++) {
-                                if((consideredAttack & ((ulong)1) << i) != 0) {
+                                if((consideredAttack & ((ulong)1) << i) != 0 && ((Piece.GetColor(squares[i]) != colorToMove && squares[i] != 0) || i == enPassantIndex)) {
                                     if(i >> 3 == colorToMove * 7) {
                                         for(int type = Piece.Knight; type < Piece.King; type++) {
                                             moves.Add(new Move(startSquare, i, type, state));
