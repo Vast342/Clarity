@@ -2,45 +2,6 @@ using System.Numerics;
 using Microsoft.AspNetCore.Identity;
 
 namespace Chess {
-    public static class Piece {
-        public const byte None = 0;
-        public const byte Pawn = 1;
-        public const byte Knight = 2;
-        public const byte Bishop = 3;
-        public const byte Rook = 4;
-        public const byte Queen = 5;
-        public const byte King = 6;
-
-        public const byte White = 8;
-        public const byte Black = 0;
-        public static int GetColor(byte piece) {
-            return piece >> 3;
-        }
-        public static int GetType(byte piece) {
-            return piece & 7;
-        }
-    }
-    public struct BoardState {
-        public byte[] squares = new byte[64];
-        public byte[] kingSquares = new byte[2];  
-        public int enPassantIndex;
-        public bool[] castlingRights = new bool[4];
-        public int fiftyMoveCounter;    
-        public BoardState(Board board) {
-            Array.Copy(board.squares, squares, 64);
-            Array.Copy(board.kingSquares, kingSquares, 2);
-            enPassantIndex = board.enPassantIndex;
-            Array.Copy(board.castlingRights, castlingRights, 4);
-            fiftyMoveCounter = board.fiftyMoveCounter;
-        }
-        public BoardState(BoardState state) {
-            Array.Copy(state.squares, squares, 64);
-            Array.Copy(state.kingSquares, kingSquares, 2);
-            enPassantIndex = state.enPassantIndex;
-            Array.Copy(state.castlingRights, castlingRights, 4);
-            fiftyMoveCounter = state.fiftyMoveCounter;
-        }
-    }
     public class Board {
         // board specific valus
         public byte[] squares = new byte[64];
@@ -302,16 +263,16 @@ namespace Chess {
             BoardState state = new(this);
             List<Move> moves = new();
             // castlingi;
-            if(castlingRights[0] && (occupiedBitboard & 0x60) == 0) {
+            if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && colorToMove == 1) {
                 moves.Add(new Move(4, 6, 0, state));
             }
-            if(castlingRights[1] && (occupiedBitboard & 0xE) == 0) {
+            if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && colorToMove == 1) {
                 moves.Add(new Move(4, 2, 0, state));
             }
-            if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0) {
+            if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && colorToMove == 0) {
                 moves.Add(new Move(60, 62, 0, state));
             }
-            if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0) {
+            if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && colorToMove == 0) {
                 moves.Add(new Move(60, 58, 0, state));
             }
             // the rest of the pieces
@@ -331,21 +292,35 @@ namespace Chess {
                             }
                         }
                         // captures
-                        int startRank = startSquare >> 3;
-                        int startFile = startSquare & 7;
-                        // beware of the h2h4 a7a5 h4a5 glitch
-                        if(startFile > -1) {
-                            int targetIndex = startSquare + directionalOffsets[colorToMove == 1 ? 4 : 7];
-                            if((squares[targetIndex] != 0 && Piece.GetColor(squares[targetIndex]) != colorToMove && Math.Abs((targetIndex >> 3) - startRank) != 2 ) || targetIndex == enPassantIndex) {
-                                moves.Add(new Move(startSquare, targetIndex, 0, state));
+                        // concept here is that you shift up and to the right and left(so directional offsets 4 and 6 as white and 5 and 7 as black) and then mask out the left or right files based on that
+                        // so like set up the current position as a bitboard
+                        ulong currentPos = ((ulong)1) << startSquare;
+                        // looping through the directions
+                        for(int direction = colorToMove == 1 ? 4 : 5; direction < 8 ; direction += 2) {
+                            // shift in the right direction
+                            ulong consideredAttack = currentPos << directionalOffsets[direction];
+                            // mask out the corresponding column
+                            if(direction == 4 || direction == 7) {
+                                // left shift, ignore rightmost file
+                                consideredAttack -= consideredAttack & 0b1000000010000000100000001000000010000000100000001000000010000000;
+                            } else if(direction == 5 || direction == 6) {
+                                // right shift, ignore leftmost file
+                                consideredAttack -= consideredAttack & 0b100000001000000010000000100000001000000010000000100000001;
+                            }           
+                            // convert to moves
+                            for(int i = 0; i < 64; i++) {
+                                if((consideredAttack & ((ulong)1) << i) != 0) {
+                                    if(i >> 3 == colorToMove * 7) {
+                                        for(int type = Piece.Knight; type < Piece.King; type++) {
+                                            moves.Add(new Move(startSquare, i, type, state));
+                                        }
+                                    } else {
+                                        moves.Add(new Move(startSquare, i, 0, new(this)));
+                                    }
+                                }
                             }
                         }
-                        if(startFile < 8) {
-                            int targetIndex = startSquare + directionalOffsets[colorToMove == 1 ? 6 : 5];
-                            if((squares[targetIndex] != 0 && Piece.GetColor(squares[targetIndex]) != colorToMove && Math.Abs((targetIndex >> 3) - startRank) != 2) || (targetIndex == enPassantIndex && Math.Abs((targetIndex >> 3) - startRank) != 2)) {
-                                moves.Add(new Move(startSquare, targetIndex, 0, state));
-                            }
-                        }
+                        // convert the attack bitboard into individual moves
                         // promotion captures
 
                         // promotions
@@ -628,53 +603,6 @@ namespace Chess {
         }
         public bool IsInCheck() {
             return SquareIsAttackedByOpponent(kingSquares[colorToMove]);
-        }
-    }
-    public struct Move {
-        public int startSquare;
-        public int endSquare;
-        public int promotionType;
-        public BoardState state;
-        /// <summary>
-        /// Makes a new move with the starting and ending squares.
-        /// </summary>
-        /// <param name="start">Starting square of the move</param>
-        /// <param name="end">Ending square of the move</param>
-        /// <param name="pType">The promotion piece type, if any</param>
-        public Move(int start, int end, int pType, BoardState s) {
-            startSquare = start;
-            endSquare = end;
-            promotionType = pType;
-            state = new(s);
-        }
-        public string ConvertToLongAlgebraic() {
-            int startRank = startSquare >> 3;
-            int startFile = startSquare & 7;
-            int endRank = endSquare >> 3;
-            int endFile = endSquare & 7;
-            string name = "";
-            name += (char)(startFile + 'a');
-            name += startRank + 1;
-            name += (char)(endFile + 'a');
-            name += endRank + 1;
-            return name;
-        }
-        public Move(string longAlgebraicForm, Board board) {
-            char[] chars = longAlgebraicForm.ToCharArray();
-            int startRank = chars[1] - '1';
-            int startFile = chars[0] - 'a';
-            int endRank = chars[3] - '1';
-            int endFile = chars[2] - 'a';
-            if(chars.Length > 4) {
-                promotionType = chars[4];
-            }
-            startSquare = startRank * 8 + startFile;
-            endSquare = endRank * 8 + endFile;
-
-            state = new(board);
-        }
-        public bool IsCapture(Board board) {
-            return board.squares[endSquare] != Piece.None;
         }
     }
 } 
