@@ -353,8 +353,9 @@ namespace Chess {
             return moves;
         }
         public ulong GetSlidingAttacks(int startSquare, int direction) {
+            ulong attacks = 0;
             if(squaresToEdge[startSquare, direction] > 0) {
-                ulong attacks = slidingMasks[startSquare, direction];
+                attacks = slidingMasks[startSquare, direction];
                 ulong potentialBlockers = occupiedBitboard & attacks;
                 if(potentialBlockers != 0) {
                     if((direction & 1) == 0) {
