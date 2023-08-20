@@ -282,20 +282,13 @@ namespace Chess {
                 // checks if it's the right color
                 if(Piece.GetColor(currentPiece) == colorToMove) {
                     // a check if it's a sliding piece
-                    if(Piece.GetType(currentPiece) == Piece.Bishop || Piece.GetType(currentPiece) == Piece.Rook || Piece.GetType(currentPiece) == Piece.Queen) {
+                    ulong total = 0;
+                    if(Piece.GetType(currentPiece) == Piece.Bishop || Piece.GetType(currentPiece) == Piece.Queen) {
                         // classical approach movegen
-                        ulong total = 0;
-                        int startDirection = Piece.GetType(squares[startSquare]) == Piece.Bishop ? 4 : 0;
-                        int endDirection = Piece.GetType(squares[startSquare]) == Piece.Rook ? 4 : 8;
-                        for(int direction = startDirection; direction < endDirection; direction++) {
-                            total |= GetSlidingAttacks(startSquare, direction);
-                        }
-                        for(int i = 0; i < 64; i++) {
-                            if((total & (((ulong)1) << (i))) != 0 && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
-                                moves.Add(new Move(startSquare, i, 0, new(this)));
-                            }
-                        }
-                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
+                        total |= GetBishopAttacks(startSquare);
+                    } else if(Piece.GetType(currentPiece) == Piece.Rook || Piece.GetType(currentPiece) == Piece.Queen) {
+                        total |= GetRookAttacks(startSquare);
+                    }else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == Piece.None) {
                             moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], 0, state));
                             if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2] == Piece.None && startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
@@ -347,27 +340,57 @@ namespace Chess {
                             }
                         }
                     }
+                    for(int i = 0; i < 64; i++) {
+                        if((total & (((ulong)1) << (i))) != 0 && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
+                            moves.Add(new Move(startSquare, i, 0, new(this)));
+                        }
+                    }
                 }
             }
             // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
             return moves;
         }
-        public ulong GetSlidingAttacks(int startSquare, int direction) {
+        public ulong GetRookAttacks(int startSquare) {
             ulong attacks = 0;
-            if(squaresToEdge[startSquare, direction] > 0) {
-                attacks = slidingMasks[startSquare, direction];
-                ulong potentialBlockers = occupiedBitboard & attacks;
-                if(potentialBlockers != 0) {
-                    if((direction & 1) == 0) {
-                        int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
-                        attacks ^= slidingMasks[firstBlocker, direction];
-                    } else {
-                        int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
-                        attacks ^= slidingMasks[63-firstBlocker, direction];
+            ulong total = 0;
+            for(int direction = 0; direction < 4; direction++) {
+                if(squaresToEdge[startSquare, direction] > 0) {
+                    attacks = slidingMasks[startSquare, direction];
+                    ulong potentialBlockers = occupiedBitboard & attacks;
+                    if(potentialBlockers != 0) {
+                        if((direction & 1) == 0) {
+                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
+                            attacks ^= slidingMasks[firstBlocker, direction];
+                        } else {
+                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
+                            attacks ^= slidingMasks[63-firstBlocker, direction];
+                        }
                     }
+                    total |= attacks;
                 }
             }
-            return attacks;
+            return total;
+        }
+        public ulong GetBishopAttacks(int startSquare) {
+            ulong attacks = 0;
+            ulong total = 0;
+            for(int direction = 4; direction < 8; direction++) {
+                if(squaresToEdge[startSquare, direction] > 0) {
+                    attacks = slidingMasks[startSquare, direction];
+                    ulong potentialBlockers = occupiedBitboard & attacks;
+                    if(potentialBlockers != 0) {
+                        if((direction & 1) == 0) {
+                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
+                            attacks ^= slidingMasks[firstBlocker, direction];
+                        } else {
+                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
+                            attacks ^= slidingMasks[63-firstBlocker, direction];
+                        }
+                    }
+                    total |= attacks;
+                }
+            }
+            return total;
         }
         public ulong GeneratePawnCaptures(int startSquare, int direction) {
             // so like set up the current position as a bitboard
@@ -527,73 +550,7 @@ namespace Chess {
         // yes I know this has the 2 loops which is not as efficient but I tried to compress it into one and it didn't work so here it is
         public bool SquareIsAttackedByOpponent(int square) {
             bool isCheck = false;
-            // orthagonal
-            for(int direction = 0; direction < 4; direction++) {
-                if(squaresToEdge[square, direction] > 0) {
-                    ulong attacks = slidingMasks[square, direction];
-                    ulong potentialBlockers = occupiedBitboard & attacks;
-                    if(potentialBlockers != 0) {
-                        if((direction & 1) == 0) {
-                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
-                            if(Piece.GetColor(squares[firstBlocker]) == colorToMove && squares[firstBlocker] != Piece.None) {
-                                break;
-                            } else {
-                                if(Piece.GetType(squares[firstBlocker]) == Piece.Rook || Piece.GetType(squares[firstBlocker]) == Piece.Queen) {
-                                    isCheck = true;
-                                    break;
-                                }
-                            }
-                        } else {
-                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
-                            if(Piece.GetColor(squares[63-firstBlocker]) == colorToMove && squares[63-firstBlocker] != Piece.None) {
-                                break;
-                            } else {
-                                if(Piece.GetType(squares[63-firstBlocker]) == Piece.Rook || Piece.GetType(squares[63-firstBlocker]) == Piece.Queen) {
-                                    isCheck = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // diagonals
-            for(int direction = 4; direction < 8; direction++) {
-                // pawns
-                if(squaresToEdge[square, direction] > 0) {
-                    if((direction & 1) != colorToMove) {
-                        if(Piece.GetType(squares[square + directionalOffsets[direction]]) == Piece.Pawn && Piece.GetColor(squares[square + directionalOffsets[direction]]) != colorToMove) {
-                            isCheck = true;
-                            break;
-                        }
-                    }
-                    ulong attacks = slidingMasks[square, direction];
-                    ulong potentialBlockers = occupiedBitboard & attacks;
-                    if(potentialBlockers != 0) {
-                        if((direction & 1) == 0) {
-                            int firstBlocker = BitOperations.TrailingZeroCount(potentialBlockers);
-                            if(Piece.GetColor(squares[firstBlocker]) == colorToMove && squares[firstBlocker] != Piece.None) {
-                                break;
-                            } else {
-                                if(Piece.GetType(squares[firstBlocker]) == Piece.Bishop || Piece.GetType(squares[firstBlocker]) == Piece.Queen) {
-                                    isCheck = true;
-                                    break;
-                                }
-                            }
-                        } else {
-                            int firstBlocker = BitOperations.LeadingZeroCount(potentialBlockers);
-                            if(Piece.GetColor(squares[63-firstBlocker]) == colorToMove && squares[63-firstBlocker] != Piece.None) {
-                                break;
-                            } else {
-                                if(Piece.GetType(squares[63-firstBlocker]) == Piece.Bishop || Piece.GetType(squares[63-firstBlocker]) == Piece.Queen) {
-                                    isCheck = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            // NEED TO MAKE DIAGONAL AND ORTHOGONAL CHECK DETECTION USING THE PAWN CAPTURES AND SLIDING ATTACK FUNCTION
             for(int direction = 0; direction < 8; direction++) {
                 int targetRank = (square >> 3) + knightOffsetsRank[direction];
                 int targetFile = (square & 7) + knightOffsetsFile[direction];

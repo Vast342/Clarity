@@ -52,7 +52,7 @@ public class UCI {
                         total = Tests.Perft(int.Parse(segments[1]), b);
                     }
                     Console.WriteLine("");
-                    Console.WriteLine(total);
+                    Console.WriteLine("Total: " + total);
                 } else {
                     int total = 0;
                     Board b = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);  
@@ -69,7 +69,7 @@ public class UCI {
                         total = Tests.Perft(int.Parse(segments[1]), b);
                     }
                     Console.WriteLine("");
-                    Console.WriteLine(total);
+                    Console.WriteLine("Total: " + total);
                 }
             }
             if(command == "in-check") {
