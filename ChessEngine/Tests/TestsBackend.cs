@@ -250,7 +250,7 @@ public class Tests {
             Console.ResetColor();
         }
         foreach(Move move1 in moves) {
-            Console.WriteLine("Testing Move " + move1.ConvertToLongAlgebraic());
+            Console.WriteLine("Testing Move " + move1.ConvertToLongAlgebraic() + " with piece " + board.squares[move1.startSquare]);
             board.MakeMove(move1);
             Console.WriteLine("Resulting FEN is " + board.GetFenString());
             board.UndoMove(move1);

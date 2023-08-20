@@ -23,8 +23,6 @@ namespace Chess {
         // random values needed later
         private readonly static ulong[,] zobTable = new ulong[64,15];
         public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
-        public static readonly int[] knightOffsetsRank = {2, 2, -2, -2, 1, -1, 1, -1};
-        public static readonly int[] knightOffsetsFile = {1, -1, 1, -1, 2, 2, -2, -2};
         public void ReadBoardState(BoardState state) {
             Array.Copy(state.squares, squares, 64);
             Array.Copy(state.kingSquares, kingSquares, 2);
@@ -231,6 +229,42 @@ namespace Chess {
             fen += plyCount / 2 + colorToMove;
             return fen;
         }
+        // values here are from Ellie M's engine Homura
+        public static readonly ulong[] knightMasks = {
+                0x0000000000020400L, 0x0000000000050800L,
+                0x00000000000A1100L, 0x0000000000142200L,
+                0x0000000000284400L, 0x0000000000508800L,
+                0x0000000000A01000L, 0x0000000000402000L,
+                0x0000000002040004L, 0x0000000005080008L,
+                0x000000000A110011L, 0x0000000014220022L,
+                0x0000000028440044L, 0x0000000050880088L,
+                0x00000000A0100010L, 0x0000000040200020L,
+                0x0000000204000402L, 0x0000000508000805L,
+                0x0000000A1100110AL, 0x0000001422002214L,
+                0x0000002844004428L, 0x0000005088008850L,
+                0x000000A0100010A0L, 0x0000004020002040L,
+                0x0000020400040200L, 0x0000050800080500L,
+                0x00000A1100110A00L, 0x0000142200221400L,
+                0x0000284400442800L, 0x0000508800885000L,
+                0x0000A0100010A000L, 0x0000402000204000L,
+                0x0002040004020000L, 0x0005080008050000L,
+                0x000A1100110A0000L, 0x0014220022140000L,
+                0x0028440044280000L, 0x0050880088500000L,
+                0x00A0100010A00000L, 0x0040200020400000L,
+                0x0204000402000000L, 0x0508000805000000L,
+                0x0A1100110A000000L, 0x1422002214000000L,
+                0x2844004428000000L, 0x5088008850000000L,
+                0xA0100010A0000000L, 0x4020002040000000L,
+                0x0400040200000000L, 0x0800080500000000L,
+                0x1100110A00000000L, 0x2200221400000000L,
+                0x4400442800000000L, 0x8800885000000000L,
+                0x100010A000000000L, 0x2000204000000000L,
+                0x0004020000000000L, 0x0008050000000000L,
+                0x00110A0000000000L, 0x0022140000000000L,
+                0x0044280000000000L, 0x0088500000000000L,
+                0x0010A00000000000L, 0x0020400000000000L
+        };
+        public static ulong[] kingMasks = new ulong[64];
         public static readonly byte[,] squaresToEdge = new byte[64,8];
         public static ulong[,] slidingMasks = new ulong[64,8];
         public void GenerateMasks() {
@@ -255,6 +289,7 @@ namespace Chess {
                 for(int direction = 0; direction < 8; direction++) {
                     for(int i = 0; i < squaresToEdge[square, direction]; i++) {
                         int targetSquareIndex = square + directionalOffsets[direction] * (i + 1);
+                        if(i == 0) kingMasks[square] |= ((ulong)1) << targetSquareIndex;
                         slidingMasks[square, direction] |= ((ulong)1) << targetSquareIndex;
                     }
                 }
@@ -283,36 +318,16 @@ namespace Chess {
                 if(Piece.GetColor(currentPiece) == colorToMove) {
                     // a check if it's a sliding piece
                     ulong total = 0;
+                    ulong pawnCaptures = 0;
+                    ulong pawnPushes = 0;
                     if(Piece.GetType(currentPiece) == Piece.Bishop || Piece.GetType(currentPiece) == Piece.Queen) {
                         // classical approach movegen
                         total |= GetBishopAttacks(startSquare);
                     } else if(Piece.GetType(currentPiece) == Piece.Rook || Piece.GetType(currentPiece) == Piece.Queen) {
                         total |= GetRookAttacks(startSquare);
                     }else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == Piece.None) {
-                            moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1], 0, state));
-                            if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2] == Piece.None && startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2, 0, state));
-                            }
-                        }
-                        // captures
-                        // concept here is that you shift up and to the right and left(so directional offsets 4 and 6 as white and 5 and 7 as black) and then mask out the left or right files based on that
-                        // looping through the directions
-                        for(int direction = colorToMove == 1 ? 4 : 5; direction < (colorToMove == 1 ? 7 : 8); direction += 2) {
-                            ulong results = GeneratePawnCaptures(startSquare, direction);
-                            // convert to moves
-                            for(int i = 0; i < 64; i++) {
-                                if((results & ((ulong)1) << i) != 0 && ((Piece.GetColor(squares[i]) != colorToMove && squares[i] != 0) || i == enPassantIndex)) {
-                                    if(i >> 3 == colorToMove * 7) {
-                                        for(int type = Piece.Knight; type < Piece.King; type++) {
-                                            moves.Add(new Move(startSquare, i, type, state));
-                                        }
-                                    } else {
-                                        moves.Add(new Move(startSquare, i, 0, new(this)));
-                                    }
-                                }
-                            }
-                        }
+                        pawnPushes |= GetPawnPushes(startSquare);
+                        pawnCaptures |= GetPawnCaptures(startSquare);
                         // promotions
                         if(Piece.GetColor((byte)(startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1])) == (colorToMove == 1 ? 7 : 0)) {
                             for(int type = Piece.Knight; type < Piece.King; type++) {
@@ -320,35 +335,42 @@ namespace Chess {
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Knight) {
-                        // for knight moves I am considering the board using a rank and file so I can determine if a move would end up off of the board or not.
-                        for(byte direction = 0; direction < 8; direction++) {
-                            int targetRank = (startSquare >> 3) + knightOffsetsRank[direction];
-                            int targetFile = (startSquare & 7) + knightOffsetsFile[direction];
-                            if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && (squares[targetRank * 8 + targetFile] == Piece.None || Piece.GetColor(squares[targetRank * 8 + targetFile]) != colorToMove)) {
-                                moves.Add(new Move(startSquare, targetRank * 8 + targetFile, 0, state));
-                            }
-                        }
-
+                        total |= GetKnightAttacks(startSquare);
                     } else if(Piece.GetType(currentPiece) == Piece.King) {
-                        for(byte direction = 0; direction < 8; direction++) {
-                            int targetSquareIndex = startSquare + directionalOffsets[direction];
-                            if(squaresToEdge[startSquare, direction] != 0) {
-                                byte targetPiece = squares[targetSquareIndex];  
-                                if(Piece.GetColor(targetPiece) != colorToMove || targetPiece == Piece.None) {
-                                    moves.Add(new Move(startSquare, targetSquareIndex, 0, state));
-                                }
+                        total |= GetKingAttacks(startSquare);
+                    }
+                    if(total != 0) {
+                        for(int i = 0; i < 64; i++) {
+                            if((total & (((ulong)1) << (i))) != 0 && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
+                                moves.Add(new Move(startSquare, i, 0, new(this)));
                             }
                         }
-                    }
-                    for(int i = 0; i < 64; i++) {
-                        if((total & (((ulong)1) << (i))) != 0 && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
-                            moves.Add(new Move(startSquare, i, 0, new(this)));
+                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
+                        for(int i = 0; i < 64; i++) {
+                            if((pawnPushes & (((ulong)1) << (i))) != 0 && Piece.GetType(squares[i]) == Piece.None) {
+                                moves.Add(new Move(startSquare, i, 0, new(this)));
+                            }
+                            if((pawnCaptures & (((ulong)1) << (i))) != 0 && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || startSquare == enPassantIndex)) {
+                                moves.Add(new Move(startSquare, i, 0, new(this)));
+                            }
+                        }
+                        for(int i = 0; i < 64; i++) {
                         }
                     }
                 }
             }
             // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
             return moves;
+        }
+        public ulong GetPawnPushes(int startSquare) {
+            ulong attacks = 0;
+            if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1]] == Piece.None) {
+                attacks |= ((ulong)1) << startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1];
+                if(squares[startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2] == Piece.None && startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
+                    attacks |= ((ulong)1) << startSquare + directionalOffsets[colorToMove == 1 ? 0 : 1] * 2;
+                }
+            }
+            return attacks;
         }
         public ulong GetRookAttacks(int startSquare) {
             ulong attacks = 0;
@@ -392,20 +414,24 @@ namespace Chess {
             }
             return total;
         }
-        public ulong GeneratePawnCaptures(int startSquare, int direction) {
+        public ulong GetKnightAttacks(int startSquare) {
+            return knightMasks[startSquare];
+        }
+        public ulong GetKingAttacks(int startSquare) {
+            return kingMasks[startSquare];
+        }
+        public ulong GetPawnCaptures(int startSquare) {
             // so like set up the current position as a bitboard
             ulong currentPos = ((ulong)1) << startSquare;
+            ulong totalAttacks = 0;
             // shift in the right direction
-            ulong consideredAttack = currentPos << directionalOffsets[direction];
-            // mask out the corresponding column
-            if(direction == 4 || direction == 7) {
-                // left shift, ignore rightmost file
-                consideredAttack -= consideredAttack & 0b1000000010000000100000001000000010000000100000001000000010000000;
-            } else if(direction == 5 || direction == 6) {
-                // right shift, ignore leftmost file
-                consideredAttack -= consideredAttack & 0b100000001000000010000000100000001000000010000000100000001;
-            }   
-            return consideredAttack;        
+            ulong consideredAttack = currentPos << directionalOffsets[colorToMove == 1 ? 4 : 7];
+            consideredAttack -= consideredAttack & Mask.GetFileMask(7);
+            totalAttacks |= consideredAttack;
+            consideredAttack = currentPos << directionalOffsets[colorToMove == 1 ? 5 : 6];
+            consideredAttack -= consideredAttack & Mask.GetFileMask(0);
+            totalAttacks |= consideredAttack;
+            return totalAttacks;        
         }
         /// <summary>
         /// initializes a table used later for zobrist hashing, done automatically if you create the board using a fen string.
@@ -550,15 +576,7 @@ namespace Chess {
         // yes I know this has the 2 loops which is not as efficient but I tried to compress it into one and it didn't work so here it is
         public bool SquareIsAttackedByOpponent(int square) {
             bool isCheck = false;
-            // NEED TO MAKE DIAGONAL AND ORTHOGONAL CHECK DETECTION USING THE PAWN CAPTURES AND SLIDING ATTACK FUNCTION
-            for(int direction = 0; direction < 8; direction++) {
-                int targetRank = (square >> 3) + knightOffsetsRank[direction];
-                int targetFile = (square & 7) + knightOffsetsFile[direction];
-                if(targetRank > -1 && targetRank < 8 && targetFile > -1 && targetFile < 8 && Piece.GetType(squares[targetRank * 8 + targetFile]) == Piece.Knight && Piece.GetColor(squares[targetRank * 8 + targetFile]) != colorToMove) {
-                    isCheck = true;
-                    break;
-                }
-            }
+            ulong totalMask = GetRookAttacks(square) & coloredPieceBitboards[colorToMove == 1 ? 0 : 1, Piece.Rook];
             return isCheck;
         }
         public bool IsInCheck() {
