@@ -50,7 +50,7 @@ public class TestBot {
         int sum = moves.Count;
         for(int i = 0; i < 6; i++) {
             sum += BitOperations.PopCount(board.coloredPieceBitboards[board.colorToMove == 1 ? 1 : 0, i]) * pieceValues[i];
-            sum -= BitOperations.PopCount(board.coloredPieceBitboards[board.colorToMove == 1 ? 0 : 1, i]) * pieceValues[i];
+            sum -= BitOperations.PopCount(board.coloredPieceBitboards[1 - board.colorToMove, i]) * pieceValues[i];
         }
 
         return sum;
@@ -96,8 +96,5 @@ public class TestBot {
     }
     public static void GetFen() {
         Console.WriteLine(board.GetFenString());
-    }
-    public static void ComputeMasks() {
-        board.GenerateMasks();
     }
 }

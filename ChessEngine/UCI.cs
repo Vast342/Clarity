@@ -1,7 +1,6 @@
 using Chess;
 public class UCI {
     static void Main() {
-        TestBot.ComputeMasks();
         while(true) {
             string? entry = Console.ReadLine();
             string command = entry.Split(' ')[0];
@@ -28,8 +27,6 @@ public class UCI {
                     Tests.BackendTests();
                 } else if(entry.Split(' ')[1] == "move-gen") {
                     Tests.MoveGenTests();
-                } else if(entry.Split(' ')[1] == "move-masks") {
-                    Tests.MoveMaskTests();
                 } else if(entry.Split(' ')[1] == "outliers") {
                     Tests.OutlierTests();
                 }

@@ -1,4 +1,6 @@
 namespace Chess {
+    // soon to be replaced by a 16 bit number
+    // according to me earlier i'm thinking 16 bits, with a format like FFFFSSSSSSEEEEEE where F is a flag for if it's a capture or something, S is the start square's index, and E is the end square index
     public struct Move {
         public int startSquare;
         public int endSquare;
