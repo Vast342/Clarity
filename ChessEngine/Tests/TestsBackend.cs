@@ -25,7 +25,7 @@ public class Tests {
             Console.ResetColor();
         }
         // pawns
-        if(board.coloredPieceBitboards[1, 0] == 0b1111111100000000) {
+        if(board.coloredPieceBitboards[1, 1] == 0b1111111100000000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("White pawn bitboard test passed");
             Console.ResetColor();
@@ -34,7 +34,7 @@ public class Tests {
             Console.WriteLine("White pawn bitboard test failed, outputted " + board.coloredPieceBitboards[1,0]);
             Console.ResetColor();
         }
-        if(board.coloredPieceBitboards[0, 0] == 0b0000000011111111000000000000000000000000000000000000000000000000) {
+        if(board.coloredPieceBitboards[0, 1] == 0b0000000011111111000000000000000000000000000000000000000000000000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Black pawn bitboard test passed");
             Console.ResetColor();
@@ -44,7 +44,7 @@ public class Tests {
             Console.ResetColor();
         }
         // knights
-        if(board.coloredPieceBitboards[1, 1] == 0b01000010) {
+        if(board.coloredPieceBitboards[1, 2] == 0b01000010) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("White knight bitboard test passed");
             Console.ResetColor();
@@ -53,7 +53,7 @@ public class Tests {
             Console.WriteLine("White knight bitboard test failed, outputted " + board.coloredPieceBitboards[1,1]);
             Console.ResetColor();
         }
-        if(board.coloredPieceBitboards[0, 1] == 0b0100001000000000000000000000000000000000000000000000000000000000) {
+        if(board.coloredPieceBitboards[0, 2] == 0b0100001000000000000000000000000000000000000000000000000000000000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Black knight bitboard test passed");
             Console.ResetColor();
@@ -63,7 +63,7 @@ public class Tests {
             Console.ResetColor();
         }
         // bishops
-        if(board.coloredPieceBitboards[1, 2] == 0b00100100) {
+        if(board.coloredPieceBitboards[1, 3] == 0b00100100) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("White bishop bitboard test passed");
             Console.ResetColor();
@@ -72,7 +72,7 @@ public class Tests {
             Console.WriteLine("White bishop bitboard test failed, outputted " + board.coloredPieceBitboards[1,2]);
             Console.ResetColor();
         }
-        if(board.coloredPieceBitboards[0, 2] == 0b0010010000000000000000000000000000000000000000000000000000000000) {
+        if(board.coloredPieceBitboards[0, 3] == 0b0010010000000000000000000000000000000000000000000000000000000000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Black bishop bitboard test passed");
             Console.ResetColor();
@@ -82,7 +82,7 @@ public class Tests {
             Console.ResetColor();
         }
         // rooks
-        if(board.coloredPieceBitboards[1, 3] == 0b10000001) {
+        if(board.coloredPieceBitboards[1, 4] == 0b10000001) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("White rook bitboard test passed");
             Console.ResetColor();
@@ -91,7 +91,7 @@ public class Tests {
             Console.WriteLine("White rook bitboard test failed, outputted " + board.coloredPieceBitboards[1,3]);
             Console.ResetColor();
         }
-        if(board.coloredPieceBitboards[0, 3] == 0b1000000100000000000000000000000000000000000000000000000000000000) {
+        if(board.coloredPieceBitboards[0, 4] == 0b1000000100000000000000000000000000000000000000000000000000000000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Black rook bitboard test passed");
             Console.ResetColor();
@@ -101,7 +101,7 @@ public class Tests {
             Console.ResetColor();
         }
         // queens
-        if(board.coloredPieceBitboards[1, 4] == 0b00001000) {
+        if(board.coloredPieceBitboards[1, 5] == 0b00001000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("White queen bitboard test passed");
             Console.ResetColor();
@@ -110,7 +110,7 @@ public class Tests {
             Console.WriteLine("White queen bitboard test failed, outputted " + board.coloredPieceBitboards[1,4]);
             Console.ResetColor();
         }
-        if(board.coloredPieceBitboards[0, 4] == 0b0000100000000000000000000000000000000000000000000000000000000000) {
+        if(board.coloredPieceBitboards[0, 5] == 0b0000100000000000000000000000000000000000000000000000000000000000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Black queen bitboard test passed");
             Console.ResetColor();
@@ -120,7 +120,7 @@ public class Tests {
             Console.ResetColor();
         }
         // kings
-        if(board.coloredPieceBitboards[1, 5] == 0b00010000) {
+        if(board.coloredPieceBitboards[1, 6] == 0b00010000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("White king bitboard test passed");
             Console.ResetColor();
@@ -129,7 +129,7 @@ public class Tests {
             Console.WriteLine("White king bitboard test failed, outputted " + board.coloredPieceBitboards[1,5]);
             Console.ResetColor();
         }
-        if(board.coloredPieceBitboards[0, 5] == 0b0001000000000000000000000000000000000000000000000000000000000000) {
+        if(board.coloredPieceBitboards[0, 6] == 0b0001000000000000000000000000000000000000000000000000000000000000) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Black king bitboard test passed");
             Console.ResetColor();

@@ -13,10 +13,9 @@ namespace Chess {
             return attacks;
         }
         public static ulong GetRookAttacks(int startSquare, ulong occupiedBitboard) {
-            ulong attacks = 0;
             ulong total = 0;
             for(int direction = 0; direction < 4; direction++) {
-                attacks = Mask.slideyPieceRays[direction, startSquare];
+                ulong attacks = Mask.slideyPieceRays[direction, startSquare];
                 ulong potentialBlockers = occupiedBitboard & attacks;
                 if(potentialBlockers != 0) {
                     if((direction & 1) == 0) {
@@ -32,10 +31,9 @@ namespace Chess {
             return total;
         }
         public static ulong GetBishopAttacks(int startSquare, ulong occupiedBitboard) {
-            ulong attacks = 0;
             ulong total = 0;
             for(int direction = 4; direction < 8; direction++) {
-                attacks = Mask.slideyPieceRays[direction, startSquare];
+                ulong attacks = Mask.slideyPieceRays[direction, startSquare];
                 ulong potentialBlockers = occupiedBitboard & attacks;
                 if(potentialBlockers != 0) {
                     if((direction & 1) == 0) {

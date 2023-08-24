@@ -80,6 +80,12 @@ public class UCI {
             if(command == "get-fen") {
                 TestBot.GetFen();
             }
+            if(command == "update-mask") {
+                MaskGenerator.GenerateMasks();
+            }
+            if(command == "make-move") {
+                TestBot.MakeMove(entry);
+            }
         }
     }
 }

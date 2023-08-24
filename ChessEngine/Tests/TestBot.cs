@@ -27,6 +27,7 @@ public class TestBot {
             }
         } else {
             if(segments.Length > 8) {
+                board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
                 if(segments[8] == "moves") {
                     board.MakeMove(new Move(segments[9 + moves.Count], board));
                     moves.Add(segments[9 + moves.Count-1]);
@@ -95,6 +96,10 @@ public class TestBot {
         moves = sortedMoves.ToList();
     }
     public static void GetFen() {
+        Console.WriteLine(board.GetFenString());
+    }
+    public static void MakeMove(string entry) {
+        board.MakeMove(new Move(entry.Split(' ')[1], board));
         Console.WriteLine(board.GetFenString());
     }
 }
