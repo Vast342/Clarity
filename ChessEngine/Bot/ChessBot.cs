@@ -1,18 +1,46 @@
 using System.Numerics;
 using Chess;
+using Bot.Essentials;
 
-public class TestBot {
-    public static Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
-    public static List<String> moves = new();
-    public static Move bestMove;
-    public static void Initialize() {
-
+public class ChessBot {
+    public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
+    public List<String> moves = new();
+    public Move bestMove;
+    public string name = "";
+    public string author = "";
+    public TranspositionTable tt = new();
+    public MoveTable moveTable = new();
+    /// <summary>
+    /// Makes the bot identify itself with the values from Initialize()
+    /// </summary>
+    public void IdentifyUCI() {
+        Console.WriteLine("id name " + name);
+        Console.WriteLine("id author " + author);
     }
-    public static void NewGame() {
+    /// <summary>
+    /// initializes the bot, it's values, and the transposition table
+    /// </summary>
+    /// <param name="n"></param>
+    /// <param name="a"></param>
+    public void Initialize(string n, string a) {
+        name = n;
+        author = a;
+        tt = new TranspositionTable();
+    }
+    /// <summary>
+    /// resets the bot and prepares for a new game
+    /// </summary>
+    public void NewGame() {
         board = new("8/8/8/8/8/8/8/8 w - - 0 0");
         moves.Clear();
+        tt.Clear();
+        moveTable.Clear();
     }
-    public static void LoadPosition(string position) {
+    /// <summary>
+    /// Loads the position from a position command
+    /// </summary>
+    /// <param name="position">The position command</param>
+    public void LoadPosition(string position) {
         string[] segments = position.Split(' ');
         if(segments[1] == "startpos") {
             if(segments.Length > 2) {
@@ -35,16 +63,23 @@ public class TestBot {
             }
         }
     }
-    public static int universalDepth = 4;
-    public static void Think() {
+    public int universalDepth = 4;
+    /// <summary>
+    /// Thinks through the position it has been given, and writes the best move to the console once the search is done
+    /// </summary>
+    public void Think() {
         Negamax(-int.MaxValue, int.MaxValue, universalDepth);
         
         moves.Add(bestMove.ConvertToLongAlgebraic());
         board.MakeMove(bestMove);
         Console.WriteLine("bestmove " + bestMove.ConvertToLongAlgebraic());
     }
-    public static int[] pieceValues = {0, 100, 310, 330, 500, 1000, 100000};
-    public static int Evaluate() {
+    public int[] pieceValues = {0, 100, 310, 330, 500, 1000, 100000};
+    /// <summary>
+    /// A static evaluation of the position, currently only using material
+    /// </summary>
+    /// <returns>The number from the evaluation</returns>
+    public int Evaluate() {
         int sum = 0;
         for(int i = 1; i < 6; i++) {
             sum += BitOperations.PopCount(board.coloredPieceBitboards[board.colorToMove, i]) * pieceValues[i];
@@ -52,7 +87,14 @@ public class TestBot {
         }
         return sum;
     }
-    public static int Negamax(int alpha, int beta, int depth) {
+    /// <summary>
+    /// Searches for the legal moves up to a certain depth and rates them using a Negamax search and Alpha-Beta pruning
+    /// </summary>
+    /// <param name="alpha">The lowest number the maximising player is guaranteed</param>
+    /// <param name="beta">The Highest number the minimising player is guaranteed</param>
+    /// <param name="depth">The depth being searched to </param>
+    /// <returns>The result of the search</returns>
+    public int Negamax(int alpha, int beta, int depth) {
         List<Move> moves = board.GetLegalMoves();
         if(moves.Count == 0) {
             if(board.IsInCheck()) {
@@ -67,6 +109,7 @@ public class TestBot {
                 int score = -Negamax(-beta, -alpha, depth - 1);
                 board.UndoMove(move);
                 if(score > beta) {
+                    moveTable.AddCutoff(move.ToNumber());
                     return beta;
                 }
                 if(score > alpha) {
@@ -79,7 +122,13 @@ public class TestBot {
         }
         return alpha;
     }
-    public static int QSearch(int alpha, int beta) {
+    /// <summary>
+    /// Looks at all the captures until there are none left, at the end of a branch.
+    /// </summary>
+    /// <param name="alpha">The lowest score</param>
+    /// <param name="beta">The highest score</param>
+    /// <returns>The total returned value of the search</returns>
+    public int QSearch(int alpha, int beta) {
         List<Move> moves = board.GetLegalMovesQSearch();
         OrderMoves(ref moves);
         int standPat = Evaluate();
@@ -99,7 +148,11 @@ public class TestBot {
         }
         return alpha;
     }
-    public static void OrderMoves(ref List<Move> moves) {
+    /// <summary>
+    /// Orders the moves using MVV-LVA
+    /// </summary>
+    /// <param name="moves">A reference to the list of legal moves being sorted</param>
+    public void OrderMoves(ref List<Move> moves) {
         int[] scores = new int[moves.Count];
         for(int i = 0; i < moves.Count; i++) {
             if(moves[i].IsCapture(board)) {
@@ -111,13 +164,18 @@ public class TestBot {
         Array.Reverse(sortedMoves);
         moves = sortedMoves.ToList();
     }
-    public static void GetFen() {
+    /// <summary>
+    /// Get's the fen string of the position currently being viewed by the bot
+    /// </summary>
+    public void GetFen() {
         Console.WriteLine(board.GetFenString());
     }
-    public static void MakeMove(string entry) {
+    /// <summary>
+    /// detects a move from the command, and does it on the board.
+    /// </summary>
+    /// <param name="entry">The command being sent</param>
+    public void MakeMove(string entry) {
         board.MakeMove(new Move(entry.Split(' ')[1], board));
         Console.WriteLine(board.GetFenString());
-    }
-    public static void EvaluatePosition(string fen) {
     }
 }

@@ -1,6 +1,6 @@
 namespace Chess {
-    // soon to be replaced by a 16 bit number
-    // according to me earlier i'm thinking 16 bits, with a format like FFFFSSSSSSEEEEEE where F is a flag for if it's a capture or something, S is the start square's index, and E is the end square index
+    // I spent a decent while trying to replace this format but it's probably good for now
+    // potential optimisations could include detecting if it's en passant, or writing that the move was en passant when it's made, and updating the  board that way instead of through the BoardState
     public struct Move {
         public int startSquare;
         public int endSquare;
@@ -18,6 +18,10 @@ namespace Chess {
             promotionType = pType;
             state = new(s);
         }
+        /// <summary>
+        /// Converts the move to long algebraic form
+        /// </summary>
+        /// <returns>the long algebraic form</returns>
         public string ConvertToLongAlgebraic() {
             int startRank = startSquare >> 3;
             int startFile = startSquare & 7;
@@ -44,8 +48,20 @@ namespace Chess {
 
             state = new(board);
         }
+        /// <summary>
+        /// Checks if the move is a capture on it's board
+        /// </summary>
+        /// <param name="board">The board the move is used on</param>
+        /// <returns>is it a capture?</returns>
         public bool IsCapture(Board board) {
             return board.squares[endSquare] != Piece.None;
+        }
+        /// <summary>
+        /// Converts the move to a number, to be used by the move table
+        /// </summary>
+        /// <returns></returns>
+        public int ToNumber() {
+            return (startSquare << 6) + endSquare;
         }
     }
 }

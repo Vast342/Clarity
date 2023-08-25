@@ -1,6 +1,8 @@
 using Chess;
-using System.Numerics;
 public class Tests {
+    /// <summary>
+    /// Performs the suite of backend tests
+    /// </summary>
     public static void BackendTests() {
         Console.WriteLine("IT'S ALIVE!!!");
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -265,6 +267,9 @@ public class Tests {
             }
         }
     }
+    /// <summary>
+    /// performs a very limited set of tests on the move generation
+    /// </summary>
     public static void MoveGenTests() {
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         List<Move> moves = board.GetLegalMoves();
@@ -278,6 +283,9 @@ public class Tests {
             Console.ResetColor();
         }
     }
+    /// <summary>
+    /// tests the outliers, such as castling and en passant
+    /// </summary>
     public static void OutlierTests() {
         Board epBoard = new("rnbqkbnr/ppp1p1pp/8/3pPp2/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 3");
         epBoard.MakeMove(new Move("e5d6", epBoard));
@@ -296,6 +304,12 @@ public class Tests {
         Console.WriteLine(BQCBoard.GetFenString());
 
     }
+    /// <summary>
+    /// Performs the perft tests at a certain depth
+    /// </summary>
+    /// <param name="depth">The depth in question</param>
+    /// <param name="board">The board that it gets done on</param>
+    /// <returns>The total legal moves to that </returns>
     public static int Perft(int depth, Board board) { 
         List<Move> moves = board.GetLegalMoves();
         int count = 0;

@@ -1,26 +1,26 @@
 using Chess;
 public class UCI {
     static void Main() {
+        ChessBot bot = new();
+        bot.Initialize("I-Don", "Vast");
         while(true) {
             string? entry = Console.ReadLine();
             string? command = entry!.Split(' ')[0];
             if(entry == "uci") {
-                Console.WriteLine("id name I-don");
-                Console.WriteLine("id author Vast");
+                bot.IdentifyUCI();
                 Console.WriteLine("uciok");
             }
             if(command == "quit") {
                 return;
             }
             if(command == "isready") {
-                TestBot.Initialize();
                 Console.WriteLine("readyok");
             }
             if(command == "ucinewgame") {
-                TestBot.NewGame();
+                bot.NewGame();
             }
             if(command == "position") {
-                TestBot.LoadPosition(entry);
+                bot.LoadPosition(entry);
             }
             if(command == "test") {
                 if(entry.Split(' ')[1] == "board-rep") {
@@ -75,16 +75,13 @@ public class UCI {
                 Console.WriteLine(b.IsInCheck());
             }
             if(command == "go") {
-                TestBot.Think();
+                bot.Think();
             }
             if(command == "get-fen") {
-                TestBot.GetFen();
-            }
-            if(command == "update-mask") {
-                MaskGenerator.GenerateMasks();
+                bot.GetFen();
             }
             if(command == "make-move") {
-                TestBot.MakeMove(entry);
+                bot.MakeMove(entry);
             }
         }
     }

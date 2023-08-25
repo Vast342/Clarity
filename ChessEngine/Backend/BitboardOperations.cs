@@ -1,5 +1,11 @@
 namespace Chess {
     public static class BitboardOperations {
+        /// <summary>
+        /// outputs true if the bit in the bitboard at the index is 1.
+        /// </summary>
+        /// <param name="bitboard">the bitboard in question</param>
+        /// <param name="index">The index in question</param>
+        /// <returns>if the bit on the bitboard at the index is 1</returns>
         public static bool AtLocation(ulong bitboard, int index) {
             return (bitboard & ((ulong)1 << index)) != 0;
         }
