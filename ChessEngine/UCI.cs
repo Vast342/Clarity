@@ -3,7 +3,7 @@ public class UCI {
     static void Main() {
         while(true) {
             string? entry = Console.ReadLine();
-            string command = entry.Split(' ')[0];
+            string? command = entry!.Split(' ')[0];
             if(entry == "uci") {
                 Console.WriteLine("id name I-don");
                 Console.WriteLine("id author Vast");

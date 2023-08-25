@@ -46,7 +46,7 @@ public class TestBot {
     public static int[] pieceValues = {0, 100, 310, 330, 500, 1000, 100000};
     public static int Evaluate() {
         int sum = 0;
-        for(int i = 0; i < 6; i++) {
+        for(int i = 1; i < 6; i++) {
             sum += BitOperations.PopCount(board.coloredPieceBitboards[board.colorToMove, i]) * pieceValues[i];
             sum -= BitOperations.PopCount(board.coloredPieceBitboards[1 - board.colorToMove, i]) * pieceValues[i];
         }
@@ -81,6 +81,7 @@ public class TestBot {
     }
     public static int QSearch(int alpha, int beta) {
         List<Move> moves = board.GetLegalMovesQSearch();
+        OrderMoves(ref moves);
         int standPat = Evaluate();
         if(standPat >= beta) return beta;
         if(alpha < standPat) alpha = standPat;

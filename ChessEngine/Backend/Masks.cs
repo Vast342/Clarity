@@ -1,6 +1,6 @@
 namespace Chess {
     public static class Mask {
-        // I was originally planning on using the masks from Ellie M's engine Homura, however even after adapting them I was running into issues, so decided to compute them all on my own
+        // These first 3 sets of masks (knight moves, king moves, and pawn attacks), were originally calculated by Ellie M, also known as RedBedHed, the developer of Homura.
         public static readonly ulong[] knightMasks = {
             0x0000000000020400L, 0x0000000000050800L,
             0x00000000000A1100L, 0x0000000000142200L,
