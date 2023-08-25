@@ -18,6 +18,13 @@ namespace Chess {
             promotionType = pType;
             state = new(s);
         }
+        public Move()
+		{
+            startSquare = NullMove.startSquare;
+            endSquare = NullMove.endSquare;
+            promotionType = NullMove.promotionType;
+            state = NullMove.state;
+		}
         /// <summary>
         /// Converts the move to long algebraic form
         /// </summary>
@@ -62,6 +69,10 @@ namespace Chess {
         /// <returns></returns>
         public int ToNumber() {
             return (startSquare << 6) + endSquare;
+        }
+        public static Move NullMove => new Move(0, 0, 0, new(new Board("8/8/8/8/8/8/8/8 - - - - 0 1")));
+        public static bool Equals(Move move1, Move move2) {
+            return move1.startSquare == move2.startSquare && move1.endSquare == move2.endSquare && move1.promotionType == move2.promotionType;
         }
     }
 }

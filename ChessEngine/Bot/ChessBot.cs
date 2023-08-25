@@ -8,8 +8,17 @@ public class ChessBot {
     public Move bestMove;
     public string name = "";
     public string author = "";
-    public TranspositionTable tt = new();
     public MoveTable moveTable = new();
+    public static ulong mask = 0x7FFFFF;
+    public Transposition[] table = new Transposition[mask + 1];
+    public class Transposition {
+        public Transposition(Move m, int d) {
+            bestMove = m;
+            depth = d;
+        }
+        public Move bestMove = new();
+        public int depth = 0;
+    }
     /// <summary>
     /// Makes the bot identify itself with the values from Initialize()
     /// </summary>
@@ -25,7 +34,6 @@ public class ChessBot {
     public void Initialize(string n, string a) {
         name = n;
         author = a;
-        tt = new TranspositionTable();
     }
     /// <summary>
     /// resets the bot and prepares for a new game
@@ -33,7 +41,7 @@ public class ChessBot {
     public void NewGame() {
         board = new("8/8/8/8/8/8/8/8 w - - 0 0");
         moves.Clear();
-        tt.Clear();
+        table = new Transposition[mask + 1];
         moveTable.Clear();
     }
     /// <summary>
@@ -90,11 +98,12 @@ public class ChessBot {
     /// <summary>
     /// Searches for the legal moves up to a certain depth and rates them using a Negamax search and Alpha-Beta pruning
     /// </summary>
-    /// <param name="alpha">The lowest number the maximising player is guaranteed</param>
-    /// <param name="beta">The Highest number the minimising player is guaranteed</param>
+    /// <param name="alpha">The lowest score the maximising player is guaranteed</param>
+    /// <param name="beta">The Highest score the minimising player is guaranteed</param>
     /// <param name="depth">The depth being searched to </param>
     /// <returns>The result of the search</returns>
     public int Negamax(int alpha, int beta, int depth) {
+        ulong hash = board.CreateHash();
         List<Move> moves = board.GetLegalMoves();
         if(moves.Count == 0) {
             if(board.IsInCheck()) {
@@ -103,7 +112,7 @@ public class ChessBot {
             return 0;
         }
         if(depth == 0) return QSearch(-int.MaxValue, int.MaxValue);
-        OrderMoves(ref moves);
+        OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
                 int score = -Negamax(-beta, -alpha, depth - 1);
@@ -113,9 +122,8 @@ public class ChessBot {
                     return beta;
                 }
                 if(score > alpha) {
-                    if(depth == universalDepth) {
-                        bestMove = move;
-                    }
+                    table[hash & mask].bestMove = move;
+                    table[hash & mask].depth = depth;
                     alpha = score;
                 }
             }
@@ -130,7 +138,8 @@ public class ChessBot {
     /// <returns>The total returned value of the search</returns>
     public int QSearch(int alpha, int beta) {
         List<Move> moves = board.GetLegalMovesQSearch();
-        OrderMoves(ref moves);
+        ulong hash = board.CreateHash();
+        OrderMoves(ref moves, hash);
         int standPat = Evaluate();
         if(standPat >= beta) return beta;
         if(alpha < standPat) alpha = standPat;
@@ -142,6 +151,7 @@ public class ChessBot {
                     return beta;
                 }
                 if(score > alpha) {
+                    table[hash & mask].bestMove = move;
                     alpha = score;
                 }
             }
@@ -152,11 +162,14 @@ public class ChessBot {
     /// Orders the moves using MVV-LVA
     /// </summary>
     /// <param name="moves">A reference to the list of legal moves being sorted</param>
-    public void OrderMoves(ref List<Move> moves) {
+    public void OrderMoves(ref List<Move> moves, ulong zobristHash) {
         int[] scores = new int[moves.Count];
         for(int i = 0; i < moves.Count; i++) {
             if(moves[i].IsCapture(board)) {
                 scores[i] = pieceValues[Piece.GetType(board.squares[moves[i].endSquare])] - pieceValues[Piece.GetType(board.squares[moves[i].startSquare])];
+            }
+            if(Move.Equals(moves[i], table[zobristHash & mask].bestMove)) {
+                scores[i] += 1000000;
             }
         }
         Move[] sortedMoves = moves.ToArray();
