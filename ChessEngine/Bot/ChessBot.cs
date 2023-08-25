@@ -89,8 +89,8 @@ public class ChessBot {
         Stopwatch sw = Stopwatch.StartNew();
         for(int i = 0; i < 5; i++) {
             universalDepth = i;
-            int eval = Negamax(-int.MaxValue, int.MaxValue, universalDepth, 0);
-            Console.WriteLine("info depth " + i + " time " + sw.Elapsed + " nodes " + nodes + " score cp " + eval);
+            int eval = Negamax(-10000000, 10000000, universalDepth, 0);
+            Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
         
         moves.Add(rootBestMove.ConvertToLongAlgebraic());
@@ -139,18 +139,20 @@ public class ChessBot {
                 || entry.flag == UPPERBOUND && entry.score <= alpha
         )) return entry.score;
 
-        if(depth == 0) return QSearch(-int.MaxValue, int.MaxValue);
+        if(depth == 0) return QSearch(-10000000, 10000000);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
                 int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
+                if(score >= beta) {
+                    return beta;
+                }
                 if(score > best) {
                     best = score;
                     bestMove = move;
                     if(!notRoot) rootBestMove = move;
                     alpha = Math.Max(alpha, score);
-                    if(alpha >= beta) break;
                 }
             }
         }
@@ -179,11 +181,13 @@ public class ChessBot {
             if(board.MakeMove(move)) {
                 int score = -QSearch(-beta, -alpha);
                 board.UndoMove(move);
+                if(score >= beta) {
+                    return beta;
+                }
                 if(score > best) {
                     best = score;
                     bestMove = move;
                     alpha = Math.Max(alpha, score);
-                    if(alpha >= beta) break;
                 }
             }
         }
@@ -199,7 +203,7 @@ public class ChessBot {
         int[] scores = new int[moves.Count];
         for(int i = 0; i < moves.Count; i++) {
             if(moves[i].IsCapture(board)) {
-                scores[i] = pieceValues[Piece.GetType(board.squares[moves[i].endSquare])] - pieceValues[Piece.GetType(board.squares[moves[i].startSquare])];
+                scores[i] = 10000 * pieceValues[Piece.GetType(board.squares[moves[i].endSquare])] - pieceValues[Piece.GetType(board.squares[moves[i].startSquare])];
             }
             if(Move.Equals(moves[i], TT[zobristHash & mask].bestMove)) {
                 scores[i] += 1000000;
