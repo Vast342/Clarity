@@ -87,7 +87,7 @@ public class ChessBot {
     public void Think() {
         nodes = 0;
         Stopwatch sw = Stopwatch.StartNew();
-        for(int i = 0; i < 5; i++) {
+        for(int i = 1; i < 5; i++) {
             universalDepth = i;
             int eval = Negamax(-10000000, 10000000, universalDepth, 0);
             Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
@@ -98,17 +98,26 @@ public class ChessBot {
         Console.WriteLine("bestmove " + rootBestMove.ConvertToLongAlgebraic());
     }
     public int[] pieceValues = {0, 100, 310, 330, 500, 1000, 100000};
+    public int[] colorMultipliers = {-1, 1};
     /// <summary>
     /// A static evaluation of the position, currently only using material
     /// </summary>
     /// <returns>The number from the evaluation</returns>
     public int Evaluate() {
         int sum = 0;
-        for(int i = 1; i < 6; i++) {
-            sum += BitOperations.PopCount(board.coloredPieceBitboards[1, i]) * pieceValues[i];
-            sum -= BitOperations.PopCount(board.coloredPieceBitboards[0, i]) * pieceValues[i];
+        for(int p = 1; p < 7; p++) {
+            for(int i = 0; i < 64; i++) {
+                if(BitboardOperations.AtLocation(board.coloredPieceBitboards[0, p], i)) {
+                    sum -= Tables.tables[p-1][63-i];
+                }
+                if(BitboardOperations.AtLocation(board.coloredPieceBitboards[1, p], i)) {
+                    sum += Tables.tables[p-1][i];
+                }
+            }
+            sum += BitOperations.PopCount(board.coloredPieceBitboards[1, p]) * pieceValues[p];
+            sum -= BitOperations.PopCount(board.coloredPieceBitboards[0, p]) * pieceValues[p];
         }
-        return sum;
+        return sum * colorMultipliers[board.colorToMove];
     }
     /// <summary>
     /// Searches for the legal moves up to a certain depth and rates them using a Negamax search and Alpha-Beta pruning
@@ -121,7 +130,6 @@ public class ChessBot {
         nodes++;
         bool notRoot = ply > 0;
         ulong hash = board.CreateHash();
-        int best = -30000;
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
         List<Move> moves = board.GetLegalMoves();
@@ -142,23 +150,23 @@ public class ChessBot {
         if(depth == 0) return QSearch(-10000000, 10000000);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
-            if(board.MakeMove(move)) {
+           if(board.MakeMove(move)) {
                 int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
                 if(score >= beta) {
                     return beta;
                 }
-                if(score > best) {
-                    best = score;
+                if(score > alpha) {
+                    alpha = score;
                     bestMove = move;
                     if(!notRoot) rootBestMove = move;
                     alpha = Math.Max(alpha, score);
                 }
-            }
+           }    
         }
-        sbyte bound = best >= beta ? LOWERBOUND : best > originalAlpha ? EXACT : LOWERBOUND;
-        TT[hash & mask] = new Transposition(hash, bestMove, depth, best, bound);
-        return best;
+        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : LOWERBOUND;
+        TT[hash & mask] = new Transposition(hash, bestMove, depth, alpha, bound);
+        return alpha;
     }
     /// <summary>
     /// Looks at all the captures until there are none left, at the end of a branch.
@@ -168,12 +176,11 @@ public class ChessBot {
     /// <returns>The total returned value of the search</returns>
     public int QSearch(int alpha, int beta) {
         Move bestMove = Move.NullMove;
-        int best = -30000;
         List<Move> moves = board.GetLegalMovesQSearch();
         ulong hash = board.CreateHash();
         OrderMoves(ref moves, hash);
         int standPat = Evaluate();
-        if(standPat >= beta) return beta;
+        if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
         int originalAlpha = alpha;
         OrderMoves(ref moves, hash);
@@ -184,16 +191,15 @@ public class ChessBot {
                 if(score >= beta) {
                     return beta;
                 }
-                if(score > best) {
-                    best = score;
+                if(score > alpha) {
                     bestMove = move;
                     alpha = Math.Max(alpha, score);
                 }
             }
         }
-        sbyte bound = best >= beta ? LOWERBOUND : best > originalAlpha ? EXACT : LOWERBOUND;
-        TT[hash & mask] = new Transposition(hash, bestMove, 0, best, bound);
-        return best;
+        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : LOWERBOUND;
+        TT[hash & mask] = new Transposition(hash, bestMove, 0, alpha, bound);
+        return alpha;
     }
     /// <summary>
     /// Orders the moves using MVV-LVA

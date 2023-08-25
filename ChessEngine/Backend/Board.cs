@@ -234,6 +234,7 @@ namespace Chess {
         /// </summary>
         /// <returns>A List of the legal moves</returns>
         public List<Move> GetLegalMoves() {
+
             BoardState state = new(this);
             List<Move> moves = new();
             // castlingi;
@@ -268,12 +269,6 @@ namespace Chess {
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         pawnPushes |= MaskGen.GetPawnPushes(startSquare, colorToMove, emptyBitboard);
                         pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
-                        // promotions
-                        if(Piece.GetColor((byte)(startSquare + directionalOffsets[1 - colorToMove])) == (colorToMove == 1 ? 7 : 0)) {
-                            for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                moves.Add(new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type, state));
-                            }
-                        }
                     } else if(Piece.GetType(currentPiece) == Piece.Knight) {
                         total |= MaskGen.GetKnightAttacks(startSquare);
                     } else if(Piece.GetType(currentPiece) == Piece.King) {
@@ -282,22 +277,30 @@ namespace Chess {
                     if(total != 0) {
                         for(int i = 0; i < 64; i++) {
                             if(BitboardOperations.AtLocation(total, i) && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
-                                moves.Add(new Move(startSquare, i, 0, state));
+                                moves.Add(new Move(startSquare, i, 0, new(this)));
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         for(int i = 0; i < 64; i++) {
-                            if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
-                                moves.Add(new Move(startSquare, i, 0, state));
-                            }
-                            if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || startSquare == enPassantIndex)) {
-                                moves.Add(new Move(startSquare, i, 0, state));
+                            if(i >> 3 == 7 * colorToMove) {
+                                // promotions
+                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
+                                    for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                        moves.Add(new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type, state));
+                                    }
+                                }
+                            } else {
+                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
+                                    moves.Add(new Move(startSquare, i, 0, new(this)));
+                                }
+                                if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || startSquare == enPassantIndex)) {
+                                    moves.Add(new Move(startSquare, i, 0, new(this)));
+                                }
                             }
                         }
                     }
                 }
             }
-            // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
             return moves;
         }
         /// <summary>
@@ -344,7 +347,6 @@ namespace Chess {
                     }
                 }
             }
-            // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
             return moves;
         }
 
@@ -374,7 +376,6 @@ namespace Chess {
         /// Makes a move on the board
         /// </summary>
         /// <param name="move">The move to be made</param>
-        /// <returns>Was making the move succesful?</returns>
         public bool MakeMove(Move move) {
             if(colorToMove != 1) {
                 fiftyMoveCounter++;
@@ -415,7 +416,7 @@ namespace Chess {
                 // castling 4
                 // switch 60 with 58 and 56 with 59
                 squares[58] = squares[60];
-                squares[60] = 0;
+                squares[4] = 0;
                 squares[59] = squares[56];
                 squares[56] = 0;
                 castlingRights[2] = false;
