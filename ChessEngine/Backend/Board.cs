@@ -231,7 +231,6 @@ namespace Chess {
             return fen;
         }
         public List<Move> GetLegalMoves() {
-            UpdateBitboards();
             BoardState state = new(this);
             List<Move> moves = new();
             // castlingi;
@@ -288,10 +287,10 @@ namespace Chess {
                                 }
                             } else {
                                 if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
-                                    moves.Add(new Move(startSquare, i, 0, new(this)));
+                                    moves.Add(new Move(startSquare, i, 0, state));
                                 }
                                 if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || startSquare == enPassantIndex)) {
-                                    moves.Add(new Move(startSquare, i, 0, new(this)));
+                                    moves.Add(new Move(startSquare, i, 0, state));
                                 }
                             }
                         }
@@ -301,6 +300,50 @@ namespace Chess {
             // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
             return moves;
         }
+        public List<Move> GetLegalMovesQSearch() {
+            BoardState state = new(this);
+            List<Move> moves = new();
+            // the rest of the pieces
+            for(int startSquare = 0; startSquare < 64; startSquare++) {
+                byte currentPiece = squares[startSquare];
+                // checks if it's the right color
+                if(Piece.GetColor(currentPiece) == colorToMove) {
+                    // a check if it's a sliding piece
+                    ulong total = 0;
+                    ulong pawnCaptures = 0;
+                    if(Piece.GetType(currentPiece) == Piece.Bishop) {
+                        total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                    } else if(Piece.GetType(currentPiece) == Piece.Rook) {
+                        total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard);
+                    } else if(Piece.GetType(currentPiece) == Piece.Queen) {
+                        total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
+                        total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
+                        pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
+                    } else if(Piece.GetType(currentPiece) == Piece.Knight) {
+                        total |= MaskGen.GetKnightAttacks(startSquare);
+                    } else if(Piece.GetType(currentPiece) == Piece.King) {
+                        total |= MaskGen.GetKingAttacks(startSquare);
+                    }
+                    if(total != 0) {
+                        for(int i = 0; i < 64; i++) {
+                            if(BitboardOperations.AtLocation(total, i) && Piece.GetColor(squares[i]) != colorToMove) {
+                                moves.Add(new Move(startSquare, i, 0, state));
+                            }
+                        }
+                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
+                        for(int i = 0; i < 64; i++) {
+                            if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || startSquare == enPassantIndex)) {
+                                moves.Add(new Move(startSquare, i, 0, state));
+                            }
+                        }
+                    }
+                }
+            }
+            // NOTE WHENEVER YOU MAKE A MOVE REMEMBER TO HAVE THE LEGAL CHECK THING
+            return moves;
+        }
+
         /// <summary>
         /// initializes a table used later for zobrist hashing, done automatically if you create the board using a fen string.
         /// </summary>
@@ -364,7 +407,7 @@ namespace Chess {
                     // castling 4
                     // switch 60 with 58 and 56 with 59
                     squares[58] = squares[60];
-                    squares[4] = 0;
+                    squares[60] = 0;
                     squares[59] = squares[56];
                     squares[56] = 0;
                     castlingRights[2] = false;
