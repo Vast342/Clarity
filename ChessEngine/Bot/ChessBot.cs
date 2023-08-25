@@ -1,6 +1,7 @@
 using System.Numerics;
 using Chess;
 using Bot.Essentials;
+using System.Diagnostics;
 
 public class ChessBot {
     public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
@@ -9,7 +10,7 @@ public class ChessBot {
     public string author = "";
     public Move rootBestMove = Move.NullMove;
     public MoveTable moveTable = new();
-    public static ulong mask = 0xFFFFFF;
+    public static ulong mask = 0x7FFFFF;
     public Transposition[] TT = new Transposition[mask + 1];
     private const sbyte EXACT = 0, LOWERBOUND = -1, UPPERBOUND = 1, INVALID = -2;
     public struct Transposition {
@@ -25,6 +26,7 @@ public class ChessBot {
         public int depth = 0, score = 0;
         public sbyte flag = INVALID;
     }
+    int nodes = 0;
     /// <summary>
     /// Makes the bot identify itself with the values from Initialize()
     /// </summary>
@@ -49,6 +51,7 @@ public class ChessBot {
         moves.Clear();
         TT = new Transposition[mask + 1];
         moveTable.Clear();
+        nodes = 0;
     }
     /// <summary>
     /// Loads the position from a position command
@@ -82,9 +85,12 @@ public class ChessBot {
     /// Thinks through the position it has been given, and writes the best move to the console once the search is done
     /// </summary>
     public void Think() {
+        nodes = 0;
+        Stopwatch sw = Stopwatch.StartNew();
         for(int i = 0; i < 5; i++) {
             universalDepth = i;
-            Negamax(-int.MaxValue, int.MaxValue, universalDepth, 0);
+            int eval = Negamax(-int.MaxValue, int.MaxValue, universalDepth, 0);
+            Console.WriteLine("info depth " + i + " time " + sw.Elapsed + " nodes " + nodes + " score cp " + eval);
         }
         
         moves.Add(rootBestMove.ConvertToLongAlgebraic());
@@ -99,8 +105,8 @@ public class ChessBot {
     public int Evaluate() {
         int sum = 0;
         for(int i = 1; i < 6; i++) {
-            sum += BitOperations.PopCount(board.coloredPieceBitboards[board.colorToMove, i]) * pieceValues[i];
-            sum -= BitOperations.PopCount(board.coloredPieceBitboards[1 - board.colorToMove, i]) * pieceValues[i];
+            sum += BitOperations.PopCount(board.coloredPieceBitboards[1, i]) * pieceValues[i];
+            sum -= BitOperations.PopCount(board.coloredPieceBitboards[0, i]) * pieceValues[i];
         }
         return sum;
     }
@@ -112,6 +118,7 @@ public class ChessBot {
     /// <param name="depth">The depth being searched to </param>
     /// <returns>The result of the search</returns>
     public int Negamax(int alpha, int beta, int depth, int ply) {
+        nodes++;
         bool notRoot = ply > 0;
         ulong hash = board.CreateHash();
         int best = -30000;
