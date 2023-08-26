@@ -108,10 +108,10 @@ public class ChessBot {
         for(int p = 1; p < 7; p++) {
             for(int i = 0; i < 64; i++) {
                 if(BitboardOperations.AtLocation(board.coloredPieceBitboards[0, p], i)) {
-                    sum -= Tables.tables[p-1][63-i];
+                    sum -= Tables.tables[p-1][i];
                 }
                 if(BitboardOperations.AtLocation(board.coloredPieceBitboards[1, p], i)) {
-                    sum += Tables.tables[p-1][i];
+                    sum += Tables.tables[p-1][i ^ 56];
                 }
             }
             sum += BitOperations.PopCount(board.coloredPieceBitboards[1, p]) * pieceValues[p];
@@ -140,21 +140,21 @@ public class ChessBot {
             return 0;
         }
         Transposition entry = TT[hash & mask];
-
         if(notRoot && entry.zobristKey == hash && entry.depth >= depth && (
             entry.flag == EXACT
                 || entry.flag == LOWERBOUND && entry.score >= beta
                 || entry.flag == UPPERBOUND && entry.score <= alpha
         )) return entry.score;
 
-        if(depth == 0) return QSearch(-10000000, 10000000);
+        if(depth == 0) return QSearch(alpha,beta);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
            if(board.MakeMove(move)) {
                 int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
                 if(score >= beta) {
-                    return beta;
+                    alpha = beta;
+                    break;
                 }
                 if(score > alpha) {
                     alpha = score;
@@ -178,7 +178,6 @@ public class ChessBot {
         Move bestMove = Move.NullMove;
         List<Move> moves = board.GetLegalMovesQSearch();
         ulong hash = board.CreateHash();
-        OrderMoves(ref moves, hash);
         int standPat = Evaluate();
         if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
@@ -189,7 +188,8 @@ public class ChessBot {
                 int score = -QSearch(-beta, -alpha);
                 board.UndoMove(move);
                 if(score >= beta) {
-                    return beta;
+                    alpha = beta;
+                    break;
                 }
                 if(score > alpha) {
                     bestMove = move;
