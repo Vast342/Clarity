@@ -133,12 +133,7 @@ public class ChessBot {
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
         List<Move> moves = board.GetLegalMoves();
-        if(moves.Count == 0) {
-            if(board.IsInCheck()) {
-                return -10000000 + board.plyCount;
-            }
-            return 0;
-        }
+        int legalMoveCount = 0;
         Transposition entry = TT[hash & mask];
         if(notRoot && entry.zobristKey == hash && entry.depth >= depth && (
             entry.flag == EXACT
@@ -146,10 +141,11 @@ public class ChessBot {
                 || entry.flag == UPPERBOUND && entry.score <= alpha
         )) return entry.score;
 
-        if(depth == 0) return QSearch(alpha,beta);
+        if(depth == 0) return Evaluate();
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
            if(board.MakeMove(move)) {
+                legalMoveCount++;
                 int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
                 if(score >= beta) {
@@ -163,6 +159,12 @@ public class ChessBot {
                     alpha = Math.Max(alpha, score);
                 }
            }    
+        }
+        if(legalMoveCount == 0) {
+            if(board.IsInCheck()) {
+                return -10000000 + ply;
+            }
+            return 0;
         }
         sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : LOWERBOUND;
         TT[hash & mask] = new Transposition(hash, bestMove, depth, alpha, bound);

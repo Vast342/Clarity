@@ -234,7 +234,6 @@ namespace Chess {
         /// </summary>
         /// <returns>A List of the legal moves</returns>
         public List<Move> GetLegalMoves() {
-
             BoardState state = new(this);
             List<Move> moves = new();
             // castlingi;
@@ -357,7 +356,7 @@ namespace Chess {
             var rng = new Random();
             for(int i = 0; i < 64; i++) {
                 for(int j = 0; j < 15; j++) {
-                    zobTable[i,j] = (ulong)rng.Next(0, (int)Math.Pow(2, 64)-1);
+                    zobTable[i,j] = (ulong)rng.Next(0, (int)Math.Pow(2, 63)-1);
                 }
             }
         }
