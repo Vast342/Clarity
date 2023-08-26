@@ -9,17 +9,15 @@ namespace Chess {
         public static bool AtLocation(ulong bitboard, int index) {
             return (bitboard & ((ulong)1 << index)) != 0;
         }
-        public static ulong AddPiece(ulong bitboard, int index) {
-            return bitboard ^ 1UL << index;
+        public static void AddPiece(ref ulong bitboard, int index) {
+            bitboard ^= 1UL << index;
         }
-        public static ulong RemovePiece(ulong bitboard, int index) {
-            return bitboard ^ 1UL << index;
+        public static void RemovePiece(ref ulong bitboard, int index) {
+            bitboard ^= 1UL << index;
         }
-        public static ulong MovePiece(ulong bitboard, int index1, int index2) {
-            ulong bb = bitboard;
-            RemovePiece(bb, index1);
-            AddPiece(bb, index2);
-            return bb;
+        public static void MovePiece(ref ulong bitboard, int index1, int index2) {
+            RemovePiece(ref bitboard, index1);
+            AddPiece(ref bitboard, index2);
         }
     }
 }

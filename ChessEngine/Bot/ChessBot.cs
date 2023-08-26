@@ -80,17 +80,18 @@ public class ChessBot {
         startTime = int.Parse(color == 1 ? entry.Split(' ')[2] : entry.Split(' ')[4]);
         nodes = 0;
         sw = Stopwatch.StartNew();
-        for(int i = 1; i < 10; i++) {
+        for(int i = 1; i <= 10; i++) {
             universalDepth = i;
             previousBestMove = rootBestMove;
             int eval = Negamax(-10000000, 10000000, universalDepth, 0);
             if(sw.ElapsedMilliseconds > startTime / 30) {
                 rootBestMove = previousBestMove;
                 break;
+            } else if(i == 10) {
+                Console.WriteLine("You made it!");
             }
             Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
-        
         moves.Add(rootBestMove.ConvertToLongAlgebraic());
         board.MakeMove(rootBestMove);
         Console.WriteLine("bestmove " + rootBestMove.ConvertToLongAlgebraic());
@@ -131,7 +132,7 @@ public class ChessBot {
         ulong hash = board.CreateHash();
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
-        List<Move> moves = board.GetLegalMoves();
+        Move[] moves = board.GetMoves();
         int legalMoveCount = 0;
         //This is the code from TT Pruning, which did not do anything important for my code, so I am leaving it commented out until I can remake it and make it work.
         //Transposition entry = TT.ReadEntry(hash);
@@ -181,7 +182,7 @@ public class ChessBot {
     public int QSearch(int alpha, int beta) {
         if(sw.ElapsedMilliseconds > startTime / 30) return 0;
         Move bestMove = Move.NullMove;
-        List<Move> moves = board.GetLegalMovesQSearch();
+        Move[] moves = board.GetMovesQSearch();
         ulong hash = board.CreateHash();
         int standPat = Evaluate();
         if(standPat >= beta) return standPat;
@@ -211,9 +212,9 @@ public class ChessBot {
     /// Orders the moves using MVV-LVA
     /// </summary>
     /// <param name="moves">A reference to the list of legal moves being sorted</param>
-    public void OrderMoves(ref List<Move> moves, ulong zobristHash) {
-        int[] scores = new int[moves.Count];
-        for(int i = 0; i < moves.Count; i++) {
+    public void OrderMoves(ref Move[] moves, ulong zobristHash) {
+        int[] scores = new int[moves.Length];
+        for(int i = 0; i < moves.Length; i++) {
             if(moves[i].IsCapture(board)) {
                 scores[i] = 10000 * pieceValues[Piece.GetType(board.squares[moves[i].endSquare])] - pieceValues[Piece.GetType(board.squares[moves[i].startSquare])];
             }
@@ -221,10 +222,8 @@ public class ChessBot {
                 scores[i] += 1000000;
             }
         }
-        Move[] sortedMoves = moves.ToArray();
-        Array.Sort(scores, sortedMoves);
-        Array.Reverse(sortedMoves);
-        moves = sortedMoves.ToList();
+        Array.Sort(scores, moves);
+        Array.Reverse(moves);
     }
     /// <summary>
     /// Get's the fen string of the position currently being viewed by the bot

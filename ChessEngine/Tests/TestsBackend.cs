@@ -6,14 +6,14 @@ public class Tests {
     public static void BackendTests() {
         Console.WriteLine("IT'S ALIVE!!!");
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        List<Move> moves = board.GetLegalMoves();
-        if(moves.Count == 20) {
+        Move[] moves = board.GetMoves();
+        if(moves.Length == 20) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Move count test passed");
             Console.ResetColor();
         } else {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Move count test Failed, outputted " + moves.Count + " legal moves");
+            Console.WriteLine("Move count test Failed, outputted " + moves.Length + " legal moves");
             Console.ResetColor();
         }
         // everything
@@ -268,22 +268,6 @@ public class Tests {
         }
     }
     /// <summary>
-    /// performs a very limited set of tests on the move generation
-    /// </summary>
-    public static void MoveGenTests() {
-        Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        List<Move> moves = board.GetLegalMoves();
-        if(moves.Count == 20) {
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Move count test passed");
-            Console.ResetColor();
-        } else {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Move count test Failed, outputted " + moves.Count + " legal moves");
-            Console.ResetColor();
-        }
-    }
-    /// <summary>
     /// tests the outliers, such as castling and en passant
     /// </summary>
     public static void OutlierTests() {
@@ -311,7 +295,7 @@ public class Tests {
     /// <param name="board">The board that it gets done on</param>
     /// <returns>The total legal moves to that </returns>
     public static int Perft(int depth, Board board) { 
-        List<Move> moves = board.GetLegalMoves();
+        Move[] moves = board.GetMoves();
         int count = 0;
         if(depth == 0) {
             return 1;

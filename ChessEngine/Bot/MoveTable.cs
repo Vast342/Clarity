@@ -1,11 +1,12 @@
 namespace Bot.Essentials {
+    // this class is to be used with anything necessary for moves, like history heuristic.
     public class MoveTable {
-        ushort[] table = new ushort[ushort.MaxValue + 1];
+        ushort[] table = new ushort[ushort.MaxValue];
         /// <summary>
         /// Clears the Move Table
         /// </summary>
         public void Clear() {
-            table = new ushort[ushort.MaxValue + 1];
+            table = new ushort[ushort.MaxValue];
         }
         /// <summary>
         /// Adds a cutoff to the array at the position

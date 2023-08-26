@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace Chess {
     public class Board {
         // board specific valus
@@ -26,11 +24,19 @@ namespace Chess {
         /// </summary>
         /// <param name="state">the boardstate in question</param>
         public void ReadBoardState(BoardState state) {
-            Array.Copy(state.squares, squares, 64);
+            foreach(SquareState s in state.squares) {
+                if(s.initialized == true) {
+                    squares[s.index] = s.value;
+                }
+            }
             Array.Copy(state.kingSquares, kingSquares, 2);
             enPassantIndex = state.enPassantIndex;
             Array.Copy(state.castlingRights, castlingRights, 4);
             fiftyMoveCounter = state.fiftyMoveCounter;
+            occupiedBitboard = state.occupiedBitboard;
+            emptyBitboard = state.emptyBitboard;
+            Array.Copy(state.coloredBitboards, coloredBitboards, 2);
+            Array.Copy(state.coloredPieceBitboards, coloredPieceBitboards, 14);
         }
         /// <summary>
         /// Establishes a new board instance, with the position and information contained within a FEN string.
@@ -38,7 +44,7 @@ namespace Chess {
         /// <param name="fen">The fen string in question.</param>
         public Board(string fen) {
             LoadFenToPosition(fen);
-            UpdateBitboards();
+            GenerateBitboards();
             InitializeZobrist();
         }
         /// <summary>
@@ -235,21 +241,26 @@ namespace Chess {
         /// Generates a list of all the moves from the position, not including moves while in check. To filter the legal moves, check the return value of Board.MakeMove()
         /// </summary>
         /// <returns>A List of the legal moves</returns>
-        public List<Move> GetLegalMoves() {
+        public Move[] GetMoves() {
             BoardState state = new(this);
-            List<Move> moves = new();
-            // castlingi;
+            Move[] moves = new Move[218];
+            int totalMoves = 0;
+            // castling
             if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && colorToMove == 1) {
-                moves.Add(new Move(4, 6, 0, state));
+                moves[totalMoves] = new Move(4, 6, 0, state);
+                totalMoves++;
             }
             if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && colorToMove == 1) {
-                moves.Add(new Move(4, 2, 0, state));
+                moves[totalMoves] = new Move(4, 2, 0, state);
+                totalMoves++;
             }
             if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && colorToMove == 0) {
-                moves.Add(new Move(60, 62, 0, state));
+                moves[totalMoves] = new Move(60, 62, 0, state);
+                totalMoves++;
             }
             if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && colorToMove == 0) {
-                moves.Add(new Move(60, 58, 0, state));
+                moves[totalMoves] = new Move(60, 58, 0, state);
+                totalMoves++;
             }
             // the rest of the pieces
             for(int startSquare = 0; startSquare < 64; startSquare++) {
@@ -278,7 +289,8 @@ namespace Chess {
                     if(total != 0) {
                         for(int i = 0; i < 64; i++) {
                             if(BitboardOperations.AtLocation(total, i) && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
-                                moves.Add(new Move(startSquare, i, 0, new(this)));
+                                moves[totalMoves] = new Move(startSquare, i, 0, new(this));
+                                totalMoves++;
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
@@ -287,30 +299,35 @@ namespace Chess {
                                 // promotions
                                 if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
                                     for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves.Add(new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type, state));
+                                        moves[totalMoves] = new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type, state);
+                                        totalMoves++;
                                     }
                                 }
                             } else {
                                 if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
-                                    moves.Add(new Move(startSquare, i, 0, new(this)));
+                                    moves[totalMoves] = new Move(startSquare, i, 0, new(this));
+                                    totalMoves++;
                                 }
                                 if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || i == enPassantIndex)) {
-                                    moves.Add(new Move(startSquare, i, 0, new(this)));
+                                    moves[totalMoves] = new Move(startSquare, i, 0, new(this));
+                                    totalMoves++;
                                 }
                             }
                         }
                     }
                 }
             }
+            Array.Resize(ref moves, totalMoves);
             return moves;
         }
         /// <summary>
         /// Gets the captures from a position, used in Q Search.
         /// </summary>
         /// <returns>A List of capture moves</returns>
-        public List<Move> GetLegalMovesQSearch() {
+        public Move[] GetMovesQSearch() {
             BoardState state = new(this);
-            List<Move> moves = new();
+            Move[] moves = new Move[218];
+            int totalMoves = 0;
             // the rest of the pieces
             for(int startSquare = 0; startSquare < 64; startSquare++) {
                 byte currentPiece = squares[startSquare];
@@ -336,18 +353,20 @@ namespace Chess {
                     if(total != 0) {
                         for(int i = 0; i < 64; i++) {
                             if(BitboardOperations.AtLocation(total, i) && Piece.GetColor(squares[i]) != colorToMove) {
-                                moves.Add(new Move(startSquare, i, 0, state));
+                                moves[totalMoves] = new Move(startSquare, i, 0, state);
+                                totalMoves++;
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         for(int i = 0; i < 64; i++) {
                             if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || i == enPassantIndex)) {
-                                moves.Add(new Move(startSquare, i, 0, state));
+                                moves[totalMoves] = new Move(startSquare, i, 0, state);
                             }
                         }
                     }
                 }
             }
+            Array.Resize(ref moves, totalMoves);
             return moves;
         }
 
@@ -355,10 +374,12 @@ namespace Chess {
         /// initializes a table used later for zobrist hashing, done automatically if you create the board using a fen string.
         /// </summary>
         public void InitializeZobrist() {
-            var rng = new Random();
-            for(int i = 0; i < 64; i++) {
-                for(int j = 0; j < 15; j++) {
-                    zobTable[i,j] = (ulong)rng.Next(0, int.MaxValue);
+            if(zobTable[0,0] != 0) {
+                var rng = new Random();
+                for(int i = 0; i < 64; i++) {
+                    for(int j = 0; j < 15; j++) {
+                        zobTable[i,j] = (ulong)rng.Next(0, int.MaxValue);
+                    }
                 }
             }
         }
@@ -378,114 +399,128 @@ namespace Chess {
         /// </summary>
         /// <param name="move">The move to be made</param>
         public bool MakeMove(Move move) {
-            if(colorToMove != 1) {
-                fiftyMoveCounter++;
-            }
-            // fifty move counter
-            if(squares[move.endSquare] != 0 || (squares[move.startSquare] & 7) == Piece.Pawn) {
-                fiftyMoveCounter = 0;
-            }
-            // for each start one set the start square to 0
-            if(castlingRights[0] && move.startSquare == 4 && move.endSquare == 6) {
-                // castling 1
-                // switch 4 with 6 and 7 with 5
-                squares[6] = squares[4];
-                squares[4] = 0;
-                squares[5] = squares[7];
-                squares[7] = 0;
-                castlingRights[0] = false;
-                castlingRights[1] = false;
-                // update the bitboards
-                coloredPieceBitboards[1, Piece.King] = BitboardOperations.MovePiece(coloredPieceBitboards[1, Piece.King], 4, 6);
-                coloredPieceBitboards[1, Piece.Rook] = BitboardOperations.MovePiece(coloredPieceBitboards[1, Piece.Rook], 7, 5);
-            } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
-                // castling 
-                // switch 4 with 2 and 0 with 3
-                squares[2] = squares[4];
-                squares[4] = 0;
-                squares[3] = squares[0];
-                squares[0] = 0;
-                castlingRights[0] = false;
-                castlingRights[1] = false;
-                // update the bitboards
-                coloredPieceBitboards[1, Piece.King] = BitboardOperations.MovePiece(coloredPieceBitboards[1, Piece.King], 4, 2);
-                coloredPieceBitboards[1, Piece.Rook] = BitboardOperations.MovePiece(coloredPieceBitboards[1, Piece.Rook], 0, 3);
-            } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
-                // castling 3
-                // switch 60 with 62 and 63 with 61
-                squares[62] = squares[60];
-                squares[60] = 0;
-                squares[61] = squares[63];
-                squares[63] = 0;
-                castlingRights[2] = false;
-                castlingRights[3] = false;
-                // update the bitboards
-                coloredPieceBitboards[0, Piece.King] = BitboardOperations.MovePiece(coloredPieceBitboards[0, Piece.King], 60, 62);
-                coloredPieceBitboards[0, Piece.Rook] = BitboardOperations.MovePiece(coloredPieceBitboards[0, Piece.Rook], 63, 61);
-            } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
-                // castling 4
-                // switch 60 with 58 and 56 with 59
-                squares[58] = squares[60];
-                squares[4] = 0;
-                squares[59] = squares[56];
-                squares[56] = 0;
-                castlingRights[2] = false;
-                castlingRights[3] = false;
-                // update the bitboards
-                coloredPieceBitboards[0, Piece.King] = BitboardOperations.MovePiece(coloredPieceBitboards[0, Piece.King], 60, 58);
-                coloredPieceBitboards[0, Piece.Rook] = BitboardOperations.MovePiece(coloredPieceBitboards[0, Piece.Rook], 56, 59);
-            } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(squares[move.startSquare]) == Piece.Pawn) {
-                // en passant
-                // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
-                squares[move.endSquare] = squares[move.startSquare];
-                squares[move.startSquare] = 0;
-                squares[move.endSquare + (colorToMove == 1 ? -8 : 8)] = 0;
-                enPassantIndex = 64;
-                // update the bitboards
-                coloredPieceBitboards[colorToMove, Piece.Pawn] = BitboardOperations.MovePiece(coloredPieceBitboards[colorToMove, Piece.Pawn], move.startSquare, move.endSquare);
-                coloredPieceBitboards[1 - colorToMove, Piece.Pawn] = BitboardOperations.RemovePiece(coloredPieceBitboards[1 - colorToMove, Piece.Pawn], move.endSquare + (colorToMove == 1 ? -8 : 8));
-            } else {
-                // move  normally
-                // switch first square with second
-                if((squares[move.startSquare] & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
-                    // its a double move, make the first square the en passant index
-                    enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
-                } else {
-                    enPassantIndex = 64;
+            if(!Move.Equals(move, Move.NullMove)) {
+                if(colorToMove != 1) {
+                    fiftyMoveCounter++;
                 }
-                int captureType = Piece.GetType(squares[move.endSquare]);
-                squares[move.endSquare] = squares[move.startSquare];
-                squares[move.startSquare] = 0;
-                // update the bitboards
-                coloredPieceBitboards[1 - colorToMove, captureType] = BitboardOperations.RemovePiece(coloredPieceBitboards[1 - colorToMove, captureType], move.endSquare);
-                coloredPieceBitboards[colorToMove, Piece.GetType(squares[move.endSquare])] = BitboardOperations.MovePiece(coloredPieceBitboards[colorToMove, Piece.GetType(squares[move.endSquare])], move.startSquare, move.endSquare);
+                // fifty move counter
+                if(squares[move.endSquare] != 0 || (squares[move.startSquare] & 7) == Piece.Pawn) {
+                    fiftyMoveCounter = 0;
+                }
+                move.state.squares[0] = new(move.startSquare, squares[move.startSquare]);
+                move.state.squares[1] = new(move.endSquare, squares[move.endSquare]);
+                // for each start one set the start square to 0
+                if(castlingRights[0] && move.startSquare == 4 && move.endSquare == 6) {
+                    // castling 1
+                    // switch 4 with 6 and 7 with 5
+                    squares[6] = squares[4];
+                    squares[4] = 0;
+                    squares[5] = squares[7];
+                    squares[7] = 0;
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
+                    // update the bitboards
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.King], 4, 6);
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.Rook], 7, 5);
+                    move.state.squares[2] = new(6, Piece.None);
+                    move.state.squares[3] = new(5, Piece.None);
+                } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
+                    // castling 
+                    // switch 4 with 2 and 0 with 3
+                    squares[2] = squares[4];
+                    squares[4] = 0;
+                    squares[3] = squares[0];
+                    squares[0] = 0;
+                    castlingRights[0] = false;
+                    castlingRights[1] = false;
+                    // update the bitboards
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.King], 4, 2);
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.Rook], 0, 3);
+                    move.state.squares[2] = new(2, Piece.None);
+                    move.state.squares[3] = new(3, Piece.None);
+                } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
+                    // castling 3
+                    // switch 60 with 62 and 63 with 61
+                    squares[62] = squares[60];
+                    squares[60] = 0;
+                    squares[61] = squares[63];
+                    squares[63] = 0;
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
+                    // update the bitboards
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.King], 60, 62);
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.Rook], 63, 61);
+                    move.state.squares[2] = new(62, Piece.None);
+                    move.state.squares[3] = new(61, Piece.None);
+                } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
+                    // castling 4
+                    // switch 60 with 58 and 56 with 59
+                    squares[58] = squares[60];
+                    squares[4] = 0;
+                    squares[59] = squares[56];
+                    squares[56] = 0;
+                    castlingRights[2] = false;
+                    castlingRights[3] = false;
+                    // update the bitboards
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.King], 60, 58);
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.Rook], 56, 59);
+                    move.state.squares[2] = new(58, Piece.None);
+                    move.state.squares[3] = new(59, Piece.None);
+                } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(squares[move.startSquare]) == Piece.Pawn) {
+                    // en passant
+                    // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
+                    squares[move.endSquare] = squares[move.startSquare];
+                    squares[move.startSquare] = 0;
+                    squares[move.endSquare + (colorToMove == 1 ? -8 : 8)] = 0;
+                    enPassantIndex = 64;
+                    // update the bitboards
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[colorToMove, Piece.Pawn], move.startSquare, move.endSquare);
+                    BitboardOperations.RemovePiece(ref coloredPieceBitboards[1 - colorToMove, Piece.Pawn], move.endSquare + (colorToMove == 1 ? -8 : 8));
+                    move.state.squares[2] = new(move.endSquare + (colorToMove == 1 ? -8 : 8), Piece.Pawn);
+                } else {
+                    // move  normally
+                    // switch first square with second
+                    if((squares[move.startSquare] & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
+                        // its a double move, make the first square the en passant index
+                        enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
+                    } else {
+                        enPassantIndex = 64;
+                    }
+                    int captureType = Piece.GetType(squares[move.endSquare]);
+                    squares[move.endSquare] = squares[move.startSquare];
+                    squares[move.startSquare] = 0;
+                    // update the bitboards
+                    BitboardOperations.RemovePiece(ref coloredPieceBitboards[1 - colorToMove, captureType], move.endSquare);
+                    BitboardOperations.MovePiece(ref coloredPieceBitboards[colorToMove, Piece.GetType(squares[move.endSquare])], move.startSquare, move.endSquare);
+                }
+                // promotions
+                if(move.promotionType != 0) {
+                    squares[move.endSquare] = (byte)(move.promotionType + colorToMove * 8);
+                    // update the bitboards
+                    BitboardOperations.RemovePiece(ref coloredPieceBitboards[colorToMove, Piece.Pawn], move.endSquare);
+                    BitboardOperations.AddPiece(ref coloredPieceBitboards[colorToMove, move.promotionType], move.endSquare);
+                }
+                // king square updates
+                if(Piece.GetType(squares[move.endSquare]) == Piece.King) {
+                    kingSquares[colorToMove] = (byte)move.endSquare;
+                    castlingRights[colorToMove == 1 ? 0 : 2] = false;
+                    castlingRights[colorToMove == 1 ? 1 : 3] = false;
+                }
+                plyCount++;
+                coloredBitboards[0] = coloredPieceBitboards[0,1] | coloredPieceBitboards[0,2] | coloredPieceBitboards[0,3] | coloredPieceBitboards[0,4] | coloredPieceBitboards[0,5] | coloredPieceBitboards[0,6];
+                coloredBitboards[1] = coloredPieceBitboards[1,1] | coloredPieceBitboards[1,2] | coloredPieceBitboards[1,3] | coloredPieceBitboards[1,4] | coloredPieceBitboards[1,5] | coloredPieceBitboards[1,6];
+                occupiedBitboard = coloredBitboards[0] | coloredBitboards[1];
+                emptyBitboard = ~occupiedBitboard;
+                if(IsInCheck()) {
+                    UndoMove(move);
+                    colorToMove = 1 - colorToMove;
+                    return false;
+                } else {
+                    colorToMove = 1 - colorToMove;
+                    return true;
+                }
             }
-            // promotions
-            if(move.promotionType != 0) {
-                squares[move.endSquare] = (byte)(move.promotionType + colorToMove * 8);
-                // update the bitboards
-                coloredPieceBitboards[colorToMove, Piece.Pawn] = BitboardOperations.RemovePiece(coloredPieceBitboards[colorToMove, Piece.Pawn], move.endSquare);
-                coloredPieceBitboards[colorToMove, move.promotionType] = BitboardOperations.AddPiece(coloredPieceBitboards[colorToMove, move.promotionType], move.endSquare);
-            }
-            // king square updates
-            if(Piece.GetColor(squares[move.startSquare]) == Piece.King) {
-                kingSquares[colorToMove] = (byte)move.endSquare;
-                castlingRights[colorToMove == 1 ? 0 : 2] = false;
-                castlingRights[colorToMove == 1 ? 1 : 3] = false;
-            }
-            plyCount++;
-            coloredBitboards[0] = coloredPieceBitboards[0,1] | coloredPieceBitboards[0,2] | coloredPieceBitboards[0,3] | coloredPieceBitboards[0,4] | coloredPieceBitboards[0,5] | coloredPieceBitboards[0,6];
-            coloredBitboards[1] = coloredPieceBitboards[1,1] | coloredPieceBitboards[1,2] | coloredPieceBitboards[1,3] | coloredPieceBitboards[1,4] | coloredPieceBitboards[1,5] | coloredPieceBitboards[1,6];
-            occupiedBitboard = coloredBitboards[0] | coloredBitboards[1];
-            emptyBitboard = ~occupiedBitboard;
-            if(IsInCheck()) {
-                UndoMove(move);
-                colorToMove = 1 - colorToMove;
-                return false;
-            } else {
-                colorToMove = 1 - colorToMove;
-                return true;
-            }
+            return false;
         }
         /// <summary>
         /// undoes a move by reading from the move's board state
@@ -497,16 +532,9 @@ namespace Chess {
             colorToMove = 1 - colorToMove;
         } 
         /// <summary>
-        /// Updates the bitboards, in a horribly inefficient manner
+        /// Generates the bitboards
         /// </summary>
-        public void UpdateBitboards() {
-            occupiedBitboard = 0;
-            coloredBitboards[0] = 0;
-            coloredBitboards[1] = 0;
-            for(int i = 0; i < 7; i++) {
-                coloredPieceBitboards[0,i] = 0;
-                coloredPieceBitboards[1,i] = 0;
-            }
+        public void GenerateBitboards() {
             for(int index = 0; index < 64; index++) {
                 if(squares[index] != 0) {
                     coloredPieceBitboards[squares[index] >> 3, squares[index] & 7] |= (ulong)1 << index; 
