@@ -316,12 +316,10 @@ public class Tests {
         if(depth == 0) {
             return 1;
         }
-        int i = 0;
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
                 count += Perft(depth - 1, board);
                 board.UndoMove(move);
-                i++;
             }
         }
         return count;

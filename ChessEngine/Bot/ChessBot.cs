@@ -170,7 +170,7 @@ public class ChessBot {
                 if(score > alpha) {
                     alpha = score;
                     bestMove = move;
-                    if(!notRoot) rootBestMove = move;
+                    if(ply == 0) rootBestMove = move;
                     alpha = Math.Max(alpha, score);
                 }
            }    
