@@ -75,7 +75,7 @@ public class UCI {
                 Console.WriteLine(b.IsInCheck());
             }
             if(command == "go") {
-                bot.Think();
+                bot.Think(entry);
             }
             if(command == "get-fen") {
                 bot.GetFen();

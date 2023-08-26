@@ -79,17 +79,28 @@ public class ChessBot {
                 board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
             }
         }
+        color = board.colorToMove;
     }
+    public int color;
     public int universalDepth = 0;
+    public int startTime;
+    public Move previousBestMove;
+    public Stopwatch sw = new();
     /// <summary>
     /// Thinks through the position it has been given, and writes the best move to the console once the search is done
     /// </summary>
-    public void Think() {
+    public void Think(string entry) {
+        startTime = int.Parse(color == 1 ? entry.Split(' ')[2] : entry.Split(' ')[4]);
         nodes = 0;
-        Stopwatch sw = Stopwatch.StartNew();
-        for(int i = 1; i < 5; i++) {
+        sw = Stopwatch.StartNew();
+        for(int i = 1; i < 10; i++) {
             universalDepth = i;
+            previousBestMove = rootBestMove;
             int eval = Negamax(-10000000, 10000000, universalDepth, 0);
+            if(sw.ElapsedMilliseconds > startTime / 30) {
+                rootBestMove = previousBestMove;
+                break;
+            }
             Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
         
@@ -127,6 +138,7 @@ public class ChessBot {
     /// <param name="depth">The depth being searched to </param>
     /// <returns>The result of the search</returns>
     public int Negamax(int alpha, int beta, int depth, int ply) {
+        if(sw.ElapsedMilliseconds > startTime / 30) return 0;
         nodes++;
         bool notRoot = ply > 0;
         ulong hash = board.CreateHash();
@@ -134,20 +146,23 @@ public class ChessBot {
         Move bestMove = Move.NullMove;
         List<Move> moves = board.GetLegalMoves();
         int legalMoveCount = 0;
+        /* This is the code from TT Pruning, which did not do anything important for my code, so I am leaving it commented out until I can remake it and make it work.
         Transposition entry = TT[hash & mask];
         //if(notRoot && entry.zobristKey == hash && entry.depth >= depth && (
           //  entry.flag == EXACT
             //    || entry.flag == LOWERBOUND && entry.score >= beta
               //  || entry.flag == UPPERBOUND && entry.score <= alpha
         //)) return entry.score;
+        */
 
-        if(depth == 0) return Evaluate();
+        if(depth == 0) return QSearch(alpha, beta);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
-           if(board.MakeMove(move)) {
+           if(board.MakeMove(move)) { 
                 legalMoveCount++;
                 int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
+                if(sw.ElapsedMilliseconds > startTime / 30) return 0;
                 if(score >= beta) {
                     alpha = beta;
                     break;
@@ -177,6 +192,7 @@ public class ChessBot {
     /// <param name="beta">The highest score</param>
     /// <returns>The total returned value of the search</returns>
     public int QSearch(int alpha, int beta) {
+        if(sw.ElapsedMilliseconds > startTime / 30) return 0;
         Move bestMove = Move.NullMove;
         List<Move> moves = board.GetLegalMovesQSearch();
         ulong hash = board.CreateHash();
@@ -189,6 +205,7 @@ public class ChessBot {
             if(board.MakeMove(move)) {
                 int score = -QSearch(-beta, -alpha);
                 board.UndoMove(move);
+                if(sw.ElapsedMilliseconds > startTime / 30) return 0;
                 if(score >= beta) {
                     alpha = beta;
                     break;
