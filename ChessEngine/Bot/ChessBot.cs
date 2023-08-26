@@ -135,11 +135,11 @@ public class ChessBot {
         List<Move> moves = board.GetLegalMoves();
         int legalMoveCount = 0;
         Transposition entry = TT[hash & mask];
-        if(notRoot && entry.zobristKey == hash && entry.depth >= depth && (
-            entry.flag == EXACT
-                || entry.flag == LOWERBOUND && entry.score >= beta
-                || entry.flag == UPPERBOUND && entry.score <= alpha
-        )) return entry.score;
+        //if(notRoot && entry.zobristKey == hash && entry.depth >= depth && (
+          //  entry.flag == EXACT
+            //    || entry.flag == LOWERBOUND && entry.score >= beta
+              //  || entry.flag == UPPERBOUND && entry.score <= alpha
+        //)) return entry.score;
 
         if(depth == 0) return Evaluate();
         OrderMoves(ref moves, hash);

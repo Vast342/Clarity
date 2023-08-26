@@ -356,7 +356,7 @@ namespace Chess {
             var rng = new Random();
             for(int i = 0; i < 64; i++) {
                 for(int j = 0; j < 15; j++) {
-                    zobTable[i,j] = (ulong)rng.Next(0, (int)Math.Pow(2, 63)-1);
+                    zobTable[i,j] = (ulong)rng.Next(0, int.MaxValue);
                 }
             }
         }
@@ -477,7 +477,7 @@ namespace Chess {
             occupiedBitboard = 0;
             coloredBitboards[0] = 0;
             coloredBitboards[1] = 0;
-            for(int i = 0; i < 6; i++) {
+            for(int i = 0; i < 7; i++) {
                 coloredPieceBitboards[0,i] = 0;
                 coloredPieceBitboards[1,i] = 0;
             }
