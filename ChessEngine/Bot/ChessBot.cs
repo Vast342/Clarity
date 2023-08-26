@@ -11,21 +11,8 @@ public class ChessBot {
     public Move rootBestMove = Move.NullMove;
     public MoveTable moveTable = new();
     public static ulong mask = 0x7FFFFF;
-    public Transposition[] TT = new Transposition[mask + 1];
+    public TranspositionTable TT = new TranspositionTable();
     private const sbyte EXACT = 0, LOWERBOUND = -1, UPPERBOUND = 1, INVALID = -2;
-    public struct Transposition {
-        public Transposition(ulong zKey, Move m, int d, int s, sbyte f) {
-            zobristKey = zKey;
-            bestMove = m;
-            depth = d;
-            score = s;
-            flag = f;
-        }
-        public ulong zobristKey;
-        public Move bestMove;
-        public int depth = 0, score = 0;
-        public sbyte flag = INVALID;
-    }
     int nodes = 0;
     /// <summary>
     /// Makes the bot identify itself with the values from Initialize()
@@ -49,7 +36,7 @@ public class ChessBot {
     public void NewGame() {
         board = new("8/8/8/8/8/8/8/8 w - - 0 0");
         moves.Clear();
-        TT = new Transposition[mask + 1];
+        TT.Clear();
         moveTable.Clear();
         nodes = 0;
     }
@@ -146,14 +133,14 @@ public class ChessBot {
         Move bestMove = Move.NullMove;
         List<Move> moves = board.GetLegalMoves();
         int legalMoveCount = 0;
-        /* This is the code from TT Pruning, which did not do anything important for my code, so I am leaving it commented out until I can remake it and make it work.
-        Transposition entry = TT[hash & mask];
+        //This is the code from TT Pruning, which did not do anything important for my code, so I am leaving it commented out until I can remake it and make it work.
+        //Transposition entry = TT.ReadEntry(hash);
         //if(notRoot && entry.zobristKey == hash && entry.depth >= depth && (
           //  entry.flag == EXACT
             //    || entry.flag == LOWERBOUND && entry.score >= beta
               //  || entry.flag == UPPERBOUND && entry.score <= alpha
         //)) return entry.score;
-        */
+        
 
         if(depth == 0) return QSearch(alpha, beta);
         OrderMoves(ref moves, hash);
@@ -181,8 +168,8 @@ public class ChessBot {
             }
             return 0;
         }
-        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : LOWERBOUND;
-        TT[hash & mask] = new Transposition(hash, bestMove, depth, alpha, bound);
+        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : UPPERBOUND;
+        TT.WriteEntry(new Transposition(hash, bestMove, depth, alpha, bound), hash);
         return alpha;
     }
     /// <summary>
@@ -217,7 +204,7 @@ public class ChessBot {
             }
         }
         sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : LOWERBOUND;
-        TT[hash & mask] = new Transposition(hash, bestMove, 0, alpha, bound);
+        TT.WriteEntry(new Transposition(hash, bestMove, 0, alpha, bound), hash);
         return alpha;
     }
     /// <summary>
@@ -230,7 +217,7 @@ public class ChessBot {
             if(moves[i].IsCapture(board)) {
                 scores[i] = 10000 * pieceValues[Piece.GetType(board.squares[moves[i].endSquare])] - pieceValues[Piece.GetType(board.squares[moves[i].startSquare])];
             }
-            if(Move.Equals(moves[i], TT[zobristHash & mask].bestMove)) {
+            if(Move.Equals(moves[i], TT.ReadBestMove(zobristHash))) {
                 scores[i] += 1000000;
             }
         }
