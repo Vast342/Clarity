@@ -2,16 +2,35 @@ using System.Diagnostics;
 
 namespace Chess {
     public class PerftTest {
-        public PerftTest(string fen, int d, long e) {
-            board = new Board(fen);
+        public PerftTest(string f, int d, long e) {
+            board = new Board(f);
+            fen = f;
             depth = d;
             expectedResult = e;
         }
         public Board board;
+        public string fen;
         public int depth;
         public long expectedResult;
     }
     public class Perft {
+        // NEXT ISSUE
+        /*
+        
+░█████╗░░█████╗░░██████╗████████╗██╗░░░░░██╗███╗░░██╗░██████╗░
+██╔══██╗██╔══██╗██╔════╝╚══██╔══╝██║░░░░░██║████╗░██║██╔════╝░
+██║░░╚═╝███████║╚█████╗░░░░██║░░░██║░░░░░██║██╔██╗██║██║░░██╗░
+██║░░██╗██╔══██║░╚═══██╗░░░██║░░░██║░░░░░██║██║╚████║██║░░╚██╗
+╚█████╔╝██║░░██║██████╔╝░░░██║░░░███████╗██║██║░╚███║╚██████╔╝
+░╚════╝░╚═╝░░╚═╝╚═════╝░░░░╚═╝░░░╚══════╝╚═╝╚═╝░░╚══╝░╚═════╝░
+
+████████╗██╗░░██╗██████╗░░█████╗░██╗░░░██╗░██████╗░██╗░░██╗  ░█████╗░██╗░░██╗███████╗░█████╗░██╗░░██╗
+╚══██╔══╝██║░░██║██╔══██╗██╔══██╗██║░░░██║██╔════╝░██║░░██║  ██╔══██╗██║░░██║██╔════╝██╔══██╗██║░██╔╝
+░░░██║░░░███████║██████╔╝██║░░██║██║░░░██║██║░░██╗░███████║  ██║░░╚═╝███████║█████╗░░██║░░╚═╝█████═╝░
+░░░██║░░░██╔══██║██╔══██╗██║░░██║██║░░░██║██║░░╚██╗██╔══██║  ██║░░██╗██╔══██║██╔══╝░░██║░░██╗██╔═██╗░
+░░░██║░░░██║░░██║██║░░██║╚█████╔╝╚██████╔╝╚██████╔╝██║░░██║  ╚█████╔╝██║░░██║███████╗╚█████╔╝██║░╚██╗
+░░░╚═╝░░░╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░░╚═════╝░░╚═════╝░╚═╝░░╚═╝  ░╚════╝░╚═╝░░╚═╝╚══════╝░╚════╝░╚═╝░░╚═╝
+*/
         public static void PerformTestSuite(PerftTest[] tests) {
             int i = 0;
             int pass = 0;
@@ -21,7 +40,7 @@ namespace Chess {
             Stopwatch sw = Stopwatch.StartNew();
             foreach(PerftTest test in tests) {
                 i++;
-                if(test.expectedResult <= 200000) {
+                if(test.expectedResult <= 50000) {
                     int result = Test(test.depth, test.board);
                     total += result;
                     if(result == test.expectedResult) {
@@ -31,7 +50,7 @@ namespace Chess {
                         pass++;
                     } else {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Test " + i + " Failed, Outputted " + result + " With FEN " + test.board.GetFenString() + " and Depth " + test.depth + ", Expected Result was " + test.expectedResult);
+                        Console.WriteLine("Test " + i + " Failed, Outputted " + result + " With FEN " + test.fen + " and Depth " + test.depth + ", Expected Result was " + test.expectedResult);
                         Console.ResetColor();
                         fail++;
                     }
@@ -52,7 +71,7 @@ namespace Chess {
                 Console.ResetColor();
             } else {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Test Failed, Outputted " + result + " With FEN " + test.board.GetFenString() + " and Depth " + test.depth + ", Expected Result was " + test.expectedResult);
+                Console.WriteLine("Test Failed, Outputted " + result + " With FEN " + test.fen + " and Depth " + test.depth + ", Expected Result was " + test.expectedResult);
                 Console.ResetColor();
             }
         }

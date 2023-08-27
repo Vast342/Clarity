@@ -239,4 +239,4 @@ public class ChessBot {
         board.MakeMove(new Move(entry.Split(' ')[1], board));
         Console.WriteLine(board.GetFenString());
     }
-}
+}   

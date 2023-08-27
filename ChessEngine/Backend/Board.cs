@@ -422,7 +422,7 @@ namespace Chess {
                     // update the bitboards
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.King], 4, 6);
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.Rook], 7, 5);
-                    move.state.squares[2] = new(6, Piece.None);
+                    move.state.squares[2] = new(7, Piece.Rook | Piece.White);
                     move.state.squares[3] = new(5, Piece.None);
                 } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
                     // castling 
@@ -436,7 +436,7 @@ namespace Chess {
                     // update the bitboards
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.King], 4, 2);
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.Rook], 0, 3);
-                    move.state.squares[2] = new(2, Piece.None);
+                    move.state.squares[2] = new(0, Piece.Rook | Piece.White);
                     move.state.squares[3] = new(3, Piece.None);
                 } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
                     // castling 3
@@ -450,13 +450,13 @@ namespace Chess {
                     // update the bitboards
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.King], 60, 62);
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.Rook], 63, 61);
-                    move.state.squares[2] = new(62, Piece.None);
+                    move.state.squares[2] = new(63, Piece.Rook);
                     move.state.squares[3] = new(61, Piece.None);
                 } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
                     // castling 4
                     // switch 60 with 58 and 56 with 59
                     squares[58] = squares[60];
-                    squares[4] = 0;
+                    squares[60] = 0;
                     squares[59] = squares[56];
                     squares[56] = 0;
                     castlingRights[2] = false;
@@ -464,7 +464,7 @@ namespace Chess {
                     // update the bitboards
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.King], 60, 58);
                     BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.Rook], 56, 59);
-                    move.state.squares[2] = new(58, Piece.None);
+                    move.state.squares[2] = new(56, Piece.Rook);
                     move.state.squares[3] = new(59, Piece.None);
                 } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(squares[move.startSquare]) == Piece.Pawn) {
                     // en passant
