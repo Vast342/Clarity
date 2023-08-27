@@ -29,7 +29,7 @@ public class UCI {
                     Tests.OutlierTests();
                 }
             }
-           if(command == "perft") {
+            if(command == "perft") {
                 string[] segments = entry.Split(' ');
                 if(segments[2] == "startpos") {
                     int total = 0;
@@ -37,14 +37,14 @@ public class UCI {
                     if(segments.Length > 3) {
                         foreach(Move m in b.GetMoves()) {
                             if(b.MakeMove(m)) {
-                                int results = Tests.Perft(int.Parse(segments[1]) - 1, b);
+                                int results = Perft.Test(int.Parse(segments[1]) - 1, b);
                                 b.UndoMove(m);
                                 Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
                                 total += results;
                             }
                         }
                     } else {
-                        total = Tests.Perft(int.Parse(segments[1]), b);
+                        total = Perft.Test(int.Parse(segments[1]), b);
                     }
                     Console.WriteLine("");
                     Console.WriteLine("Total: " + total);
@@ -54,19 +54,24 @@ public class UCI {
                     if(segments.Length > 8) {
                         foreach(Move m in b.GetMoves()) {
                             if(b.MakeMove(m)) {
-                                int results = Tests.Perft(int.Parse(segments[1]) - 1, b);
+                                int results = Perft.Test(int.Parse(segments[1]) - 1, b);
                                 b.UndoMove(m);
                                 Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
                                 total += results;
                             }
                         } 
                     } else {
-                        total = Tests.Perft(int.Parse(segments[1]), b);
+                        total = Perft.Test(int.Parse(segments[1]), b);
                     }
                     Console.WriteLine("");
                     Console.WriteLine("Total: " + total);
                 }
             }
+            if(command == "perft-suite") {
+                    if(entry.Split(' ')[1] == "ethereal") {
+                        Perft.PerformTestSuite(Suite.etherealSuite);
+                    }
+                }
             if(command == "in-check") {
                 string[] segments = entry.Split(" ");
                 Board b = new(segments[1] + " " + segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6]);

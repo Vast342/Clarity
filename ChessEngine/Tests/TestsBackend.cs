@@ -288,24 +288,4 @@ public class Tests {
         Console.WriteLine(BQCBoard.GetFenString());
 
     }
-    /// <summary>
-    /// Performs the perft tests at a certain depth
-    /// </summary>
-    /// <param name="depth">The depth in question</param>
-    /// <param name="board">The board that it gets done on</param>
-    /// <returns>The total legal moves to that </returns>
-    public static int Perft(int depth, Board board) { 
-        Move[] moves = board.GetMoves();
-        int count = 0;
-        if(depth == 0) {
-            return 1;
-        }
-        foreach(Move move in moves) {
-            if(board.MakeMove(move)) {
-                count += Perft(depth - 1, board);
-                board.UndoMove(move);
-            }
-        }
-        return count;
-    }
 }

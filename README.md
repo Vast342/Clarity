@@ -5,7 +5,7 @@ This project is my attempt at making a chess engine, the goal is to make it suit
 
 It is also my attempt to learn development in raw c# after using it with Unity for so long.
 
-Currently, I have a basic testing bot (negamax + ab pruning + mvv-lva ordering + material eval), some sketchy UCI support, and a few custom commands. 
+Currently, I have a basic testing bot (negamax + ab pruning + mvv-lva orderidng + material eval), some sketchy UCI support, and a few custom commands. 
 
 Those commands are:
 
@@ -18,3 +18,5 @@ perft [depth] [fen/startpos] [split/ ]: The most complicated one. It can perform
 in-check [fen]: outputs if the board state read from the fen string is in check or not.
 
 make-move [move]: Makes the move on the board, and outputs the resulting fen. move must be in long algebraic notation.
+
+perft-suite [suite]: Performs a suite of perft tests, and outputs specified results, followed by a total result. Currently, due to performance limitations, it will restrict the tests performed to being under 100000 total nodes. The only currently supported suite is known as ethereal, and is a series of tests from the bot Ethereal.
