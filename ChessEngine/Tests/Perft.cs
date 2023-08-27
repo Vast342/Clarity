@@ -20,6 +20,7 @@ namespace Chess {
             long total = 0;
             Stopwatch sw = Stopwatch.StartNew();
             foreach(PerftTest test in tests) {
+                i++;
                 if(test.expectedResult <= 200000) {
                     int result = Test(test.depth, test.board);
                     total += result;
@@ -34,7 +35,6 @@ namespace Chess {
                         Console.ResetColor();
                         fail++;
                     }
-                    i++;
                 } else {
                     Console.WriteLine("Test too large to perform as part of a suite");
                     skip++;
