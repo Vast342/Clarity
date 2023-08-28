@@ -31,3 +31,5 @@ ChessEngine/obj/Debug/net7.0/refint/ChessEngine.dll
 ChessEngine/obj/Debug/net7.0/staticwebassets/msbuild.build.ChessEngine.props
 ChessEngine/obj/Debug/net7.0/staticwebassets/msbuild.buildMultiTargeting.ChessEngine.props
 ChessEngine/obj/Debug/net7.0/staticwebassets/msbuild.buildTransitive.ChessEngine.props
+.vscode/launch.json
+ChessEngine.exe_20230826_153026.speedscope.json
