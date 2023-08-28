@@ -96,7 +96,7 @@ public class ChessBot {
         board.MakeMove(rootBestMove);
         Console.WriteLine("bestmove " + rootBestMove.ConvertToLongAlgebraic());
     }
-    public int[] pieceValues = {0, 100, 310, 330, 500, 1000, 100000};
+    public int[] pieceValues = {100, 310, 330, 500, 1000, 100000, 0};
     public int[] colorMultipliers = {-1, 1};
     /// <summary>
     /// A static evaluation of the position, currently only using material
@@ -104,13 +104,13 @@ public class ChessBot {
     /// <returns>The number from the evaluation</returns>
     public int Evaluate() {
         int sum = 0;
-        for(byte p = 1; p < 7; p++) {
+        for(byte p = Piece.Pawn; p <= Piece.King; p++) {
             for(int i = 0; i < 64; i++) {
                 if(BitboardOperations.AtLocation(board.GetColoredPieceBitboard(0, p), i)) {
-                    sum -= Tables.tables[p-1][i];
+                    sum -= Tables.tables[p][i];
                 }
                 if(BitboardOperations.AtLocation(board.GetColoredPieceBitboard(1, p), i)) {
-                    sum += Tables.tables[p-1][i ^ 56];
+                    sum += Tables.tables[p][i ^ 56];
                 }
             }
             sum += BitOperations.PopCount(board.GetColoredPieceBitboard(1, p)) * pieceValues[p];

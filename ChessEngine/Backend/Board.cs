@@ -241,21 +241,23 @@ namespace Chess {
             Move[] moves = new Move[218];
             int totalMoves = 0;
             // castling
-            if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(5) && PieceAtIndex(7) == (Piece.Rook | Piece.White)) {
-                moves[totalMoves] = new Move(4, 6, Piece.None, state);
-                totalMoves++;
-            }
-            if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(3) && PieceAtIndex(0) == (Piece.Rook | Piece.White)) {
-                moves[totalMoves] = new Move(4, 2, Piece.None, state);
-                totalMoves++;
-            }
-            if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(61) && PieceAtIndex(63) == Piece.Rook) {
-                moves[totalMoves] = new Move(60, 62, Piece.None, state);
-                totalMoves++;
-            }
-            if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(59) && PieceAtIndex(56) == Piece.Rook) {
-                moves[totalMoves] = new Move(60, 58, Piece.None, state);
-                totalMoves++;
+            if(!IsInCheck()) {
+                if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(5) && PieceAtIndex(7) == (Piece.Rook | Piece.White)) {
+                    moves[totalMoves] = new Move(4, 6, Piece.None, state);
+                    totalMoves++;
+                }
+                if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(3) && PieceAtIndex(0) == (Piece.Rook | Piece.White)) {
+                    moves[totalMoves] = new Move(4, 2, Piece.None, state);
+                    totalMoves++;
+                }
+                if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(61) && PieceAtIndex(63) == Piece.Rook) {
+                    moves[totalMoves] = new Move(60, 62, Piece.None, state);
+                    totalMoves++;
+                }
+                if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(59) && PieceAtIndex(56) == Piece.Rook) {
+                    moves[totalMoves] = new Move(60, 58, Piece.None, state);
+                    totalMoves++;   
+                }
             }
             ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
@@ -296,13 +298,13 @@ namespace Chess {
                                 // promotions
                                 if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(PieceAtIndex(i)) == Piece.None) {
                                     for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves[totalMoves] = new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                                        moves[totalMoves] = new Move(startSquare, i, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                                         totalMoves++;
                                     }
                                 }
                                 if(BitboardOperations.AtLocation(pawnCaptures, i) && Piece.GetColor(PieceAtIndex(i)) != colorToMove && Piece.GetType(PieceAtIndex(i)) != Piece.None) {
                                     for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves[totalMoves] = new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                                        moves[totalMoves] = new Move(startSquare, i, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                                         totalMoves++;
                                     }
                                 }
@@ -425,6 +427,7 @@ namespace Chess {
                     // update the bitboards
                     MovePiece(4, PieceAtIndex(4), 6, Piece.None);
                     MovePiece(7, PieceAtIndex(7), 5, Piece.None);
+                    enPassantIndex = 64;
                 } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
                     // castling 
                     // switch 4 with 2 and 0 with 3
@@ -433,6 +436,7 @@ namespace Chess {
                     // update the bitboards
                     MovePiece(4, PieceAtIndex(4), 2, Piece.None);
                     MovePiece(0, PieceAtIndex(0), 3, Piece.None);
+                    enPassantIndex = 64;
                 } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
                     // castling 3
                     // switch 60 with 62 and 63 with 61
@@ -441,6 +445,7 @@ namespace Chess {
                     // update the bitboards
                     MovePiece(60, PieceAtIndex(60), 62, Piece.None);
                     MovePiece(63, PieceAtIndex(63), 61, Piece.None);
+                    enPassantIndex = 64;
                 } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
                     // castling 4
                     // switch 60 with 58 and 56 with 59
@@ -449,6 +454,7 @@ namespace Chess {
                     // update the bitboards
                     MovePiece(60, PieceAtIndex(60), 58, Piece.None);
                     MovePiece(56, PieceAtIndex(56), 59, Piece.None);
+                    enPassantIndex = 64;
                 } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(PieceAtIndex(move.startSquare)) == Piece.Pawn) {
                     // en passant
                     // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0

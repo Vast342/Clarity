@@ -32,6 +32,20 @@ namespace Chess {
             name += startRank + 1;
             name += (char)(endFile + 'a');
             name += endRank + 1;
+            switch(Piece.GetType((byte)promotionType)) {
+                    case Piece.Knight:
+                        name += 'n';
+                        break;
+                    case Piece.Bishop:
+                        name += 'b';
+                        break;
+                    case Piece.Rook:
+                        name += 'r';
+                        break;
+                    case Piece.Queen:
+                        name += 'q';
+                        break;
+                }
             return name;
         }
         public Move(string longAlgebraicForm, Board board) {
