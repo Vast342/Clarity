@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Chess {
     public static class BitboardOperations {
         /// <summary>
@@ -9,15 +11,10 @@ namespace Chess {
         public static bool AtLocation(ulong bitboard, int index) {
             return (bitboard & ((ulong)1 << index)) != 0;
         }
-        public static void AddPiece(ref ulong bitboard, int index) {
-            bitboard ^= 1UL << index;
-        }
-        public static void RemovePiece(ref ulong bitboard, int index) {
-            bitboard ^= 1UL << index;
-        }
-        public static void MovePiece(ref ulong bitboard, int index1, int index2) {
-            RemovePiece(ref bitboard, index1);
-            AddPiece(ref bitboard, index2);
+        public static int PopLSB(ref ulong bitboard) {
+            int lsb = BitOperations.TrailingZeroCount(bitboard);
+            bitboard ^= 1UL << lsb;
+            return lsb;
         }
     }
 }

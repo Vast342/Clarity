@@ -104,17 +104,17 @@ public class ChessBot {
     /// <returns>The number from the evaluation</returns>
     public int Evaluate() {
         int sum = 0;
-        for(int p = 1; p < 7; p++) {
+        for(byte p = 1; p < 7; p++) {
             for(int i = 0; i < 64; i++) {
-                if(BitboardOperations.AtLocation(board.coloredPieceBitboards[0, p], i)) {
+                if(BitboardOperations.AtLocation(board.GetColoredPieceBitboard(0, p), i)) {
                     sum -= Tables.tables[p-1][i];
                 }
-                if(BitboardOperations.AtLocation(board.coloredPieceBitboards[1, p], i)) {
+                if(BitboardOperations.AtLocation(board.GetColoredPieceBitboard(1, p), i)) {
                     sum += Tables.tables[p-1][i ^ 56];
                 }
             }
-            sum += BitOperations.PopCount(board.coloredPieceBitboards[1, p]) * pieceValues[p];
-            sum -= BitOperations.PopCount(board.coloredPieceBitboards[0, p]) * pieceValues[p];
+            sum += BitOperations.PopCount(board.GetColoredPieceBitboard(1, p)) * pieceValues[p];
+            sum -= BitOperations.PopCount(board.GetColoredPieceBitboard(0, p)) * pieceValues[p];
         }
         return sum * colorMultipliers[board.colorToMove];
     }
@@ -127,27 +127,17 @@ public class ChessBot {
     /// <returns>The result of the search</returns>
     public int Negamax(int alpha, int beta, int depth, int ply) {
         if(sw.ElapsedMilliseconds > startTime / 30) return 0;
-        nodes++;
-        bool notRoot = ply > 0;
+        if(depth == 0) return QSearch(alpha, beta);
         ulong hash = board.CreateHash();
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
         Move[] moves = board.GetMoves();
         int legalMoveCount = 0;
-        //This is the code from TT Pruning, which did not do anything important for my code, so I am leaving it commented out until I can remake it and make it work.
-        //Transposition entry = TT.ReadEntry(hash);
-        //if(notRoot && entry.zobristKey == hash && entry.depth >= depth && (
-          //  entry.flag == EXACT
-            //    || entry.flag == LOWERBOUND && entry.score >= beta
-              //  || entry.flag == UPPERBOUND && entry.score <= alpha
-        //)) return entry.score;
-        
-
-        if(depth == 0) return QSearch(alpha, beta);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
            if(board.MakeMove(move)) { 
                 legalMoveCount++;
+                nodes++;
                 int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
                 if(sw.ElapsedMilliseconds > startTime / 30) return 0;
@@ -182,15 +172,16 @@ public class ChessBot {
     public int QSearch(int alpha, int beta) {
         if(sw.ElapsedMilliseconds > startTime / 30) return 0;
         Move bestMove = Move.NullMove;
-        Move[] moves = board.GetMovesQSearch();
         ulong hash = board.CreateHash();
         int standPat = Evaluate();
         if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
         int originalAlpha = alpha;
+        Move[] moves = board.GetMovesQSearch();
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
+                nodes++;
                 int score = -QSearch(-beta, -alpha);
                 board.UndoMove(move);
                 if(sw.ElapsedMilliseconds > startTime / 30) return 0;
@@ -216,7 +207,7 @@ public class ChessBot {
         int[] scores = new int[moves.Length];
         for(int i = 0; i < moves.Length; i++) {
             if(moves[i].IsCapture(board)) {
-                scores[i] = 10000 * pieceValues[Piece.GetType(board.squares[moves[i].endSquare])] - pieceValues[Piece.GetType(board.squares[moves[i].startSquare])];
+                scores[i] = 10000 * pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].endSquare))] - pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].startSquare))];
             }
             if(Move.Equals(moves[i], TT.ReadBestMove(zobristHash))) {
                 scores[i] += 1000000;

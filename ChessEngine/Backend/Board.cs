@@ -1,22 +1,18 @@
 namespace Chess {
     public class Board {
-        // board specific valus
-        public byte[] squares = new byte[64];
+        // board specific values
         public byte[] kingSquares = new byte[2];
         public int colorToMove = 1;
-        public ulong occupiedBitboard = 0;
-        public ulong emptyBitboard = 0;
         // bitboards of the entire color: 0 is black 1 is white
         public ulong[] coloredBitboards = new ulong[2];
         // bitboards of specific pieces of specific color, using the numbers above.
-        public ulong[,] coloredPieceBitboards = new ulong[2,7];
+        public ulong[] pieceBitboards = new ulong[6];
         // the index of the en-passantable square, from 0-63, and if it's 64 no en passant is legal.
         public int enPassantIndex = 64;
         // white kingside, white queenside, black kingside, black kingside
         public bool[] castlingRights = new bool[4];
         public int plyCount = 0;
         public int fiftyMoveCounter;
-        // random values needed later
         private readonly static ulong[,] zobTable = new ulong[64,15];
         public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
         /// <summary>
@@ -24,19 +20,12 @@ namespace Chess {
         /// </summary>
         /// <param name="state">the boardstate in question</param>
         public void ReadBoardState(BoardState state) {
-            foreach(SquareState s in state.squares) {
-                if(s.initialized == true) {
-                    squares[s.index] = s.value;
-                }
-            }
             Array.Copy(state.kingSquares, kingSquares, 2);
             enPassantIndex = state.enPassantIndex;
             Array.Copy(state.castlingRights, castlingRights, 4);
             fiftyMoveCounter = state.fiftyMoveCounter;
-            occupiedBitboard = state.occupiedBitboard;
-            emptyBitboard = state.emptyBitboard;
             Array.Copy(state.coloredBitboards, coloredBitboards, 2);
-            Array.Copy(state.coloredPieceBitboards, coloredPieceBitboards, 14);
+            Array.Copy(state.pieceBitboards, pieceBitboards, 6);
         }
         /// <summary>
         /// Establishes a new board instance, with the position and information contained within a FEN string.
@@ -44,7 +33,6 @@ namespace Chess {
         /// <param name="fen">The fen string in question.</param>
         public Board(string fen) {
             LoadFenToPosition(fen);
-            GenerateBitboards();
             InitializeZobrist();
         }
         /// <summary>
@@ -52,6 +40,10 @@ namespace Chess {
         /// </summary>
         /// <param name="fen">The FEN string in question.</param>
         public void LoadFenToPosition(string fen) {
+            byte[] squares = new byte[64];
+            for(int j = 0; j < 64; j++) {
+                squares[j] = Piece.None;
+            }
             string[] parts = fen.Split(" ");
             string[] ranks = parts[0].Split('/');
             Array.Reverse(ranks);
@@ -74,7 +66,7 @@ namespace Chess {
                         squares[i] = Piece.Bishop | Piece.Black;
                         i++;
                     } else if(c == 'B') {
-                        squares[i] = Piece.Bishop | Piece.White;
+                        squares[i]= Piece.Bishop | Piece.White;
                         i++;
                     } else if(c == 'r') {
                         squares[i] = Piece.Rook | Piece.Black;
@@ -126,11 +118,13 @@ namespace Chess {
             // counters 
             fiftyMoveCounter = int.Parse(parts[4]);
             plyCount = int.Parse(parts[5]) * 2 - colorToMove;
+            GenerateBitboards(squares);
         }
         /// <summary>
         /// Outputs the fen string of the current position
         /// </summary>
         /// <returns>the fen string</returns>
+        // NEEDS TO BE REWRITTEN TO USE BITBOARDS 
         public string GetFenString() {
             string fen = "";
 
@@ -139,8 +133,8 @@ namespace Chess {
                 int numEmptyFiles = 0;
                 for (int file = 0; file < 8; file++)
                 {
-                    int piece = squares[8*rank+file];
-                    if (piece != 0)
+                    int piece = PieceAtIndex(8*rank+file);
+                    if (piece != Piece.None)
                     {
                         if (numEmptyFiles != 0)
                         {
@@ -243,28 +237,31 @@ namespace Chess {
         /// <returns>A List of the legal moves</returns>
         public Move[] GetMoves() {
             BoardState state = new(this);
+            ulong occupiedBitboard = GetOccupiedBitboard();
             Move[] moves = new Move[218];
             int totalMoves = 0;
             // castling
-            if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && colorToMove == 1) {
-                moves[totalMoves] = new Move(4, 6, 0, state);
+            if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(5) && PieceAtIndex(7) == (Piece.Rook | Piece.White)) {
+                moves[totalMoves] = new Move(4, 6, Piece.None, state);
                 totalMoves++;
             }
-            if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && colorToMove == 1) {
-                moves[totalMoves] = new Move(4, 2, 0, state);
+            if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(3) && PieceAtIndex(0) == (Piece.Rook | Piece.White)) {
+                moves[totalMoves] = new Move(4, 2, Piece.None, state);
                 totalMoves++;
             }
-            if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && colorToMove == 0) {
-                moves[totalMoves] = new Move(60, 62, 0, state);
+            if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(61) && PieceAtIndex(63) == Piece.Rook) {
+                moves[totalMoves] = new Move(60, 62, Piece.None, state);
                 totalMoves++;
             }
-            if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && colorToMove == 0) {
-                moves[totalMoves] = new Move(60, 58, 0, state);
+            if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(59) && PieceAtIndex(56) == Piece.Rook) {
+                moves[totalMoves] = new Move(60, 58, Piece.None, state);
                 totalMoves++;
             }
+            ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
-            for(int startSquare = 0; startSquare < 64; startSquare++) {
-                byte currentPiece = squares[startSquare];
+            while(mask != 0) {
+                int startSquare = BitboardOperations.PopLSB(ref mask);
+                byte currentPiece = PieceAtIndex(startSquare);
                 // checks if it's the right color
                 if(Piece.GetColor(currentPiece) == colorToMove) {
                     // a check if it's a sliding piece
@@ -279,7 +276,7 @@ namespace Chess {
                         total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
                         total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        pawnPushes |= MaskGen.GetPawnPushes(startSquare, colorToMove, emptyBitboard);
+                        pawnPushes |= MaskGen.GetPawnPushes(startSquare, colorToMove, ~occupiedBitboard);
                         pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
                     } else if(Piece.GetType(currentPiece) == Piece.Knight) {
                         total |= MaskGen.GetKnightAttacks(startSquare);
@@ -288,8 +285,8 @@ namespace Chess {
                     }
                     if(total != 0) {
                         for(int i = 0; i < 64; i++) {
-                            if(BitboardOperations.AtLocation(total, i) && (Piece.GetColor(squares[i]) != colorToMove || Piece.GetType(squares[i]) == Piece.None)) {
-                                moves[totalMoves] = new Move(startSquare, i, 0, new(this));
+                            if(BitboardOperations.AtLocation(total, i) && (Piece.GetColor(PieceAtIndex(i)) != colorToMove || Piece.GetType(PieceAtIndex(i)) == Piece.None)) {
+                                moves[totalMoves] = new Move(startSquare, i, Piece.None, new(this));
                                 totalMoves++;
                             }
                         }
@@ -297,19 +294,25 @@ namespace Chess {
                         for(int i = 0; i < 64; i++) {
                             if(i >> 3 == 7 * colorToMove) {
                                 // promotions
-                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
+                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(PieceAtIndex(i)) == Piece.None) {
                                     for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves[totalMoves] = new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type, state);
+                                        moves[totalMoves] = new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                                        totalMoves++;
+                                    }
+                                }
+                                if(BitboardOperations.AtLocation(pawnCaptures, i) && Piece.GetColor(PieceAtIndex(i)) != colorToMove && Piece.GetType(PieceAtIndex(i)) != Piece.None) {
+                                    for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                        moves[totalMoves] = new Move(startSquare, startSquare + directionalOffsets[1 - colorToMove], type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                                         totalMoves++;
                                     }
                                 }
                             } else {
-                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(squares[i]) == Piece.None) {
-                                    moves[totalMoves] = new Move(startSquare, i, 0, new(this));
+                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(PieceAtIndex(i)) == Piece.None) {
+                                    moves[totalMoves] = new Move(startSquare, i, Piece.None, new(this));
                                     totalMoves++;
                                 }
-                                if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || i == enPassantIndex)) {
-                                    moves[totalMoves] = new Move(startSquare, i, 0, new(this));
+                                if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(PieceAtIndex(i)) != colorToMove && Piece.GetType(PieceAtIndex(i)) != Piece.None) || i == enPassantIndex)) {
+                                    moves[totalMoves] = new Move(startSquare, i, Piece.None, new(this));
                                     totalMoves++;
                                 }
                             }
@@ -326,11 +329,14 @@ namespace Chess {
         /// <returns>A List of capture moves</returns>
         public Move[] GetMovesQSearch() {
             BoardState state = new(this);
+            ulong occupiedBitboard = GetOccupiedBitboard();
             Move[] moves = new Move[218];
             int totalMoves = 0;
+            ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
-            for(int startSquare = 0; startSquare < 64; startSquare++) {
-                byte currentPiece = squares[startSquare];
+            while(mask != 0) {
+                int startSquare = BitboardOperations.PopLSB(ref mask);
+                byte currentPiece = PieceAtIndex(startSquare);
                 // checks if it's the right color
                 if(Piece.GetColor(currentPiece) == colorToMove) {
                     // a check if it's a sliding piece
@@ -352,15 +358,16 @@ namespace Chess {
                     }
                     if(total != 0) {
                         for(int i = 0; i < 64; i++) {
-                            if(BitboardOperations.AtLocation(total, i) && Piece.GetColor(squares[i]) != colorToMove) {
-                                moves[totalMoves] = new Move(startSquare, i, 0, state);
+                            if(BitboardOperations.AtLocation(total, i) && Piece.GetColor(PieceAtIndex(i)) != colorToMove) {
+                                moves[totalMoves] = new Move(startSquare, i, Piece.None, state);
                                 totalMoves++;
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                         for(int i = 0; i < 64; i++) {
-                            if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(squares[i]) != colorToMove && Piece.GetType(squares[i]) != Piece.None) || i == enPassantIndex)) {
-                                moves[totalMoves] = new Move(startSquare, i, 0, state);
+                            if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(PieceAtIndex(i)) != colorToMove && Piece.GetType(PieceAtIndex(i)) != Piece.None) || i == enPassantIndex)) {
+                                moves[totalMoves] = new Move(startSquare, i, Piece.None, state);
+                                totalMoves++;
                             }
                         }
                     }
@@ -390,7 +397,9 @@ namespace Chess {
         public ulong CreateHash() {
             ulong hash = 0;
             for(int i = 0; i < 64; i++) {
-                hash ^= zobTable[i, squares[i]];
+                if(PieceAtIndex(i) != 0) {
+                    hash ^= zobTable[i, PieceAtIndex(i)];
+                }
             }
             return hash;
         }
@@ -404,113 +413,90 @@ namespace Chess {
                     fiftyMoveCounter++;
                 }
                 // fifty move counter
-                if(squares[move.endSquare] != 0 || (squares[move.startSquare] & 7) == Piece.Pawn) {
+                if(PieceAtIndex(move.endSquare) != 0 || (PieceAtIndex(move.startSquare) & 7) == Piece.Pawn) {
                     fiftyMoveCounter = 0;
                 }
-                move.state.squares[0] = new(move.startSquare, squares[move.startSquare]);
-                move.state.squares[1] = new(move.endSquare, squares[move.endSquare]);
                 // for each start one set the start square to 0
                 if(castlingRights[0] && move.startSquare == 4 && move.endSquare == 6) {
                     // castling 1
                     // switch 4 with 6 and 7 with 5
-                    squares[6] = squares[4];
-                    squares[4] = 0;
-                    squares[5] = squares[7];
-                    squares[7] = 0;
                     castlingRights[0] = false;
                     castlingRights[1] = false;
                     // update the bitboards
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.King], 4, 6);
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.Rook], 7, 5);
-                    move.state.squares[2] = new(7, Piece.Rook | Piece.White);
-                    move.state.squares[3] = new(5, Piece.None);
+                    MovePiece(4, PieceAtIndex(4), 6, Piece.None);
+                    MovePiece(7, PieceAtIndex(7), 5, Piece.None);
                 } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
                     // castling 
                     // switch 4 with 2 and 0 with 3
-                    squares[2] = squares[4];
-                    squares[4] = 0;
-                    squares[3] = squares[0];
-                    squares[0] = 0;
                     castlingRights[0] = false;
                     castlingRights[1] = false;
                     // update the bitboards
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.King], 4, 2);
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[1, Piece.Rook], 0, 3);
-                    move.state.squares[2] = new(0, Piece.Rook | Piece.White);
-                    move.state.squares[3] = new(3, Piece.None);
+                    MovePiece(4, PieceAtIndex(4), 2, Piece.None);
+                    MovePiece(0, PieceAtIndex(0), 3, Piece.None);
                 } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
                     // castling 3
                     // switch 60 with 62 and 63 with 61
-                    squares[62] = squares[60];
-                    squares[60] = 0;
-                    squares[61] = squares[63];
-                    squares[63] = 0;
                     castlingRights[2] = false;
                     castlingRights[3] = false;
                     // update the bitboards
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.King], 60, 62);
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.Rook], 63, 61);
-                    move.state.squares[2] = new(63, Piece.Rook);
-                    move.state.squares[3] = new(61, Piece.None);
+                    MovePiece(60, PieceAtIndex(60), 62, Piece.None);
+                    MovePiece(63, PieceAtIndex(63), 61, Piece.None);
                 } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
                     // castling 4
                     // switch 60 with 58 and 56 with 59
-                    squares[58] = squares[60];
-                    squares[60] = 0;
-                    squares[59] = squares[56];
-                    squares[56] = 0;
                     castlingRights[2] = false;
                     castlingRights[3] = false;
                     // update the bitboards
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.King], 60, 58);
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[0, Piece.Rook], 56, 59);
-                    move.state.squares[2] = new(56, Piece.Rook);
-                    move.state.squares[3] = new(59, Piece.None);
-                } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(squares[move.startSquare]) == Piece.Pawn) {
+                    MovePiece(60, PieceAtIndex(60), 58, Piece.None);
+                    MovePiece(56, PieceAtIndex(56), 59, Piece.None);
+                } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(PieceAtIndex(move.startSquare)) == Piece.Pawn) {
                     // en passant
                     // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
-                    squares[move.endSquare] = squares[move.startSquare];
-                    squares[move.startSquare] = 0;
-                    squares[move.endSquare + (colorToMove == 1 ? -8 : 8)] = 0;
                     enPassantIndex = 64;
                     // update the bitboards
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[colorToMove, Piece.Pawn], move.startSquare, move.endSquare);
-                    BitboardOperations.RemovePiece(ref coloredPieceBitboards[1 - colorToMove, Piece.Pawn], move.endSquare + (colorToMove == 1 ? -8 : 8));
-                    move.state.squares[2] = new(move.endSquare + (colorToMove == 1 ? -8 : 8), Piece.Pawn);
+                    MovePiece(move.startSquare, PieceAtIndex(move.startSquare), move.endSquare, PieceAtIndex(move.endSquare));
+                    RemovePiece(move.endSquare + (colorToMove == 1 ? -8 : 8), (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.Black : Piece.White)));
                 } else {
                     // move  normally
                     // switch first square with second
-                    if((squares[move.startSquare] & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
+                    if((PieceAtIndex(move.startSquare) & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
                         // its a double move, make the first square the en passant index
                         enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
                     } else {
                         enPassantIndex = 64;
                     }
-                    int captureType = Piece.GetType(squares[move.endSquare]);
-                    squares[move.endSquare] = squares[move.startSquare];
-                    squares[move.startSquare] = 0;
                     // update the bitboards
-                    BitboardOperations.RemovePiece(ref coloredPieceBitboards[1 - colorToMove, captureType], move.endSquare);
-                    BitboardOperations.MovePiece(ref coloredPieceBitboards[colorToMove, Piece.GetType(squares[move.endSquare])], move.startSquare, move.endSquare);
+                    MovePiece(move.startSquare, PieceAtIndex(move.startSquare), move.endSquare, PieceAtIndex(move.endSquare));
                 }
                 // promotions
-                if(move.promotionType != 0) {
-                    squares[move.endSquare] = (byte)(move.promotionType + colorToMove * 8);
+                if(move.promotionType != Piece.None && move.promotionType != 0) {
                     // update the bitboards
-                    BitboardOperations.RemovePiece(ref coloredPieceBitboards[colorToMove, Piece.Pawn], move.endSquare);
-                    BitboardOperations.AddPiece(ref coloredPieceBitboards[colorToMove, move.promotionType], move.endSquare);
+                    RemovePiece(move.endSquare, (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
+                    AddPiece(move.endSquare, (byte)move.promotionType);
                 }
                 // king square updates
-                if(Piece.GetType(squares[move.endSquare]) == Piece.King) {
+                if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.King) {
                     kingSquares[colorToMove] = (byte)move.endSquare;
                     castlingRights[colorToMove == 1 ? 0 : 2] = false;
                     castlingRights[colorToMove == 1 ? 1 : 3] = false;
                 }
+                if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.Rook) {
+                    switch (move.startSquare) {
+                        case 0:
+                            castlingRights[1] = false;
+                            break;
+                        case 7:
+                            castlingRights[0] = false;
+                            break;
+                        case 56:
+                            castlingRights[3] = false;
+                            break;
+                        case 63:
+                            castlingRights[2] = false;
+                            break;
+                    }
+                }
                 plyCount++;
-                coloredBitboards[0] = coloredPieceBitboards[0,1] | coloredPieceBitboards[0,2] | coloredPieceBitboards[0,3] | coloredPieceBitboards[0,4] | coloredPieceBitboards[0,5] | coloredPieceBitboards[0,6];
-                coloredBitboards[1] = coloredPieceBitboards[1,1] | coloredPieceBitboards[1,2] | coloredPieceBitboards[1,3] | coloredPieceBitboards[1,4] | coloredPieceBitboards[1,5] | coloredPieceBitboards[1,6];
-                occupiedBitboard = coloredBitboards[0] | coloredBitboards[1];
-                emptyBitboard = ~occupiedBitboard;
                 if(IsInCheck()) {
                     UndoMove(move);
                     colorToMove = 1 - colorToMove;
@@ -534,19 +520,15 @@ namespace Chess {
         /// <summary>
         /// Generates the bitboards
         /// </summary>
-        public void GenerateBitboards() {
+        public void GenerateBitboards(byte[] squares) {
             for(int index = 0; index < 64; index++) {
-                if(squares[index] != 0) {
-                    coloredPieceBitboards[squares[index] >> 3, squares[index] & 7] |= (ulong)1 << index; 
+                if(squares[index] != Piece.None) {
+                    AddPiece(index, squares[index]);
                 }
-                if(squares[index] == 6 || squares[index] == 14) {
-                    kingSquares[squares[index] == 14 ? 1 : 0] = (byte)index;
+                if(squares[index] == Piece.King || squares[index] == (Piece.King | Piece.White)) {
+                    kingSquares[squares[index] == (Piece.King | Piece.White) ? 1 : 0] = (byte)index;
                 } 
             }
-            coloredBitboards[0] = coloredPieceBitboards[0,1] | coloredPieceBitboards[0,2] | coloredPieceBitboards[0,3] | coloredPieceBitboards[0,4] | coloredPieceBitboards[0,5] | coloredPieceBitboards[0,6];
-            coloredBitboards[1] = coloredPieceBitboards[1,1] | coloredPieceBitboards[1,2] | coloredPieceBitboards[1,3] | coloredPieceBitboards[1,4] | coloredPieceBitboards[1,5] | coloredPieceBitboards[1,6];
-            occupiedBitboard = coloredBitboards[0] | coloredBitboards[1];
-            emptyBitboard = ~occupiedBitboard;
         }
         /// <summary>
         /// Checks if the given square is under attack, using the various masks.
@@ -554,23 +536,23 @@ namespace Chess {
         /// <param name="square">The index of the square</param>
         /// <returns>Is the square under attack?</returns>
         public bool SquareIsAttackedByOpponent(int square) {
-            ulong rook = MaskGen.GetRookAttacks(square, occupiedBitboard);
-            ulong bishop = MaskGen.GetBishopAttacks(square, occupiedBitboard);
-            ulong totalMask = rook & coloredPieceBitboards[1 - colorToMove, Piece.Rook];
+            ulong rook = MaskGen.GetRookAttacks(square, GetOccupiedBitboard());
+            ulong bishop = MaskGen.GetBishopAttacks(square, GetOccupiedBitboard());
+            ulong totalMask = rook & GetColoredPieceBitboard(1 - colorToMove, Piece.Rook);
             if(totalMask == 0) {
-                totalMask |= bishop & coloredPieceBitboards[1 - colorToMove, Piece.Bishop];
+                totalMask |= bishop & GetColoredPieceBitboard(1 - colorToMove, Piece.Bishop);
             }
             if(totalMask == 0) {
-                totalMask |= bishop & coloredPieceBitboards[1 - colorToMove, Piece.Queen];
+                totalMask |= bishop & GetColoredPieceBitboard(1 - colorToMove, Piece.Queen);
             }
             if(totalMask == 0) {
-                totalMask |= rook & coloredPieceBitboards[1 - colorToMove, Piece.Queen];
+                totalMask |= rook & GetColoredPieceBitboard(1 - colorToMove, Piece.Queen);
             }
             if(totalMask == 0) {
-                totalMask |= MaskGen.GetKnightAttacks(square) & coloredPieceBitboards[1 - colorToMove, Piece.Knight];
+                totalMask |= MaskGen.GetKnightAttacks(square) & GetColoredPieceBitboard(1 - colorToMove, Piece.Knight);
             }
             if(totalMask == 0) {
-                totalMask |= MaskGen.GetPawnCaptures(square, colorToMove) & coloredPieceBitboards[1 - colorToMove, Piece.Pawn];
+                totalMask |= MaskGen.GetPawnCaptures(square, colorToMove) & GetColoredPieceBitboard(1 - colorToMove, Piece.Pawn);
             }
             return totalMask != 0;
         }
@@ -580,6 +562,38 @@ namespace Chess {
         /// <returns>Are you in check?</returns>
         public bool IsInCheck() {
             return SquareIsAttackedByOpponent(kingSquares[colorToMove]);
+        }
+        public byte PieceAtIndex(int index) {
+            for(byte i = 0; i < 6; i++) {
+                if((GetColoredPieceBitboard(0, i) & 1UL << index) != 0) {
+                    return (byte)(i | Piece.Black);
+                }
+                if((GetColoredPieceBitboard(1, i) & 1UL << index) != 0) {
+                    return (byte)(i | Piece.White);
+                }
+            }
+            return Piece.None;
+        }
+        public void AddPiece(int index, byte type) {
+            coloredBitboards[Piece.GetColor(type)] ^= 1UL << index; 
+            pieceBitboards[Piece.GetType(type)] ^=  1UL << index;
+        }
+        public void RemovePiece(int index, byte type) {
+            coloredBitboards[Piece.GetColor(type)] ^= 1UL << index; 
+            pieceBitboards[Piece.GetType(type)] ^=  1UL << index;
+        }
+        public void MovePiece(int index1, byte type1, int index2, byte type2) {
+            RemovePiece(index1, type1);
+            if(Piece.GetType(type2) < Piece.None) {
+                RemovePiece(index2, type2);
+            }
+            AddPiece(index2, type1);
+        }
+        public ulong GetColoredPieceBitboard(int color, byte piece) {
+            return pieceBitboards[piece] & coloredBitboards[color];
+        }
+        public ulong GetOccupiedBitboard() {
+            return coloredBitboards[0] | coloredBitboards[1];
         }
     }
 } 

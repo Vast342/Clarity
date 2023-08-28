@@ -40,7 +40,7 @@ namespace Chess {
             Stopwatch sw = Stopwatch.StartNew();
             foreach(PerftTest test in tests) {
                 i++;
-                if(test.expectedResult <= 50000) {
+                if(test.expectedResult <= 2000000) {
                     int result = Test(test.depth, test.board);
                     total += result;
                     if(result == test.expectedResult) {
@@ -76,11 +76,9 @@ namespace Chess {
             }
         }
         public static int Test(int depth, Board board) { 
+            if(depth == 0) return 1;
             Move[] moves = board.GetMoves();
             int count = 0;
-            if(depth == 0) {
-                return 1;
-            }
             foreach(Move move in moves) {
                 if(board.MakeMove(move)) {
                     count += Test(depth - 1, board);

@@ -1,0 +1,759 @@
+perft-suite ethereal
+Test 1 Passed
+Test 2 Passed
+Test 3 Passed
+Test 4 Passed
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 7 Passed
+Test 8 Passed
+Test 9 Failed, Outputted 97868 With FEN r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 and Depth 3, Expected Result was 97862
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 12 Passed
+Test 13 Passed
+Test 14 Passed
+Test 15 Passed
+Test 16 Passed
+Test 17 Failed, Outputted 765033 With FEN 4k3/8/8/8/8/8/8/4K2R w K - 0 1 and Depth 6, Expected Result was 764643
+Test 18 Passed
+Test 19 Passed
+Test 20 Passed
+Test 21 Passed
+Test 22 Passed
+Test 23 Failed, Outputted 847041 With FEN 4k3/8/8/8/8/8/8/R3K3 w Q - 0 1 and Depth 6, Expected Result was 846648
+Test 24 Passed
+Test 25 Passed
+Test 26 Passed
+Test 27 Passed
+Test 28 Passed
+Test 29 Failed, Outputted 899831 With FEN 4k2r/8/8/8/8/8/8/4K3 w k - 0 1 and Depth 6, Expected Result was 899442
+Test 30 Passed
+Test 31 Passed
+Test 32 Passed
+Test 33 Passed
+Test 34 Passed
+Test 35 Failed, Outputted 1001916 With FEN r3k3/8/8/8/8/8/8/4K3 w q - 0 1 and Depth 6, Expected Result was 1001523
+Test 36 Passed
+Test 37 Passed
+Test 38 Passed
+Test 39 Passed
+Test 40 Passed
+Test too large to perform as part of a suite
+Test 42 Passed
+Test 43 Passed
+Test 44 Passed
+Test 45 Passed
+Test 46 Passed
+Test too large to perform as part of a suite
+Test 48 Failed, Outputted 15 With FEN 8/8/8/8/8/8/6k1/4K2R w K - 0 1 and Depth 1, Expected Result was 12
+Test 49 Failed, Outputted 68 With FEN 8/8/8/8/8/8/6k1/4K2R w K - 0 1 and Depth 2, Expected Result was 38
+Test 50 Failed, Outputted 1100 With FEN 8/8/8/8/8/8/6k1/4K2R w K - 0 1 and Depth 3, Expected Result was 564
+Test 51 Failed, Outputted 5625 With FEN 8/8/8/8/8/8/6k1/4K2R w K - 0 1 and Depth 4, Expected Result was 2219
+Test 52 Failed, Outputted 100685 With FEN 8/8/8/8/8/8/6k1/4K2R w K - 0 1 and Depth 5, Expected Result was 37735
+Test 53 Failed, Outputted 568243 With FEN 8/8/8/8/8/8/6k1/4K2R w K - 0 1 and Depth 6, Expected Result was 185867
+Test 54 Failed, Outputted 16 With FEN 8/8/8/8/8/8/1k6/R3K3 w Q - 0 1 and Depth 1, Expected Result was 15
+Test 55 Failed, Outputted 75 With FEN 8/8/8/8/8/8/1k6/R3K3 w Q - 0 1 and Depth 2, Expected Result was 65
+Test 56 Failed, Outputted 1230 With FEN 8/8/8/8/8/8/1k6/R3K3 w Q - 0 1 and Depth 3, Expected Result was 1018
+Test 57 Failed, Outputted 6398 With FEN 8/8/8/8/8/8/1k6/R3K3 w Q - 0 1 and Depth 4, Expected Result was 4573
+Test 58 Failed, Outputted 117095 With FEN 8/8/8/8/8/8/1k6/R3K3 w Q - 0 1 and Depth 5, Expected Result was 80619
+Test 59 Failed, Outputted 663059 With FEN 8/8/8/8/8/8/1k6/R3K3 w Q - 0 1 and Depth 6, Expected Result was 413018
+Test 60 Failed, Outputted 4 With FEN 4k2r/6K1/8/8/8/8/8/8 w k - 0 1 and Depth 1, Expected Result was 3
+Test 61 Failed, Outputted 50 With FEN 4k2r/6K1/8/8/8/8/8/8 w k - 0 1 and Depth 2, Expected Result was 32
+Test 62 Failed, Outputted 280 With FEN 4k2r/6K1/8/8/8/8/8/8 w k - 0 1 and Depth 3, Expected Result was 134
+Test 63 Failed, Outputted 4742 With FEN 4k2r/6K1/8/8/8/8/8/8 w k - 0 1 and Depth 4, Expected Result was 2073
+Test 64 Failed, Outputted 27379 With FEN 4k2r/6K1/8/8/8/8/8/8 w k - 0 1 and Depth 5, Expected Result was 10485
+Test 65 Failed, Outputted 493435 With FEN 4k2r/6K1/8/8/8/8/8/8 w k - 0 1 and Depth 6, Expected Result was 179869
+Test 66 Passed
+Test 67 Failed, Outputted 53 With FEN r3k3/1K6/8/8/8/8/8/8 w q - 0 1 and Depth 2, Expected Result was 49
+Test 68 Failed, Outputted 303 With FEN r3k3/1K6/8/8/8/8/8/8 w q - 0 1 and Depth 3, Expected Result was 243
+Test 69 Failed, Outputted 5214 With FEN r3k3/1K6/8/8/8/8/8/8 w q - 0 1 and Depth 4, Expected Result was 3991
+Test 70 Failed, Outputted 30250 With FEN r3k3/1K6/8/8/8/8/8/8 w q - 0 1 and Depth 5, Expected Result was 20780
+Test 71 Failed, Outputted 554836 With FEN r3k3/1K6/8/8/8/8/8/8 w q - 0 1 and Depth 6, Expected Result was 367724
+Test 72 Passed
+Test 73 Failed, Outputted 570 With FEN r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1 and Depth 2, Expected Result was 568
+Test 74 Failed, Outputted 13792 With FEN r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1 and Depth 3, Expected Result was 13744
+Test 75 Failed, Outputted 315106 With FEN r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1 and Depth 4, Expected Result was 314346
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 78 Passed
+Test 79 Failed, Outputted 569 With FEN r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1 and Depth 2, Expected Result was 567
+Test 80 Failed, Outputted 14150 With FEN r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1 and Depth 3, Expected Result was 14095
+Test 81 Failed, Outputted 330139 With FEN r3k2r/8/8/8/8/8/8/1R2K2R w Kkq - 0 1 and Depth 4, Expected Result was 328965
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 84 Passed
+Test 85 Failed, Outputted 549 With FEN r3k2r/8/8/8/8/8/8/2R1K2R w Kkq - 0 1 and Depth 2, Expected Result was 548
+Test 86 Failed, Outputted 13533 With FEN r3k2r/8/8/8/8/8/8/2R1K2R w Kkq - 0 1 and Depth 3, Expected Result was 13502
+Test 87 Failed, Outputted 313771 With FEN r3k2r/8/8/8/8/8/8/2R1K2R w Kkq - 0 1 and Depth 4, Expected Result was 312835
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 90 Passed
+Test 91 Failed, Outputted 548 With FEN r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1 and Depth 2, Expected Result was 547
+Test 92 Failed, Outputted 13610 With FEN r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1 and Depth 3, Expected Result was 13579
+Test 93 Failed, Outputted 317131 With FEN r3k2r/8/8/8/8/8/8/R3K1R1 w Qkq - 0 1 and Depth 4, Expected Result was 316214
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 96 Passed
+Test 97 Passed
+Test 98 Failed, Outputted 14259 With FEN 1r2k2r/8/8/8/8/8/8/R3K2R w KQk - 0 1 and Depth 3, Expected Result was 14252
+Test 99 Failed, Outputted 335195 With FEN 1r2k2r/8/8/8/8/8/8/R3K2R w KQk - 0 1 and Depth 4, Expected Result was 334705
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 102 Passed
+Test 103 Passed
+Test 104 Failed, Outputted 13600 With FEN 2r1k2r/8/8/8/8/8/8/R3K2R w KQk - 0 1 and Depth 3, Expected Result was 13592
+Test 105 Failed, Outputted 317814 With FEN 2r1k2r/8/8/8/8/8/8/R3K2R w KQk - 0 1 and Depth 4, Expected Result was 317324
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 108 Passed
+Test 109 Passed
+Test 110 Failed, Outputted 13614 With FEN r3k1r1/8/8/8/8/8/8/R3K2R w KQq - 0 1 and Depth 3, Expected Result was 13607
+Test 111 Failed, Outputted 321236 With FEN r3k1r1/8/8/8/8/8/8/R3K2R w KQq - 0 1 and Depth 4, Expected Result was 320792
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 114 Passed
+Test 115 Passed
+Test 116 Passed
+Test 117 Passed
+Test 118 Passed
+Test 119 Failed, Outputted 899831 With FEN 4k3/8/8/8/8/8/8/4K2R b K - 0 1 and Depth 6, Expected Result was 899442
+Test 120 Passed
+Test 121 Passed
+Test 122 Passed
+Test 123 Passed
+Test 124 Passed
+Test 125 Failed, Outputted 1001916 With FEN 4k3/8/8/8/8/8/8/R3K3 b Q - 0 1 and Depth 6, Expected Result was 1001523
+Test 126 Passed
+Test 127 Passed
+Test 128 Passed
+Test 129 Passed
+Test 130 Passed
+Test 131 Failed, Outputted 765033 With FEN 4k2r/8/8/8/8/8/8/4K3 b k - 0 1 and Depth 6, Expected Result was 764643
+Test 132 Passed
+Test 133 Passed
+Test 134 Passed
+Test 135 Passed
+Test 136 Passed
+Test 137 Failed, Outputted 847041 With FEN r3k3/8/8/8/8/8/8/4K3 b q - 0 1 and Depth 6, Expected Result was 846648
+Test 138 Passed
+Test 139 Passed
+Test 140 Passed
+Test 141 Passed
+Test 142 Passed
+Test too large to perform as part of a suite
+Test 144 Passed
+Test 145 Passed
+Test 146 Passed
+Test 147 Passed
+Test 148 Passed
+Test too large to perform as part of a suite
+Test 150 Failed, Outputted 4 With FEN 8/8/8/8/8/8/6k1/4K2R b K - 0 1 and Depth 1, Expected Result was 3
+Test 151 Failed, Outputted 50 With FEN 8/8/8/8/8/8/6k1/4K2R b K - 0 1 and Depth 2, Expected Result was 32
+Test 152 Failed, Outputted 280 With FEN 8/8/8/8/8/8/6k1/4K2R b K - 0 1 and Depth 3, Expected Result was 134
+Test 153 Failed, Outputted 4742 With FEN 8/8/8/8/8/8/6k1/4K2R b K - 0 1 and Depth 4, Expected Result was 2073
+Test 154 Failed, Outputted 27379 With FEN 8/8/8/8/8/8/6k1/4K2R b K - 0 1 and Depth 5, Expected Result was 10485
+Test 155 Failed, Outputted 493435 With FEN 8/8/8/8/8/8/6k1/4K2R b K - 0 1 and Depth 6, Expected Result was 179869
+Test 156 Passed
+Test 157 Failed, Outputted 53 With FEN 8/8/8/8/8/8/1k6/R3K3 b Q - 0 1 and Depth 2, Expected Result was 49
+Test 158 Failed, Outputted 303 With FEN 8/8/8/8/8/8/1k6/R3K3 b Q - 0 1 and Depth 3, Expected Result was 243
+Test 159 Failed, Outputted 5214 With FEN 8/8/8/8/8/8/1k6/R3K3 b Q - 0 1 and Depth 4, Expected Result was 3991
+Test 160 Failed, Outputted 30250 With FEN 8/8/8/8/8/8/1k6/R3K3 b Q - 0 1 and Depth 5, Expected Result was 20780
+Test 161 Failed, Outputted 554836 With FEN 8/8/8/8/8/8/1k6/R3K3 b Q - 0 1 and Depth 6, Expected Result was 367724
+Test 162 Failed, Outputted 15 With FEN 4k2r/6K1/8/8/8/8/8/8 b k - 0 1 and Depth 1, Expected Result was 12
+Test 163 Failed, Outputted 68 With FEN 4k2r/6K1/8/8/8/8/8/8 b k - 0 1 and Depth 2, Expected Result was 38
+Test 164 Failed, Outputted 1100 With FEN 4k2r/6K1/8/8/8/8/8/8 b k - 0 1 and Depth 3, Expected Result was 564
+Test 165 Failed, Outputted 5625 With FEN 4k2r/6K1/8/8/8/8/8/8 b k - 0 1 and Depth 4, Expected Result was 2219
+Test 166 Failed, Outputted 100685 With FEN 4k2r/6K1/8/8/8/8/8/8 b k - 0 1 and Depth 5, Expected Result was 37735
+Test 167 Failed, Outputted 568243 With FEN 4k2r/6K1/8/8/8/8/8/8 b k - 0 1 and Depth 6, Expected Result was 185867
+Test 168 Failed, Outputted 16 With FEN r3k3/1K6/8/8/8/8/8/8 b q - 0 1 and Depth 1, Expected Result was 15
+Test 169 Failed, Outputted 75 With FEN r3k3/1K6/8/8/8/8/8/8 b q - 0 1 and Depth 2, Expected Result was 65
+Test 170 Failed, Outputted 1230 With FEN r3k3/1K6/8/8/8/8/8/8 b q - 0 1 and Depth 3, Expected Result was 1018
+Test 171 Failed, Outputted 6398 With FEN r3k3/1K6/8/8/8/8/8/8 b q - 0 1 and Depth 4, Expected Result was 4573
+Test 172 Failed, Outputted 117095 With FEN r3k3/1K6/8/8/8/8/8/8 b q - 0 1 and Depth 5, Expected Result was 80619
+Test 173 Failed, Outputted 663059 With FEN r3k3/1K6/8/8/8/8/8/8 b q - 0 1 and Depth 6, Expected Result was 413018
+Test 174 Passed
+Test 175 Failed, Outputted 570 With FEN r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1 and Depth 2, Expected Result was 568
+Test 176 Failed, Outputted 13792 With FEN r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1 and Depth 3, Expected Result was 13744
+Test 177 Failed, Outputted 315106 With FEN r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1 and Depth 4, Expected Result was 314346
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 180 Passed
+Test 181 Passed
+Test 182 Failed, Outputted 14259 With FEN r3k2r/8/8/8/8/8/8/1R2K2R b Kkq - 0 1 and Depth 3, Expected Result was 14252
+Test 183 Failed, Outputted 335195 With FEN r3k2r/8/8/8/8/8/8/1R2K2R b Kkq - 0 1 and Depth 4, Expected Result was 334705
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 186 Passed
+Test 187 Passed
+Test 188 Failed, Outputted 13600 With FEN r3k2r/8/8/8/8/8/8/2R1K2R b Kkq - 0 1 and Depth 3, Expected Result was 13592
+Test 189 Failed, Outputted 317814 With FEN r3k2r/8/8/8/8/8/8/2R1K2R b Kkq - 0 1 and Depth 4, Expected Result was 317324
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 192 Passed
+Test 193 Passed
+Test 194 Failed, Outputted 13614 With FEN r3k2r/8/8/8/8/8/8/R3K1R1 b Qkq - 0 1 and Depth 3, Expected Result was 13607
+Test 195 Failed, Outputted 321236 With FEN r3k2r/8/8/8/8/8/8/R3K1R1 b Qkq - 0 1 and Depth 4, Expected Result was 320792
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 198 Passed
+Test 199 Failed, Outputted 569 With FEN 1r2k2r/8/8/8/8/8/8/R3K2R b KQk - 0 1 and Depth 2, Expected Result was 567
+Test 200 Failed, Outputted 14150 With FEN 1r2k2r/8/8/8/8/8/8/R3K2R b KQk - 0 1 and Depth 3, Expected Result was 14095
+Test 201 Failed, Outputted 330139 With FEN 1r2k2r/8/8/8/8/8/8/R3K2R b KQk - 0 1 and Depth 4, Expected Result was 328965
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 204 Passed
+Test 205 Failed, Outputted 549 With FEN 2r1k2r/8/8/8/8/8/8/R3K2R b KQk - 0 1 and Depth 2, Expected Result was 548
+Test 206 Failed, Outputted 13533 With FEN 2r1k2r/8/8/8/8/8/8/R3K2R b KQk - 0 1 and Depth 3, Expected Result was 13502
+Test 207 Failed, Outputted 313771 With FEN 2r1k2r/8/8/8/8/8/8/R3K2R b KQk - 0 1 and Depth 4, Expected Result was 312835
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 210 Passed
+Test 211 Failed, Outputted 548 With FEN r3k1r1/8/8/8/8/8/8/R3K2R b KQq - 0 1 and Depth 2, Expected Result was 547
+Test 212 Failed, Outputted 13610 With FEN r3k1r1/8/8/8/8/8/8/R3K2R b KQq - 0 1 and Depth 3, Expected Result was 13579
+Test 213 Failed, Outputted 317131 With FEN r3k1r1/8/8/8/8/8/8/R3K2R b KQq - 0 1 and Depth 4, Expected Result was 316214
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 216 Passed
+Test 217 Failed, Outputted 196 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 w - - 0 1 and Depth 2, Expected Result was 195
+Test 218 Failed, Outputted 2792 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 w - - 0 1 and Depth 3, Expected Result was 2760
+Test 219 Failed, Outputted 39394 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 w - - 0 1 and Depth 4, Expected Result was 38675
+Test 220 Failed, Outputted 584374 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 w - - 0 1 and Depth 5, Expected Result was 570726
+Test too large to perform as part of a suite
+Test 222 Passed
+Test 223 Passed
+Test 224 Passed
+Test 225 Passed
+Test 226 Failed, Outputted 223559 With FEN 8/1k6/8/5N2/8/4n3/8/2K5 w - - 0 1 and Depth 5, Expected Result was 223507
+Test too large to perform as part of a suite
+Test 228 Passed
+Test 229 Failed, Outputted 291 With FEN 8/8/4k3/3Nn3/3nN3/4K3/8/8 w - - 0 1 and Depth 2, Expected Result was 289
+Test 230 Failed, Outputted 4517 With FEN 8/8/4k3/3Nn3/3nN3/4K3/8/8 w - - 0 1 and Depth 3, Expected Result was 4442
+Test 231 Failed, Outputted 75789 With FEN 8/8/4k3/3Nn3/3nN3/4K3/8/8 w - - 0 1 and Depth 4, Expected Result was 73584
+Test 232 Failed, Outputted 1250042 With FEN 8/8/4k3/3Nn3/3nN3/4K3/8/8 w - - 0 1 and Depth 5, Expected Result was 1198299
+Test too large to perform as part of a suite
+Test 234 Passed
+Test 235 Passed
+Test 236 Passed
+Test 237 Passed
+Test 238 Passed
+Test 239 Failed, Outputted 588753 With FEN K7/8/2n5/1n6/8/8/8/k6N w - - 0 1 and Depth 6, Expected Result was 588695
+Test 240 Passed
+Test 241 Passed
+Test 242 Passed
+Test 243 Passed
+Test 244 Passed
+Test 245 Failed, Outputted 688838 With FEN k7/8/2N5/1N6/8/8/8/K6n w - - 0 1 and Depth 6, Expected Result was 688780
+Test 246 Passed
+Test 247 Failed, Outputted 194 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 b - - 0 1 and Depth 2, Expected Result was 193
+Test 248 Failed, Outputted 2848 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 b - - 0 1 and Depth 3, Expected Result was 2816
+Test 249 Failed, Outputted 40738 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 b - - 0 1 and Depth 4, Expected Result was 40039
+Test 250 Failed, Outputted 596854 With FEN 8/1n4N1/2k5/8/8/5K2/1N4n1/8 b - - 0 1 and Depth 5, Expected Result was 582642
+Test too large to perform as part of a suite
+Test 252 Passed
+Test 253 Passed
+Test 254 Passed
+Test 255 Passed
+Test 256 Failed, Outputted 288205 With FEN 8/1k6/8/5N2/8/4n3/8/2K5 b - - 0 1 and Depth 5, Expected Result was 288141
+Test too large to perform as part of a suite
+Test 258 Passed
+Test 259 Failed, Outputted 69 With FEN 8/8/3K4/3Nn3/3nN3/4k3/8/8 b - - 0 1 and Depth 2, Expected Result was 68
+Test 260 Failed, Outputted 1135 With FEN 8/8/3K4/3Nn3/3nN3/4k3/8/8 b - - 0 1 and Depth 3, Expected Result was 1118
+Test 261 Failed, Outputted 16623 With FEN 8/8/3K4/3Nn3/3nN3/4k3/8/8 b - - 0 1 and Depth 4, Expected Result was 16199
+Test 262 Failed, Outputted 289994 With FEN 8/8/3K4/3Nn3/3nN3/4k3/8/8 b - - 0 1 and Depth 5, Expected Result was 281190
+Test too large to perform as part of a suite
+Test 264 Passed
+Test 265 Passed
+Test 266 Passed
+Test 267 Passed
+Test 268 Passed
+Test 269 Failed, Outputted 688838 With FEN K7/8/2n5/1n6/8/8/8/k6N b - - 0 1 and Depth 6, Expected Result was 688780
+Test 270 Passed
+Test 271 Passed
+Test 272 Passed
+Test 273 Passed
+Test 274 Passed
+Test 275 Failed, Outputted 588753 With FEN k7/8/2N5/1N6/8/8/8/K6n b - - 0 1 and Depth 6, Expected Result was 588695
+Test 276 Failed, Outputted 18 With FEN B6b/8/8/8/2K5/4k3/8/b6B w - - 0 1 and Depth 1, Expected Result was 17
+Test 277 Failed, Outputted 320 With FEN B6b/8/8/8/2K5/4k3/8/b6B w - - 0 1 and Depth 2, Expected Result was 278
+Test 278 Failed, Outputted 5530 With FEN B6b/8/8/8/2K5/4k3/8/b6B w - - 0 1 and Depth 3, Expected Result was 4607
+Test 279 Failed, Outputted 95082 With FEN B6b/8/8/8/2K5/4k3/8/b6B w - - 0 1 and Depth 4, Expected Result was 76778
+Test 280 Failed, Outputted 1676418 With FEN B6b/8/8/8/2K5/4k3/8/b6B w - - 0 1 and Depth 5, Expected Result was 1320507
+Test too large to perform as part of a suite
+Test 282 Passed
+Test 283 Failed, Outputted 320 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K w - - 0 1 and Depth 2, Expected Result was 316
+Test 284 Failed, Outputted 5959 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K w - - 0 1 and Depth 3, Expected Result was 5744
+Test 285 Failed, Outputted 100119 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K w - - 0 1 and Depth 4, Expected Result was 93338
+Test 286 Failed, Outputted 1909046 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K w - - 0 1 and Depth 5, Expected Result was 1713368
+Test too large to perform as part of a suite
+Test 288 Passed
+Test 289 Passed
+Test 290 Passed
+Test 291 Passed
+Test 292 Passed
+Test too large to perform as part of a suite
+Test 294 Passed
+Test 295 Passed
+Test 296 Passed
+Test 297 Passed
+Test 298 Passed
+Test too large to perform as part of a suite
+Test 300 Passed
+Test 301 Failed, Outputted 108 With FEN B6b/8/8/8/2K5/5k2/8/b6B b - - 0 1 and Depth 2, Expected Result was 106
+Test 302 Failed, Outputted 1904 With FEN B6b/8/8/8/2K5/5k2/8/b6B b - - 0 1 and Depth 3, Expected Result was 1829
+Test 303 Failed, Outputted 32920 With FEN B6b/8/8/8/2K5/5k2/8/b6B b - - 0 1 and Depth 4, Expected Result was 31151
+Test 304 Failed, Outputted 568192 With FEN B6b/8/8/8/2K5/5k2/8/b6B b - - 0 1 and Depth 5, Expected Result was 530585
+Test too large to perform as part of a suite
+Test 306 Passed
+Test 307 Failed, Outputted 313 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K b - - 0 1 and Depth 2, Expected Result was 309
+Test 308 Failed, Outputted 5330 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K b - - 0 1 and Depth 3, Expected Result was 5133
+Test 309 Failed, Outputted 100252 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K b - - 0 1 and Depth 4, Expected Result was 93603
+Test 310 Failed, Outputted 1766240 With FEN 8/8/1B6/7b/7k/8/2B1b3/7K b - - 0 1 and Depth 5, Expected Result was 1591064
+Test too large to perform as part of a suite
+Test 312 Passed
+Test 313 Passed
+Test 314 Passed
+Test 315 Passed
+Test 316 Passed
+Test too large to perform as part of a suite
+Test 318 Passed
+Test 319 Passed
+Test 320 Passed
+Test 321 Passed
+Test 322 Passed
+Test too large to perform as part of a suite
+Test 324 Passed
+Test 325 Passed
+Test 326 Passed
+Test 327 Passed
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 330 Passed
+Test 331 Failed, Outputted 1033 With FEN R6r/8/8/2K5/5k2/8/8/r6R w - - 0 1 and Depth 2, Expected Result was 1027
+Test 332 Failed, Outputted 29748 With FEN R6r/8/8/2K5/5k2/8/8/r6R w - - 0 1 and Depth 3, Expected Result was 29215
+Test 333 Failed, Outputted 798391 With FEN R6r/8/8/2K5/5k2/8/8/r6R w - - 0 1 and Depth 4, Expected Result was 771461
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 336 Passed
+Test 337 Passed
+Test 338 Passed
+Test 339 Passed
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 342 Passed
+Test 343 Failed, Outputted 1033 With FEN R6r/8/8/2K5/5k2/8/8/r6R b - - 0 1 and Depth 2, Expected Result was 1027
+Test 344 Failed, Outputted 29760 With FEN R6r/8/8/2K5/5k2/8/8/r6R b - - 0 1 and Depth 3, Expected Result was 29227
+Test 345 Failed, Outputted 798302 With FEN R6r/8/8/2K5/5k2/8/8/r6R b - - 0 1 and Depth 4, Expected Result was 771368
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 348 Passed
+Test 349 Passed
+Test 350 Passed
+Test 351 Passed
+Test 352 Passed
+Test 353 Failed, Outputted 391596 With FEN 6kq/8/8/8/8/8/8/7K w - - 0 1 and Depth 6, Expected Result was 391507
+Test 354 Passed
+Test 355 Passed
+Test 356 Passed
+Test 357 Passed
+Test 358 Passed
+Test 359 Failed, Outputted 391596 With FEN 6KQ/8/8/8/8/8/8/7k b - - 0 1 and Depth 6, Expected Result was 391507
+Test 360 Passed
+Test 361 Passed
+Test 362 Passed
+Test 363 Passed
+Test 364 Passed
+Test too large to perform as part of a suite
+Test 366 Passed
+Test 367 Passed
+Test 368 Passed
+Test 369 Passed
+Test 370 Passed
+Test 371 Failed, Outputted 419418 With FEN 6qk/8/8/8/8/8/8/7K b - - 0 1 and Depth 6, Expected Result was 419369
+Test 372 Passed
+Test 373 Passed
+Test 374 Passed
+Test 375 Passed
+Test 376 Passed
+Test 377 Failed, Outputted 391596 With FEN 6KQ/8/8/8/8/8/8/7k b - - 0 1 and Depth 6, Expected Result was 391507
+Test 378 Passed
+Test 379 Passed
+Test 380 Passed
+Test 381 Passed
+Test 382 Passed
+Test too large to perform as part of a suite
+Test 384 Failed, Outputted 4 With FEN 8/8/8/8/8/K7/P7/k7 w - - 0 1 and Depth 1, Expected Result was 3
+Test 385 Failed, Outputted 12 With FEN 8/8/8/8/8/K7/P7/k7 w - - 0 1 and Depth 2, Expected Result was 7
+Test 386 Failed, Outputted 90 With FEN 8/8/8/8/8/K7/P7/k7 w - - 0 1 and Depth 3, Expected Result was 43
+Test 387 Failed, Outputted 489 With FEN 8/8/8/8/8/K7/P7/k7 w - - 0 1 and Depth 4, Expected Result was 199
+Test 388 Failed, Outputted 3368 With FEN 8/8/8/8/8/K7/P7/k7 w - - 0 1 and Depth 5, Expected Result was 1347
+Test 389 Failed, Outputted 17631 With FEN 8/8/8/8/8/K7/P7/k7 w - - 0 1 and Depth 6, Expected Result was 6249
+Test 390 Failed, Outputted 4 With FEN 8/8/8/8/8/7K/7P/7k w - - 0 1 and Depth 1, Expected Result was 3
+Test 391 Failed, Outputted 12 With FEN 8/8/8/8/8/7K/7P/7k w - - 0 1 and Depth 2, Expected Result was 7
+Test 392 Failed, Outputted 90 With FEN 8/8/8/8/8/7K/7P/7k w - - 0 1 and Depth 3, Expected Result was 43
+Test 393 Failed, Outputted 489 With FEN 8/8/8/8/8/7K/7P/7k w - - 0 1 and Depth 4, Expected Result was 199
+Test 394 Failed, Outputted 3368 With FEN 8/8/8/8/8/7K/7P/7k w - - 0 1 and Depth 5, Expected Result was 1347
+Test 395 Failed, Outputted 17631 With FEN 8/8/8/8/8/7K/7P/7k w - - 0 1 and Depth 6, Expected Result was 6249
+Test 396 Failed, Outputted 3 With FEN K7/p7/k7/8/8/8/8/8 w - - 0 1 and Depth 1, Expected Result was 1
+Test 397 Failed, Outputted 13 With FEN K7/p7/k7/8/8/8/8/8 w - - 0 1 and Depth 2, Expected Result was 3
+Test 398 Failed, Outputted 61 With FEN K7/p7/k7/8/8/8/8/8 w - - 0 1 and Depth 3, Expected Result was 12
+Test 399 Failed, Outputted 453 With FEN K7/p7/k7/8/8/8/8/8 w - - 0 1 and Depth 4, Expected Result was 80
+Test 400 Failed, Outputted 2301 With FEN K7/p7/k7/8/8/8/8/8 w - - 0 1 and Depth 5, Expected Result was 342
+Test 401 Failed, Outputted 16193 With FEN K7/p7/k7/8/8/8/8/8 w - - 0 1 and Depth 6, Expected Result was 2343
+Test 402 Failed, Outputted 3 With FEN 7K/7p/7k/8/8/8/8/8 w - - 0 1 and Depth 1, Expected Result was 1
+Test 403 Failed, Outputted 13 With FEN 7K/7p/7k/8/8/8/8/8 w - - 0 1 and Depth 2, Expected Result was 3
+Test 404 Failed, Outputted 61 With FEN 7K/7p/7k/8/8/8/8/8 w - - 0 1 and Depth 3, Expected Result was 12
+Test 405 Failed, Outputted 453 With FEN 7K/7p/7k/8/8/8/8/8 w - - 0 1 and Depth 4, Expected Result was 80
+Test 406 Failed, Outputted 2301 With FEN 7K/7p/7k/8/8/8/8/8 w - - 0 1 and Depth 5, Expected Result was 342
+Test 407 Failed, Outputted 16193 With FEN 7K/7p/7k/8/8/8/8/8 w - - 0 1 and Depth 6, Expected Result was 2343
+Test 408 Passed
+Test 409 Passed
+Test 410 Passed
+Test 411 Failed, Outputted 1092 With FEN 8/2k1p3/3pP3/3P2K1/8/8/8/8 w - - 0 1 and Depth 4, Expected Result was 1091
+Test 412 Failed, Outputted 7046 With FEN 8/2k1p3/3pP3/3P2K1/8/8/8/8 w - - 0 1 and Depth 5, Expected Result was 7028
+Test 413 Failed, Outputted 34959 With FEN 8/2k1p3/3pP3/3P2K1/8/8/8/8 w - - 0 1 and Depth 6, Expected Result was 34834
+Test 414 Failed, Outputted 3 With FEN 8/8/8/8/8/K7/P7/k7 b - - 0 1 and Depth 1, Expected Result was 1
+Test 415 Failed, Outputted 13 With FEN 8/8/8/8/8/K7/P7/k7 b - - 0 1 and Depth 2, Expected Result was 3
+Test 416 Failed, Outputted 61 With FEN 8/8/8/8/8/K7/P7/k7 b - - 0 1 and Depth 3, Expected Result was 12
+Test 417 Failed, Outputted 453 With FEN 8/8/8/8/8/K7/P7/k7 b - - 0 1 and Depth 4, Expected Result was 80
+Test 418 Failed, Outputted 2301 With FEN 8/8/8/8/8/K7/P7/k7 b - - 0 1 and Depth 5, Expected Result was 342
+Test 419 Failed, Outputted 16193 With FEN 8/8/8/8/8/K7/P7/k7 b - - 0 1 and Depth 6, Expected Result was 2343
+Test 420 Failed, Outputted 3 With FEN 8/8/8/8/8/7K/7P/7k b - - 0 1 and Depth 1, Expected Result was 1
+Test 421 Failed, Outputted 13 With FEN 8/8/8/8/8/7K/7P/7k b - - 0 1 and Depth 2, Expected Result was 3
+Test 422 Failed, Outputted 61 With FEN 8/8/8/8/8/7K/7P/7k b - - 0 1 and Depth 3, Expected Result was 12
+Test 423 Failed, Outputted 453 With FEN 8/8/8/8/8/7K/7P/7k b - - 0 1 and Depth 4, Expected Result was 80
+Test 424 Failed, Outputted 2301 With FEN 8/8/8/8/8/7K/7P/7k b - - 0 1 and Depth 5, Expected Result was 342
+Test 425 Failed, Outputted 16193 With FEN 8/8/8/8/8/7K/7P/7k b - - 0 1 and Depth 6, Expected Result was 2343
+Test 426 Failed, Outputted 4 With FEN K7/p7/k7/8/8/8/8/8 b - - 0 1 and Depth 1, Expected Result was 3
+Test 427 Failed, Outputted 12 With FEN K7/p7/k7/8/8/8/8/8 b - - 0 1 and Depth 2, Expected Result was 7
+Test 428 Failed, Outputted 90 With FEN K7/p7/k7/8/8/8/8/8 b - - 0 1 and Depth 3, Expected Result was 43
+Test 429 Failed, Outputted 489 With FEN K7/p7/k7/8/8/8/8/8 b - - 0 1 and Depth 4, Expected Result was 199
+Test 430 Failed, Outputted 3368 With FEN K7/p7/k7/8/8/8/8/8 b - - 0 1 and Depth 5, Expected Result was 1347
+Test 431 Failed, Outputted 17631 With FEN K7/p7/k7/8/8/8/8/8 b - - 0 1 and Depth 6, Expected Result was 6249
+Test 432 Failed, Outputted 4 With FEN 7K/7p/7k/8/8/8/8/8 b - - 0 1 and Depth 1, Expected Result was 3
+Test 433 Failed, Outputted 12 With FEN 7K/7p/7k/8/8/8/8/8 b - - 0 1 and Depth 2, Expected Result was 7
+Test 434 Failed, Outputted 90 With FEN 7K/7p/7k/8/8/8/8/8 b - - 0 1 and Depth 3, Expected Result was 43
+Test 435 Failed, Outputted 489 With FEN 7K/7p/7k/8/8/8/8/8 b - - 0 1 and Depth 4, Expected Result was 199
+Test 436 Failed, Outputted 3368 With FEN 7K/7p/7k/8/8/8/8/8 b - - 0 1 and Depth 5, Expected Result was 1347
+Test 437 Failed, Outputted 17631 With FEN 7K/7p/7k/8/8/8/8/8 b - - 0 1 and Depth 6, Expected Result was 6249
+Test 438 Passed
+Test 439 Passed
+Test 440 Passed
+Test 441 Failed, Outputted 1092 With FEN 8/2k1p3/3pP3/3P2K1/8/8/8/8 b - - 0 1 and Depth 4, Expected Result was 1091
+Test 442 Failed, Outputted 5418 With FEN 8/2k1p3/3pP3/3P2K1/8/8/8/8 b - - 0 1 and Depth 5, Expected Result was 5408
+Test 443 Failed, Outputted 34961 With FEN 8/2k1p3/3pP3/3P2K1/8/8/8/8 b - - 0 1 and Depth 6, Expected Result was 34822
+Test 444 Failed, Outputted 4 With FEN 8/8/8/8/8/4k3/4P3/4K3 w - - 0 1 and Depth 1, Expected Result was 2
+Test 445 Failed, Outputted 24 With FEN 8/8/8/8/8/4k3/4P3/4K3 w - - 0 1 and Depth 2, Expected Result was 8
+Test 446 Failed, Outputted 158 With FEN 8/8/8/8/8/4k3/4P3/4K3 w - - 0 1 and Depth 3, Expected Result was 44
+Test 447 Failed, Outputted 1084 With FEN 8/8/8/8/8/4k3/4P3/4K3 w - - 0 1 and Depth 4, Expected Result was 282
+Test 448 Failed, Outputted 7406 With FEN 8/8/8/8/8/4k3/4P3/4K3 w - - 0 1 and Depth 5, Expected Result was 1814
+Test 449 Failed, Outputted 49850 With FEN 8/8/8/8/8/4k3/4P3/4K3 w - - 0 1 and Depth 6, Expected Result was 11848
+Test 450 Failed, Outputted 4 With FEN 4k3/4p3/4K3/8/8/8/8/8 b - - 0 1 and Depth 1, Expected Result was 2
+Test 451 Failed, Outputted 24 With FEN 4k3/4p3/4K3/8/8/8/8/8 b - - 0 1 and Depth 2, Expected Result was 8
+Test 452 Failed, Outputted 158 With FEN 4k3/4p3/4K3/8/8/8/8/8 b - - 0 1 and Depth 3, Expected Result was 44
+Test 453 Failed, Outputted 1084 With FEN 4k3/4p3/4K3/8/8/8/8/8 b - - 0 1 and Depth 4, Expected Result was 282
+Test 454 Failed, Outputted 7406 With FEN 4k3/4p3/4K3/8/8/8/8/8 b - - 0 1 and Depth 5, Expected Result was 1814
+Test 455 Failed, Outputted 49850 With FEN 4k3/4p3/4K3/8/8/8/8/8 b - - 0 1 and Depth 6, Expected Result was 11848
+Test 456 Passed
+Test 457 Passed
+Test 458 Passed
+Test 459 Failed, Outputted 361 With FEN 8/8/7k/7p/7P/7K/8/8 w - - 0 1 and Depth 4, Expected Result was 360
+Test 460 Failed, Outputted 1995 With FEN 8/8/7k/7p/7P/7K/8/8 w - - 0 1 and Depth 5, Expected Result was 1969
+Test 461 Failed, Outputted 11018 With FEN 8/8/7k/7p/7P/7K/8/8 w - - 0 1 and Depth 6, Expected Result was 10724
+Test 462 Passed
+Test 463 Passed
+Test 464 Passed
+Test 465 Failed, Outputted 361 With FEN 8/8/k7/p7/P7/K7/8/8 w - - 0 1 and Depth 4, Expected Result was 360
+Test 466 Failed, Outputted 1995 With FEN 8/8/k7/p7/P7/K7/8/8 w - - 0 1 and Depth 5, Expected Result was 1969
+Test 467 Failed, Outputted 11018 With FEN 8/8/k7/p7/P7/K7/8/8 w - - 0 1 and Depth 6, Expected Result was 10724
+Test 468 Passed
+Test 469 Passed
+Test 470 Passed
+Test 471 Failed, Outputted 1296 With FEN 8/8/3k4/3p4/3P4/3K4/8/8 w - - 0 1 and Depth 4, Expected Result was 1294
+Test 472 Failed, Outputted 8352 With FEN 8/8/3k4/3p4/3P4/3K4/8/8 w - - 0 1 and Depth 5, Expected Result was 8296
+Test 473 Failed, Outputted 53810 With FEN 8/8/3k4/3p4/3P4/3K4/8/8 w - - 0 1 and Depth 6, Expected Result was 53138
+Test 474 Passed
+Test 475 Passed
+Test 476 Failed, Outputted 489 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 w - - 0 1 and Depth 3, Expected Result was 483
+Test 477 Failed, Outputted 3289 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 w - - 0 1 and Depth 4, Expected Result was 3213
+Test 478 Failed, Outputted 24363 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 w - - 0 1 and Depth 5, Expected Result was 23599
+Test 479 Failed, Outputted 164293 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 w - - 0 1 and Depth 6, Expected Result was 157093
+Test 480 Passed
+Test 481 Passed
+Test 482 Failed, Outputted 417 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 w - - 0 1 and Depth 3, Expected Result was 411
+Test 483 Failed, Outputted 3289 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 w - - 0 1 and Depth 4, Expected Result was 3213
+Test 484 Failed, Outputted 22401 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 w - - 0 1 and Depth 5, Expected Result was 21637
+Test 485 Failed, Outputted 165265 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 w - - 0 1 and Depth 6, Expected Result was 158065
+Test 486 Passed
+Test 487 Passed
+Test 488 Passed
+Test 489 Passed
+Test 490 Passed
+Test 491 Failed, Outputted 20961 With FEN k7/8/3p4/8/3P4/8/8/7K w - - 0 1 and Depth 6, Expected Result was 20960
+Test 492 Passed
+Test 493 Passed
+Test 494 Passed
+Test 495 Failed, Outputted 361 With FEN 8/8/7k/7p/7P/7K/8/8 b - - 0 1 and Depth 4, Expected Result was 360
+Test 496 Failed, Outputted 1995 With FEN 8/8/7k/7p/7P/7K/8/8 b - - 0 1 and Depth 5, Expected Result was 1969
+Test 497 Failed, Outputted 11018 With FEN 8/8/7k/7p/7P/7K/8/8 b - - 0 1 and Depth 6, Expected Result was 10724
+Test 498 Passed
+Test 499 Passed
+Test 500 Passed
+Test 501 Failed, Outputted 361 With FEN 8/8/k7/p7/P7/K7/8/8 b - - 0 1 and Depth 4, Expected Result was 360
+Test 502 Failed, Outputted 1995 With FEN 8/8/k7/p7/P7/K7/8/8 b - - 0 1 and Depth 5, Expected Result was 1969
+Test 503 Failed, Outputted 11018 With FEN 8/8/k7/p7/P7/K7/8/8 b - - 0 1 and Depth 6, Expected Result was 10724
+Test 504 Passed
+Test 505 Passed
+Test 506 Passed
+Test 507 Failed, Outputted 1296 With FEN 8/8/3k4/3p4/3P4/3K4/8/8 b - - 0 1 and Depth 4, Expected Result was 1294
+Test 508 Failed, Outputted 8352 With FEN 8/8/3k4/3p4/3P4/3K4/8/8 b - - 0 1 and Depth 5, Expected Result was 8296
+Test 509 Failed, Outputted 53810 With FEN 8/8/3k4/3p4/3P4/3K4/8/8 b - - 0 1 and Depth 6, Expected Result was 53138
+Test 510 Passed
+Test 511 Passed
+Test 512 Failed, Outputted 417 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 b - - 0 1 and Depth 3, Expected Result was 411
+Test 513 Failed, Outputted 3289 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 b - - 0 1 and Depth 4, Expected Result was 3213
+Test 514 Failed, Outputted 22401 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 b - - 0 1 and Depth 5, Expected Result was 21637
+Test 515 Failed, Outputted 165265 With FEN 8/3k4/3p4/8/3P4/3K4/8/8 b - - 0 1 and Depth 6, Expected Result was 158065
+Test 516 Passed
+Test 517 Passed
+Test 518 Failed, Outputted 489 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 b - - 0 1 and Depth 3, Expected Result was 483
+Test 519 Failed, Outputted 3289 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 b - - 0 1 and Depth 4, Expected Result was 3213
+Test 520 Failed, Outputted 24363 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 b - - 0 1 and Depth 5, Expected Result was 23599
+Test 521 Failed, Outputted 164293 With FEN 8/8/3k4/3p4/8/3P4/3K4/8 b - - 0 1 and Depth 6, Expected Result was 157093
+Test 522 Passed
+Test 523 Passed
+Test 524 Passed
+Test 525 Passed
+Test 526 Passed
+Test 527 Failed, Outputted 21105 With FEN k7/8/3p4/8/3P4/8/8/7K b - - 0 1 and Depth 6, Expected Result was 21104
+Test 528 Passed
+Test 529 Passed
+Test 530 Passed
+Test 531 Passed
+Test 532 Passed
+Test 533 Passed
+Test 534 Passed
+Test 535 Passed
+Test 536 Passed
+Test 537 Passed
+Test 538 Passed
+Test 539 Failed, Outputted 30981 With FEN 7k/8/8/3p4/8/8/3P4/K7 w - - 0 1 and Depth 6, Expected Result was 30980
+Test 540 Passed
+Test 541 Passed
+Test 542 Passed
+Test 543 Passed
+Test 544 Passed
+Test 545 Failed, Outputted 42001 With FEN k7/8/8/7p/6P1/8/8/K7 w - - 0 1 and Depth 6, Expected Result was 41874
+Test 546 Passed
+Test 547 Passed
+Test 548 Passed
+Test 549 Passed
+Test 550 Passed
+Test 551 Failed, Outputted 29806 With FEN k7/8/7p/8/8/6P1/8/K7 w - - 0 1 and Depth 6, Expected Result was 29679
+Test 552 Passed
+Test 553 Passed
+Test 554 Passed
+Test 555 Passed
+Test 556 Passed
+Test 557 Failed, Outputted 42001 With FEN k7/8/8/6p1/7P/8/8/K7 w - - 0 1 and Depth 6, Expected Result was 41874
+Test 558 Passed
+Test 559 Passed
+Test 560 Passed
+Test 561 Passed
+Test 562 Passed
+Test 563 Failed, Outputted 29806 With FEN k7/8/6p1/8/8/7P/8/K7 w - - 0 1 and Depth 6, Expected Result was 29679
+Test 564 Passed
+Test 565 Passed
+Test 566 Passed
+Test 567 Passed
+Test 568 Passed
+Test 569 Passed
+Test 570 Passed
+Test 571 Passed
+Test 572 Passed
+Test 573 Passed
+Test 574 Passed
+Test 575 Failed, Outputted 28663 With FEN k7/8/3p4/8/8/4P3/8/7K w - - 0 1 and Depth 6, Expected Result was 28662
+Test 576 Passed
+Test 577 Passed
+Test 578 Passed
+Test 579 Passed
+Test 580 Passed
+Test 581 Passed
+Test 582 Passed
+Test 583 Passed
+Test 584 Passed
+Test 585 Passed
+Test 586 Passed
+Test 587 Failed, Outputted 30750 With FEN 7k/8/8/3p4/8/8/3P4/K7 b - - 0 1 and Depth 6, Expected Result was 30749
+Test 588 Passed
+Test 589 Passed
+Test 590 Passed
+Test 591 Passed
+Test 592 Passed
+Test 593 Failed, Outputted 42001 With FEN k7/8/8/7p/6P1/8/8/K7 b - - 0 1 and Depth 6, Expected Result was 41874
+Test 594 Passed
+Test 595 Passed
+Test 596 Passed
+Test 597 Passed
+Test 598 Passed
+Test 599 Failed, Outputted 29806 With FEN k7/8/7p/8/8/6P1/8/K7 b - - 0 1 and Depth 6, Expected Result was 29679
+Test 600 Passed
+Test 601 Passed
+Test 602 Passed
+Test 603 Passed
+Test 604 Passed
+Test 605 Failed, Outputted 42001 With FEN k7/8/8/6p1/7P/8/8/K7 b - - 0 1 and Depth 6, Expected Result was 41874
+Test 606 Passed
+Test 607 Passed
+Test 608 Passed
+Test 609 Passed
+Test 610 Passed
+Test 611 Failed, Outputted 29806 With FEN k7/8/6p1/8/8/7P/8/K7 b - - 0 1 and Depth 6, Expected Result was 29679
+Test 612 Passed
+Test 613 Passed
+Test 614 Passed
+Test 615 Passed
+Test 616 Passed
+Test 617 Passed
+Test 618 Passed
+Test 619 Passed
+Test 620 Passed
+Test 621 Passed
+Test 622 Passed
+Test 623 Failed, Outputted 28663 With FEN k7/8/3p4/8/8/4P3/8/7K b - - 0 1 and Depth 6, Expected Result was 28662
+Test 624 Passed
+Test 625 Passed
+Test 626 Passed
+Test 627 Passed
+Test 628 Passed
+Test 629 Failed, Outputted 42001 With FEN 7k/8/8/p7/1P6/8/8/7K w - - 0 1 and Depth 6, Expected Result was 41874
+Test 630 Passed
+Test 631 Passed
+Test 632 Passed
+Test 633 Passed
+Test 634 Passed
+Test 635 Failed, Outputted 29806 With FEN 7k/8/p7/8/8/1P6/8/7K w - - 0 1 and Depth 6, Expected Result was 29679
+Test 636 Passed
+Test 637 Passed
+Test 638 Passed
+Test 639 Passed
+Test 640 Passed
+Test 641 Failed, Outputted 42001 With FEN 7k/8/8/1p6/P7/8/8/7K w - - 0 1 and Depth 6, Expected Result was 41874
+Test 642 Passed
+Test 643 Passed
+Test 644 Passed
+Test 645 Passed
+Test 646 Passed
+Test 647 Failed, Outputted 29806 With FEN 7k/8/1p6/8/8/P7/8/7K w - - 0 1 and Depth 6, Expected Result was 29679
+Test 648 Passed
+Test 649 Passed
+Test 650 Passed
+Test 651 Passed
+Test 652 Passed
+Test 653 Failed, Outputted 55465 With FEN k7/7p/8/8/8/8/6P1/K7 w - - 0 1 and Depth 6, Expected Result was 55338
+Test 654 Passed
+Test 655 Passed
+Test 656 Passed
+Test 657 Passed
+Test 658 Passed
+Test 659 Failed, Outputted 55465 With FEN k7/6p1/8/8/8/8/7P/K7 w - - 0 1 and Depth 6, Expected Result was 55338
+Test 660 Passed
+Test 661 Passed
+Test 662 Passed
+Test 663 Passed
+Test 664 Passed
+Test 665 Failed, Outputted 199053 With FEN 3k4/3pp3/8/8/8/8/3PP3/3K4 w - - 0 1 and Depth 6, Expected Result was 199002
+Test 666 Passed
+Test 667 Passed
+Test 668 Passed
+Test 669 Passed
+Test 670 Passed
+Test 671 Failed, Outputted 42001 With FEN 7k/8/8/p7/1P6/8/8/7K b - - 0 1 and Depth 6, Expected Result was 41874
+Test 672 Passed
+Test 673 Passed
+Test 674 Passed
+Test 675 Passed
+Test 676 Passed
+Test 677 Failed, Outputted 29806 With FEN 7k/8/p7/8/8/1P6/8/7K b - - 0 1 and Depth 6, Expected Result was 29679
+Test 678 Passed
+Test 679 Passed
+Test 680 Passed
+Test 681 Passed
+Test 682 Passed
+Test 683 Failed, Outputted 42001 With FEN 7k/8/8/1p6/P7/8/8/7K b - - 0 1 and Depth 6, Expected Result was 41874
+Test 684 Passed
+Test 685 Passed
+Test 686 Passed
+Test 687 Passed
+Test 688 Passed
+Test 689 Failed, Outputted 29806 With FEN 7k/8/1p6/8/8/P7/8/7K b - - 0 1 and Depth 6, Expected Result was 29679
+Test 690 Passed
+Test 691 Passed
+Test 692 Passed
+Test 693 Passed
+Test 694 Passed
+Test 695 Failed, Outputted 55465 With FEN k7/7p/8/8/8/8/6P1/K7 b - - 0 1 and Depth 6, Expected Result was 55338
+Test 696 Passed
+Test 697 Passed
+Test 698 Passed
+Test 699 Passed
+Test 700 Passed
+Test 701 Failed, Outputted 55465 With FEN k7/6p1/8/8/8/8/7P/K7 b - - 0 1 and Depth 6, Expected Result was 55338
+Test 702 Passed
+Test 703 Passed
+Test 704 Passed
+Test 705 Passed
+Test 706 Passed
+Test 707 Failed, Outputted 199053 With FEN 3k4/3pp3/8/8/8/8/3PP3/3K4 b - - 0 1 and Depth 6, Expected Result was 199002
+Test 708 Passed
+Test 709 Passed
+Test 710 Passed
+Test 711 Failed, Outputted 8049 With FEN 8/Pk6/8/8/8/8/6Kp/8 w - - 0 1 and Depth 4, Expected Result was 8048
+Test 712 Failed, Outputted 90654 With FEN 8/Pk6/8/8/8/8/6Kp/8 w - - 0 1 and Depth 5, Expected Result was 90606
+Test 713 Failed, Outputted 1031979 With FEN 8/Pk6/8/8/8/8/6Kp/8 w - - 0 1 and Depth 6, Expected Result was 1030499
+Test 714 Passed
+Test 715 Failed, Outputted 414 With FEN n1n5/1Pk5/8/8/8/8/5Kp1/5N1N w - - 0 1 and Depth 2, Expected Result was 421
+Test 716 Failed, Outputted 7248 With FEN n1n5/1Pk5/8/8/8/8/5Kp1/5N1N w - - 0 1 and Depth 3, Expected Result was 7421
+Test 717 Failed, Outputted 124349 With FEN n1n5/1Pk5/8/8/8/8/5Kp1/5N1N w - - 0 1 and Depth 4, Expected Result was 124608
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 720 Passed
+Test 721 Passed
+Test 722 Passed
+Test 723 Failed, Outputted 79400 With FEN 8/PPPk4/8/8/8/8/4Kppp/8 w - - 0 1 and Depth 4, Expected Result was 79355
+Test 724 Failed, Outputted 1536403 With FEN 8/PPPk4/8/8/8/8/4Kppp/8 w - - 0 1 and Depth 5, Expected Result was 1533145
+Test too large to perform as part of a suite
+Test 726 Passed
+Test 727 Failed, Outputted 513 With FEN n1n5/PPPk4/8/8/8/8/4Kppp/5N1N w - - 0 1 and Depth 2, Expected Result was 496
+Test 728 Failed, Outputted 10326 With FEN n1n5/PPPk4/8/8/8/8/4Kppp/5N1N w - - 0 1 and Depth 3, Expected Result was 9483
+Test 729 Failed, Outputted 211555 With FEN n1n5/PPPk4/8/8/8/8/4Kppp/5N1N w - - 0 1 and Depth 4, Expected Result was 182838
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 732 Passed
+Test 733 Passed
+Test 734 Passed
+Test 735 Failed, Outputted 8049 With FEN 8/Pk6/8/8/8/8/6Kp/8 b - - 0 1 and Depth 4, Expected Result was 8048
+Test 736 Failed, Outputted 90654 With FEN 8/Pk6/8/8/8/8/6Kp/8 b - - 0 1 and Depth 5, Expected Result was 90606
+Test 737 Failed, Outputted 1031979 With FEN 8/Pk6/8/8/8/8/6Kp/8 b - - 0 1 and Depth 6, Expected Result was 1030499
+Test 738 Passed
+Test 739 Failed, Outputted 414 With FEN n1n5/1Pk5/8/8/8/8/5Kp1/5N1N b - - 0 1 and Depth 2, Expected Result was 421
+Test 740 Failed, Outputted 7248 With FEN n1n5/1Pk5/8/8/8/8/5Kp1/5N1N b - - 0 1 and Depth 3, Expected Result was 7421
+Test 741 Failed, Outputted 124349 With FEN n1n5/1Pk5/8/8/8/8/5Kp1/5N1N b - - 0 1 and Depth 4, Expected Result was 124608
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Test 744 Passed
+Test 745 Passed
+Test 746 Passed
+Test 747 Failed, Outputted 79400 With FEN 8/PPPk4/8/8/8/8/4Kppp/8 b - - 0 1 and Depth 4, Expected Result was 79355
+Test 748 Failed, Outputted 1536403 With FEN 8/PPPk4/8/8/8/8/4Kppp/8 b - - 0 1 and Depth 5, Expected Result was 1533145
+Test too large to perform as part of a suite
+Test 750 Passed
+Test 751 Failed, Outputted 513 With FEN n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1 and Depth 2, Expected Result was 496
+Test 752 Failed, Outputted 10326 With FEN n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1 and Depth 3, Expected Result was 9483
+Test 753 Failed, Outputted 211555 With FEN n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1 and Depth 4, Expected Result was 182838
+Test too large to perform as part of a suite
+Test too large to perform as part of a suite
+Passed 395, Failed 290, Skipped 70
+Tests took 00:01:58.5346292
+Total nodes: 47553473

@@ -41,7 +41,20 @@ namespace Chess {
             int endRank = chars[3] - '1';
             int endFile = chars[2] - 'a';
             if(chars.Length > 4) {
-                promotionType = chars[4];
+                switch(chars[4]) {
+                    case 'n':
+                        promotionType = Piece.Knight | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        break;
+                    case 'b':
+                        promotionType = Piece.Bishop | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        break;
+                    case 'r':
+                        promotionType = Piece.Rook | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        break;
+                    case 'q':
+                        promotionType = Piece.Queen | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        break;
+                }
             }
             startSquare = startRank * 8 + startFile;
             endSquare = endRank * 8 + endFile;
@@ -54,7 +67,7 @@ namespace Chess {
         /// <param name="board">The board the move is used on</param>
         /// <returns>is it a capture?</returns>
         public bool IsCapture(Board board) {
-            return board.squares[endSquare] != Piece.None;
+            return board.PieceAtIndex(endSquare) != Piece.None;
         }
         /// <summary>
         /// Converts the move to a number, to be used by the move table
