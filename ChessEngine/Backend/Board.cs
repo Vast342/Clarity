@@ -554,6 +554,9 @@ namespace Chess {
             if(totalMask == 0) {
                 totalMask |= MaskGen.GetPawnCaptures(square, colorToMove) & GetColoredPieceBitboard(1 - colorToMove, Piece.Pawn);
             }
+            if(totalMask == 0) {
+                totalMask |= MaskGen.GetKingAttacks(square) & GetColoredPieceBitboard(1 - colorToMove, Piece.King);
+            }
             return totalMask != 0;
         }
         /// <summary>
