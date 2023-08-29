@@ -1,7 +1,9 @@
 # ChessEngine
 ---
 
-This project is my attempt at making a chess engine, the goal is to make it suitable, efficient, and most importantly, UCI compatible.
+This project is my attempt at making a chess engine, the goal is to make it a powerful opponent, efficient, and most importantly, UCI compatible.
+
+Currently, it is only the last of those 3.
 
 It is also my attempt to learn development in raw c# after using it with Unity for so long.
 
