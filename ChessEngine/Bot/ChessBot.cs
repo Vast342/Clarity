@@ -1,11 +1,10 @@
-using System.Numerics;
 using Chess;
 using Bot.Essentials;
 using System.Diagnostics;
 
 public class ChessBot {
     public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
-    public List<String> moves = new();
+    public List<string> moves = new();
     public string name = "";
     public string author = "";
     public Move rootBestMove = Move.NullMove;
@@ -87,9 +86,7 @@ public class ChessBot {
             if(sw.ElapsedMilliseconds > startTime / 30) {
                 rootBestMove = previousBestMove;
                 break;
-            } else if(i == 10) {
-                Console.WriteLine("You made it!");
-            }
+            } 
             Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
         moves.Add(rootBestMove.ConvertToLongAlgebraic());
@@ -98,23 +95,19 @@ public class ChessBot {
     }
     public int[] pieceValues = {100, 310, 330, 500, 1000, 100000, 0};
     public int[] colorMultipliers = {-1, 1};
+    public int[] colorShifters = {0, 56};
     /// <summary>
     /// A static evaluation of the position, currently only using material
     /// </summary>
     /// <returns>The number from the evaluation</returns>
     public int Evaluate() {
         int sum = 0;
-        for(byte p = Piece.Pawn; p <= Piece.King; p++) {
-            for(int i = 0; i < 64; i++) {
-                if(BitboardOperations.AtLocation(board.GetColoredPieceBitboard(0, p), i)) {
-                    sum -= Tables.tables[p][i];
-                }
-                if(BitboardOperations.AtLocation(board.GetColoredPieceBitboard(1, p), i)) {
-                    sum += Tables.tables[p][i ^ 56];
-                }
-            }
-            sum += BitOperations.PopCount(board.GetColoredPieceBitboard(1, p)) * pieceValues[p];
-            sum -= BitOperations.PopCount(board.GetColoredPieceBitboard(0, p)) * pieceValues[p];
+        ulong mask = board.GetOccupiedBitboard();
+        while(mask != 0) {
+            int index = BitboardOperations.PopLSB(ref mask);
+            byte piece = board.PieceAtIndex(index);
+            sum += Tables.tables[Piece.GetType(piece)][index ^ colorShifters[Piece.GetColor(piece)]] * colorMultipliers[Piece.GetColor(piece)];
+            sum += pieceValues[Piece.GetType(piece)] * colorMultipliers[Piece.GetColor(piece)];
         }
         return sum * colorMultipliers[board.colorToMove];
     }
@@ -195,7 +188,7 @@ public class ChessBot {
                 }
             }
         }
-        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : LOWERBOUND;
+        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : UPPERBOUND;
         TT.WriteEntry(new Transposition(hash, bestMove, 0, alpha, bound), hash);
         return alpha;
     }

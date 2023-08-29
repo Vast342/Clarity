@@ -23,7 +23,7 @@ namespace Chess {
             Stopwatch sw = Stopwatch.StartNew();
             foreach(PerftTest test in tests) {
                 i++;
-                if(test.expectedResult <= 2000000) {
+                if(test.expectedResult <= 5000000) {
                     int result = Test(test.depth, test.board);
                     total += result;
                     if(result == test.expectedResult) {

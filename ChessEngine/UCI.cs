@@ -2,7 +2,7 @@ using Chess;
 public class UCI {
     static void Main() {
         ChessBot bot = new();
-        bot.Initialize("Vast-Test", "Joseph");
+        bot.Initialize("Vast-Test", "Vast");
         while(true) {
             string? entry = Console.ReadLine();
             string? command = entry!.Split(' ')[0];

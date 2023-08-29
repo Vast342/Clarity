@@ -14,6 +14,7 @@ namespace Chess {
         public int plyCount = 0;
         public int fiftyMoveCounter;
         private readonly static ulong[,] zobTable = new ulong[64,15];
+        private static ulong zobColorToMove;
         public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
         /// <summary>
         /// Reads from a boardstate
@@ -242,21 +243,24 @@ namespace Chess {
             int totalMoves = 0;
             // castling
             if(!IsInCheck()) {
-                if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(5) && PieceAtIndex(7) == (Piece.Rook | Piece.White)) {
-                    moves[totalMoves] = new Move(4, 6, Piece.None, state);
-                    totalMoves++;
-                }
-                if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && colorToMove == 1 && !SquareIsAttackedByOpponent(3) && PieceAtIndex(0) == (Piece.Rook | Piece.White)) {
-                    moves[totalMoves] = new Move(4, 2, Piece.None, state);
-                    totalMoves++;
-                }
-                if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(61) && PieceAtIndex(63) == Piece.Rook) {
-                    moves[totalMoves] = new Move(60, 62, Piece.None, state);
-                    totalMoves++;
-                }
-                if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && colorToMove == 0 && !SquareIsAttackedByOpponent(59) && PieceAtIndex(56) == Piece.Rook) {
-                    moves[totalMoves] = new Move(60, 58, Piece.None, state);
-                    totalMoves++;   
+                if(colorToMove == 1) {
+                    if(castlingRights[0] && (occupiedBitboard & 0x60) == 0 && !SquareIsAttackedByOpponent(5) && PieceAtIndex(7) == (Piece.Rook | Piece.White)) {
+                        moves[totalMoves] = new Move(4, 6, Piece.None, state);
+                        totalMoves++;
+                    }
+                    if(castlingRights[1] && (occupiedBitboard & 0xE) == 0 && !SquareIsAttackedByOpponent(3) && PieceAtIndex(0) == (Piece.Rook | Piece.White)) {
+                        moves[totalMoves] = new Move(4, 2, Piece.None, state);
+                        totalMoves++;
+                    }
+                } else {
+                    if(castlingRights[2] && (occupiedBitboard & 0x6000000000000000) == 0 && !SquareIsAttackedByOpponent(61) && PieceAtIndex(63) == Piece.Rook) {
+                        moves[totalMoves] = new Move(60, 62, Piece.None, state);
+                        totalMoves++;
+                    }
+                    if(castlingRights[3] && (occupiedBitboard & 0xE00000000000000) == 0 && !SquareIsAttackedByOpponent(59) && PieceAtIndex(56) == Piece.Rook) {
+                        moves[totalMoves] = new Move(60, 58, Piece.None, state);
+                        totalMoves++;   
+                    }
                 }
             }
             ulong mask = coloredBitboards[colorToMove];
@@ -286,35 +290,47 @@ namespace Chess {
                         total |= MaskGen.GetKingAttacks(startSquare);
                     }
                     if(total != 0) {
-                        for(int i = 0; i < 64; i++) {
-                            if(BitboardOperations.AtLocation(total, i) && (Piece.GetColor(PieceAtIndex(i)) != colorToMove || Piece.GetType(PieceAtIndex(i)) == Piece.None)) {
-                                moves[totalMoves] = new Move(startSquare, i, Piece.None, new(this));
+                        ulong mask2 = total;
+                        while(mask2 != 0) {
+                            int index = BitboardOperations.PopLSB(ref mask2);
+                            if(Piece.GetColor(PieceAtIndex(index)) != colorToMove || Piece.GetType(PieceAtIndex(index)) == Piece.None) {
+                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
                                 totalMoves++;
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        for(int i = 0; i < 64; i++) {
-                            if(i >> 3 == 7 * colorToMove) {
+                        ulong mask2 = pawnPushes;
+                        while(mask2 != 0) {
+                            int index = BitboardOperations.PopLSB(ref mask2);
+                            if(index >> 3 == 7 * colorToMove) {
                                 // promotions
-                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(PieceAtIndex(i)) == Piece.None) {
+                                if(Piece.GetType(PieceAtIndex(index)) == Piece.None) {
                                     for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves[totalMoves] = new Move(startSquare, i, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                        totalMoves++;
-                                    }
-                                }
-                                if(BitboardOperations.AtLocation(pawnCaptures, i) && Piece.GetColor(PieceAtIndex(i)) != colorToMove && Piece.GetType(PieceAtIndex(i)) != Piece.None) {
-                                    for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves[totalMoves] = new Move(startSquare, i, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                                        moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                                         totalMoves++;
                                     }
                                 }
                             } else {
-                                if(BitboardOperations.AtLocation(pawnPushes, i) && Piece.GetType(PieceAtIndex(i)) == Piece.None) {
-                                    moves[totalMoves] = new Move(startSquare, i, Piece.None, new(this));
+                                if(Piece.GetType(PieceAtIndex(index)) == Piece.None) {
+                                    moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
                                     totalMoves++;
                                 }
-                                if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(PieceAtIndex(i)) != colorToMove && Piece.GetType(PieceAtIndex(i)) != Piece.None) || i == enPassantIndex)) {
-                                    moves[totalMoves] = new Move(startSquare, i, Piece.None, new(this));
+                            }
+                        }
+                        mask2 = pawnCaptures;
+                        while(mask2 != 0) {
+                            int index = BitboardOperations.PopLSB(ref mask2);
+                            if(index >> 3 == 7 * colorToMove) {
+                                // promotions
+                                if(Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) {
+                                    for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                        moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                                        totalMoves++;
+                                    }
+                                }
+                            } else {
+                                if((Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) || index == enPassantIndex) {
+                                    moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
                                     totalMoves++;
                                 }
                             }
@@ -359,16 +375,20 @@ namespace Chess {
                         total |= MaskGen.GetKingAttacks(startSquare);
                     }
                     if(total != 0) {
-                        for(int i = 0; i < 64; i++) {
-                            if(BitboardOperations.AtLocation(total, i) && Piece.GetColor(PieceAtIndex(i)) != colorToMove) {
-                                moves[totalMoves] = new Move(startSquare, i, Piece.None, state);
+                        ulong mask2 = total;
+                        while(mask2 != 0) {
+                            int index = BitboardOperations.PopLSB(ref mask2);
+                            if(Piece.GetColor(PieceAtIndex(index)) != colorToMove) {
+                                moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                                 totalMoves++;
                             }
                         }
                     } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        for(int i = 0; i < 64; i++) {
-                            if(BitboardOperations.AtLocation(pawnCaptures, i) && ((Piece.GetColor(PieceAtIndex(i)) != colorToMove && Piece.GetType(PieceAtIndex(i)) != Piece.None) || i == enPassantIndex)) {
-                                moves[totalMoves] = new Move(startSquare, i, Piece.None, state);
+                        ulong mask2 = pawnCaptures;
+                        while(mask2 != 0) {
+                            int index = BitboardOperations.PopLSB(ref mask2);
+                            if((Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) || index == enPassantIndex) {
+                                moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                                 totalMoves++;
                             }
                         }
@@ -385,6 +405,7 @@ namespace Chess {
         public void InitializeZobrist() {
             if(zobTable[0,0] != 0) {
                 var rng = new Random();
+                zobColorToMove = (ulong)rng.Next(0, int.MaxValue);
                 for(int i = 0; i < 64; i++) {
                     for(int j = 0; j < 15; j++) {
                         zobTable[i,j] = (ulong)rng.Next(0, int.MaxValue);
@@ -398,6 +419,9 @@ namespace Chess {
         /// <returns>The zobrist hash</returns>
         public ulong CreateHash() {
             ulong hash = 0;
+            if(colorToMove == 0) {
+                hash ^= zobColorToMove;
+            }
             for(int i = 0; i < 64; i++) {
                 if(PieceAtIndex(i) != 0) {
                     hash ^= zobTable[i, PieceAtIndex(i)];
