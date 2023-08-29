@@ -3,14 +3,12 @@ using Bot.Essentials;
 using System.Diagnostics;
 
 public struct ChessBot {
-    public ChessBot(string n, string a) {
-        name = n;
-        author = a;
+    public ChessBot() {
+        NewGame();
     }
     public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
-    public List<string> moves = new();
-    public string name = "";
-    public string author = "";
+    public string name = "Vast-Test";
+    public string author = "Vast";
     public Move rootBestMove = Move.NullMove;
     public static ulong mask = 0x7FFFFF;
     public TranspositionTable TT = new TranspositionTable();
@@ -24,20 +22,10 @@ public struct ChessBot {
         Console.WriteLine("id author " + author);
     }
     /// <summary>
-    /// initializes the bot, it's values, and the transposition TT
-    /// </summary>
-    /// <param name="n"></param>
-    /// <param name="a"></param>
-    public void Initialize(string n, string a) {
-        name = n;
-        author = a;
-    }
-    /// <summary>
     /// resets the bot and prepares for a new game
     /// </summary>
     public void NewGame() {
         board = new("8/8/8/8/8/8/8/8 w - - 0 0");
-        moves.Clear();
         TT.Clear();
         nodes = 0;
     }
