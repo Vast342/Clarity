@@ -1,7 +1,7 @@
 using System.Diagnostics;
 
 namespace Chess {
-    public class PerftTest {
+    public struct PerftTest {
         public PerftTest(string f, int d, long e) {
             board = new Board(f);
             fen = f;
@@ -13,7 +13,7 @@ namespace Chess {
         public int depth;
         public long expectedResult;
     }
-    public class Perft {
+    public struct Perft {
         public static void PerformTestSuite(PerftTest[] tests) {
             int i = 0;
             int pass = 0;
