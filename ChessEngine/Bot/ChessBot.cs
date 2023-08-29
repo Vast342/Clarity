@@ -2,17 +2,19 @@ using Chess;
 using Bot.Essentials;
 using System.Diagnostics;
 
-public class ChessBot {
+public struct ChessBot {
+    public ChessBot(int i) {
+        NewGame();
+    }
     public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
-    public List<string> moves = new();
-    public string name = "";
-    public string author = "";
+    public string name = "Vast-Test";
+    public string author = "Vast";
     public Move rootBestMove = Move.NullMove;
-    public MoveTable moveTable = new();
     public static ulong mask = 0x7FFFFF;
     public TranspositionTable TT = new TranspositionTable();
     private const sbyte EXACT = 0, LOWERBOUND = -1, UPPERBOUND = 1, INVALID = -2;
     int nodes = 0;
+    int numMoves = 0;
     /// <summary>
     /// Makes the bot identify itself with the values from Initialize()
     /// </summary>
@@ -21,23 +23,13 @@ public class ChessBot {
         Console.WriteLine("id author " + author);
     }
     /// <summary>
-    /// initializes the bot, it's values, and the transposition TT
-    /// </summary>
-    /// <param name="n"></param>
-    /// <param name="a"></param>
-    public void Initialize(string n, string a) {
-        name = n;
-        author = a;
-    }
-    /// <summary>
     /// resets the bot and prepares for a new game
     /// </summary>
     public void NewGame() {
         board = new("8/8/8/8/8/8/8/8 w - - 0 0");
-        moves.Clear();
         TT.Clear();
-        moveTable.Clear();
         nodes = 0;
+        numMoves = 0;
     }
     /// <summary>
     /// Loads the position from a position command
@@ -48,8 +40,8 @@ public class ChessBot {
         if(segments[1] == "startpos") {
             if(segments.Length > 2) {
                 if(segments[2] == "moves") {
-                    board.MakeMove(new Move(segments[3 + moves.Count], board));
-                    moves.Add(segments[3 + moves.Count-1]);
+                    board.MakeMove(new Move(segments[3 + numMoves], board));
+                    numMoves++;
                 }
             } else {
                 board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -58,8 +50,8 @@ public class ChessBot {
             if(segments.Length > 8) {
                 board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
                 if(segments[8] == "moves") {
-                    board.MakeMove(new Move(segments[9 + moves.Count], board));
-                    moves.Add(segments[9 + moves.Count-1]);
+                    board.MakeMove(new Move(segments[9 + numMoves], board));
+                    numMoves++;
                 }
             } else {
                 board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
@@ -89,7 +81,7 @@ public class ChessBot {
             } 
             Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
-        moves.Add(rootBestMove.ConvertToLongAlgebraic());
+        numMoves++;
         board.MakeMove(rootBestMove);
         Console.WriteLine("bestmove " + rootBestMove.ConvertToLongAlgebraic());
     }
