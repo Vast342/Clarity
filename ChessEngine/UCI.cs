@@ -1,12 +1,12 @@
 using Chess;
 public class UCI {
     static void Main() {
-        ChessBot bot = new(0);
+        ChessEngine engine = new(0);
         while(true) {
             string? entry = Console.ReadLine();
             string? command = entry!.Split(' ')[0];
             if(entry == "uci") {
-                bot.IdentifyUCI();
+                engine.IdentifyUCI();
                 Console.WriteLine("uciok");
             }
             if(command == "quit") {
@@ -16,10 +16,10 @@ public class UCI {
                 Console.WriteLine("readyok");
             }
             if(command == "ucinewgame") {
-                bot.NewGame();
+                engine.NewGame();
             }
             if(command == "position") {
-                bot.LoadPosition(entry);
+                engine.LoadPosition(entry);
             }
             if(command == "test") {
                 if(entry.Split(' ')[1] == "board-rep") {
@@ -77,13 +77,13 @@ public class UCI {
                 Console.WriteLine(b.IsInCheck());
             }
             if(command == "go") {
-                bot.Think(entry);
+                engine.Think(entry);
             }
             if(command == "get-fen") {
-                bot.GetFen();
+                engine.GetFen();
             }
             if(command == "make-move") {
-                bot.MakeMove(entry);
+                engine.MakeMove(entry);
             }
         }
     }
