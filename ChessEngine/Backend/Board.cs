@@ -1,5 +1,5 @@
 namespace Chess {
-    public class Board {
+    public struct Board {
         // board specific values
         public byte[] kingSquares = new byte[2];
         public int colorToMove = 1;

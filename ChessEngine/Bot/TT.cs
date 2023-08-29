@@ -1,9 +1,8 @@
 using Chess;
 
 namespace Bot.Essentials {
-    public class TranspositionTable {
-        public static ulong mask = 0x7FFFFF;
-        
+    public struct TranspositionTable {
+        public static ulong mask = 0xFFFFFF;
         public Transposition[] table;
         /// <summary>
         /// Creates a new Transposition Table
@@ -54,6 +53,9 @@ namespace Bot.Essentials {
         }
         public Transposition ReadEntry(ulong z) {
             return table[z & mask];
+        }
+        public int ReadScore(ulong z) {
+            return table[z & mask].score;
         }
     }
     public struct Transposition {

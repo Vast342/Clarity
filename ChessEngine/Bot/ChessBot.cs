@@ -2,13 +2,16 @@ using Chess;
 using Bot.Essentials;
 using System.Diagnostics;
 
-public class ChessBot {
+public struct ChessBot {
+    public ChessBot(string n, string a) {
+        name = n;
+        author = a;
+    }
     public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
     public List<string> moves = new();
     public string name = "";
     public string author = "";
     public Move rootBestMove = Move.NullMove;
-    public MoveTable moveTable = new();
     public static ulong mask = 0x7FFFFF;
     public TranspositionTable TT = new TranspositionTable();
     private const sbyte EXACT = 0, LOWERBOUND = -1, UPPERBOUND = 1, INVALID = -2;
@@ -36,7 +39,6 @@ public class ChessBot {
         board = new("8/8/8/8/8/8/8/8 w - - 0 0");
         moves.Clear();
         TT.Clear();
-        moveTable.Clear();
         nodes = 0;
     }
     /// <summary>

@@ -12,6 +12,12 @@ namespace Chess {
             }
             return attacks;
         }
+        // This is a concept, I don't know if it will get used but I think it would be more efficient
+        public static ulong GetPawnPushesRow(int colorToMove, ulong coloredPawnBitboard) {
+            ulong attacks = coloredPawnBitboard;
+            attacks <<= directionalOffsets[1 - colorToMove];
+            return attacks;
+        }
         public static ulong GetRookAttacks(int startSquare, ulong occupiedBitboard) {
             ulong total = 0;
             for(int direction = 0; direction < 4; direction++) {
