@@ -86,7 +86,7 @@ public class ChessBot {
             if(sw.ElapsedMilliseconds > startTime / 30) {
                 rootBestMove = previousBestMove;
                 break;
-            }
+            } 
             Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
         moves.Add(rootBestMove.ConvertToLongAlgebraic());
