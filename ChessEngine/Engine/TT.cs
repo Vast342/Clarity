@@ -1,6 +1,6 @@
 using Chess;
 
-namespace Bot.Essentials {
+namespace Engine.Essentials {
     public struct TranspositionTable {
         public static ulong mask = 0xFFFFFF;
         public Transposition[] table;

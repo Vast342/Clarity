@@ -1,4 +1,4 @@
-namespace Bot.Essentials {
+namespace Engine.Essentials {
     // this class is to be used with anything necessary for moves, like history heuristic.
     // that being said, it is currently unused.
     public struct MoveTable {
