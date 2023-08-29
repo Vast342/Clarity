@@ -1,7 +1,7 @@
 using Chess;
 public class UCI {
     static void Main() {
-        ChessBot bot = new();
+        ChessBot bot = new(0);
         while(true) {
             string? entry = Console.ReadLine();
             string? command = entry!.Split(' ')[0];
