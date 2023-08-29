@@ -2,8 +2,8 @@ using Chess;
 using Bot.Essentials;
 using System.Diagnostics;
 
-public struct ChessBot {
-    public ChessBot(int i) {
+public struct ChessEngine {
+    public ChessEngine(int i) {
         NewGame();
     }
     public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
