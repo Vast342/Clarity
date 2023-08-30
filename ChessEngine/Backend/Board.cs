@@ -5,18 +5,21 @@ LIST OF IDEAS
 
 lookup table for pawn pushes
 
+The lookup table will require a check for pawn pushes to make sure that I don't accidentally make it play checkers. That check is now done.
+
 make MakeMove and UndoMove better, rework readBoardState and GetMoves (remove bitboards from boardState)
 
 Figure out TT
 
 Memory management
 
-Optimisations
+Optimizations in general
 
-magic bitboard move generation
+Magic bitboard move generation
 
-stuff with unsafe and fixed size
+stuff with unsafe and fixed-size arrays
 
+Delete the extra branches on the local repo, establish dev as the main, and commit to main only after large changes & improvements
 */
 
         // board specific values
@@ -251,6 +254,7 @@ stuff with unsafe and fixed size
             fen += plyCount / 2 + colorToMove;
             return fen;
         }
+        public static int[] colorMultipliers = {-1, 1};
         /// <summary>
         /// Generates a list of all the moves from the position, not including moves while in check. To filter the legal moves, check the return value of Board.MakeMove()
         /// </summary>
@@ -298,7 +302,7 @@ stuff with unsafe and fixed size
                     total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
                     total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
                 } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                    pawnPushes |= MaskGen.GetPawnPushes(startSquare, colorToMove, ~occupiedBitboard);
+                    pawnPushes |= MaskGen.GetPawnPushes(startSquare, colorToMove);
                     pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
                 } else if(Piece.GetType(currentPiece) == Piece.Knight) {
                     total |= MaskGen.GetKnightAttacks(startSquare);
@@ -325,9 +329,16 @@ stuff with unsafe and fixed size
                             }
                         }
                     } else {
-                        if(Piece.GetType(piece) == Piece.None) {
-                            moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
-                            totalMoves++;
+                        if(index == startSquare + (16 * colorMultipliers[colorToMove))) {
+                            if(Piece.GetType(piece) == Piece.None &&  Piece.GetType(PieceAtIndex(startSquare + (8 * colorMultipliers[colorToMove]))) == Piece.None) {
+                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                                totalMoves++;
+                            }
+                        } else {
+                            if(Piece.GetType(piece) == Piece.None) {6
+                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                                totalMoves++;
+                            }
                         }
                     }
                 }
@@ -383,25 +394,33 @@ stuff with unsafe and fixed size
                 } else if(Piece.GetType(currentPiece) == Piece.King) {
                     total |= MaskGen.GetKingAttacks(startSquare);
                 }
-                if(total != 0) {
-                    ulong mask2 = total;
-                    while(mask2 != 0) {
-                        int index = BitboardOperations.PopLSB(ref mask2);
-                        if(Piece.GetColor(PieceAtIndex(index)) != colorToMove) {
-                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
-                            totalMoves++;
-                        }
+                while(total != 0) {
+                    int index = BitboardOperations.PopLSB(ref total);
+                    int piece = PieceAtIndex(index);
+                    if(Piece.GetColor(piece) != colorToMove || Piece.GetType(piece) == Piece.None) {
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                        totalMoves++;
                     }
-                } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                    ulong mask2 = pawnCaptures;
-                    while(mask2 != 0) {
-                        int index = BitboardOperations.PopLSB(ref mask2);
-                        if((Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) || index == enPassantIndex) {
-                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                }
+                while(pawnCaptures != 0) {
+                    int index = BitboardOperations.PopLSB(ref pawnCaptures);
+                    int piece = PieceAtIndex(index);
+                    if(index >> 3 == 7 * colorToMove) {
+                        // promotions
+                        if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
+                            for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                                totalMoves++;
+                            }
+                        }
+                    } else {
+                        if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
+                            moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
                             totalMoves++;
                         }
                     }
                 }
+            }
             }
             Array.Resize(ref moves, totalMoves);
             return moves;
