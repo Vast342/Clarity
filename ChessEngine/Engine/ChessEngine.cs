@@ -113,6 +113,7 @@ public struct ChessEngine {
     public int Negamax(int alpha, int beta, int depth, int ply) {
         if(sw.ElapsedMilliseconds > startTime / 30) return 0;
         ulong hash = board.CreateHash();
+        /* TT PRUNING, not quite working, so commented out for now
         Transposition entry = TT.ReadEntry(hash);
         if (entry.zobristKey == board.CreateHash() && entry.depth >= depth && ply > 0) {
             //If we have an "exact" score (a <    score < beta) just use that
@@ -121,7 +122,7 @@ public struct ChessEngine {
             if (entry.flag == LOWERBOUND && entry.score >= beta) return entry.score;
             //If we have an upper bound worse than alpha, use that
             if (entry.flag == UPPERBOUND && entry.score <= alpha) return entry.score;
-        }
+        }*/
         if(depth == 0) return QSearch(alpha, beta);
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
