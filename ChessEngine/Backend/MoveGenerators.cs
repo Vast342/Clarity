@@ -3,13 +3,16 @@ using System.Numerics;
 namespace Chess {
     public static class MaskGen {
         public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
-        public static ulong GetPawnPushes(int startSquare, int colorToMove) {
+        public static ulong GetPawnPushesOld(int startSquare, int colorToMove) {
             ulong attacks = 0;
             attacks |= ((ulong)1) << startSquare + directionalOffsets[1 - colorToMove];
             if(startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
                 attacks |= ((ulong)1) << startSquare + directionalOffsets[1 - colorToMove] * 2;
             }
             return attacks;
+        }
+        public static ulong GetPawnPushes(int startSquare, int colorToMove) {
+            return Mask.pawnPushMasks[colorToMove, startSquare];
         }
         public static ulong GetRookAttacks(int startSquare, ulong occupiedBitboard) {
             // North
