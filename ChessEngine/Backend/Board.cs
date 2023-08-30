@@ -305,50 +305,47 @@ stuff with unsafe and fixed size
                 } else if(Piece.GetType(currentPiece) == Piece.King) {
                     total |= MaskGen.GetKingAttacks(startSquare);
                 }
-                if(total != 0) {
-                    ulong mask2 = total;
-                    while(mask2 != 0) {
-                        int index = BitboardOperations.PopLSB(ref mask2);
-                        if(Piece.GetColor(PieceAtIndex(index)) != colorToMove || Piece.GetType(PieceAtIndex(index)) == Piece.None) {
+                while(total != 0) {
+                    int index = BitboardOperations.PopLSB(ref total);
+                    int piece = PieceAtIndex(index);
+                    if(Piece.GetColor(piece) != colorToMove || Piece.GetType(piece) == Piece.None) {
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                        totalMoves++;
+                    }
+                }
+                while(pawnPushes != 0) {
+                    int index = BitboardOperations.PopLSB(ref pawnPushes);
+                    int piece = PieceAtIndex(index);
+                    if(index >> 3 == 7 * colorToMove) {
+                        // promotions
+                        if(Piece.GetType(piece) == Piece.None) {
+                            for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                                totalMoves++;
+                            }
+                        }
+                    } else {
+                        if(Piece.GetType(piece) == Piece.None) {
                             moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
                             totalMoves++;
                         }
                     }
-                } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                    ulong mask2 = pawnPushes;
-                    while(mask2 != 0) {
-                        int index = BitboardOperations.PopLSB(ref mask2);
-                        if(index >> 3 == 7 * colorToMove) {
-                            // promotions
-                            if(Piece.GetType(PieceAtIndex(index)) == Piece.None) {
-                                for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                    moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                    totalMoves++;
-                                }
-                            }
-                        } else {
-                            if(Piece.GetType(PieceAtIndex(index)) == Piece.None) {
-                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                }
+                while(pawnCaptures != 0) {
+                    int index = BitboardOperations.PopLSB(ref pawnCaptures);
+                    int piece = PieceAtIndex(index);
+                    if(index >> 3 == 7 * colorToMove) {
+                        // promotions
+                        if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
+                            for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                                 totalMoves++;
                             }
                         }
-                    }
-                    mask2 = pawnCaptures;
-                    while(mask2 != 0) {
-                        int index = BitboardOperations.PopLSB(ref mask2);
-                        if(index >> 3 == 7 * colorToMove) {
-                            // promotions
-                            if(Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) {
-                                for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                    moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                    totalMoves++;
-                                }
-                            }
-                        } else {
-                            if((Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) || index == enPassantIndex) {
-                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
-                                totalMoves++;
-                            }
+                    } else {
+                        if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
+                            moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                            totalMoves++;
                         }
                     }
                 }
