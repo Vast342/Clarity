@@ -1,18 +1,23 @@
-using System.Globalization;
 using System.Numerics;
 namespace Chess {
     public static class MaskGen {
-        public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
-        public static ulong GetPawnPushesOld(int startSquare, int colorToMove) {
+        public static ulong GetPawnPushes(ulong pawnBitboard, ulong emptyBitboard, int colorToMove) {
             ulong attacks = 0;
-            attacks |= ((ulong)1) << startSquare + directionalOffsets[1 - colorToMove];
-            if(startSquare >> 3 == (colorToMove == 1 ? 1 : 6)) {
-                attacks |= ((ulong)1) << startSquare + directionalOffsets[1 - colorToMove] * 2;
+            if(colorToMove == 1) {
+                attacks = (pawnBitboard << 8) & emptyBitboard; 
+            } else {
+                attacks = (pawnBitboard >> 8) & emptyBitboard; 
             }
             return attacks;
         }
-        public static ulong GetPawnPushes(int startSquare, int colorToMove) {
-            return Mask.pawnPushMasks[colorToMove, startSquare];
+        public static ulong GetDoublePawnPushes(ulong pawnAttacks, ulong emptyBitboard, int colorToMove) {
+            ulong attacks = 0;
+            if(colorToMove == 1) {
+                attacks = ((pawnAttacks & Mask.GetRankMask(5 - (3 * colorToMove))) << 8) & emptyBitboard;
+            } else {
+                attacks = ((pawnAttacks & Mask.GetRankMask(5 - (3 * colorToMove))) >> 8) & emptyBitboard;
+            }
+            return attacks;
         }
         public static ulong GetRookAttacks(int startSquare, ulong occupiedBitboard) {
             // North

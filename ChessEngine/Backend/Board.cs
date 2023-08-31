@@ -1,11 +1,9 @@
+using System.Text.RegularExpressions;
+
 namespace Chess {
     public struct Board {
 /*
 LIST OF IDEAS
-
-lookup table for pawn pushes
-
-The lookup table will require a check for pawn pushes to make sure that I don't accidentally make it play checkers. That check is now done.
 
 make MakeMove and UndoMove better, rework readBoardState and GetMoves (remove bitboards from boardState)
 
@@ -18,8 +16,6 @@ Optimizations in general
 Magic bitboard move generation
 
 stuff with unsafe and fixed-size arrays
-
-Delete the extra branches on the local repo, establish dev as the main, and commit to main only after large changes & improvements
 */
 
         // board specific values
@@ -47,8 +43,6 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
             enPassantIndex = state.enPassantIndex;
             Array.Copy(state.castlingRights, castlingRights, 4);
             fiftyMoveCounter = state.fiftyMoveCounter;
-            Array.Copy(state.coloredBitboards, coloredBitboards, 2);
-            Array.Copy(state.pieceBitboards, pieceBitboards, 6);
         }
         /// <summary>
         /// Establishes a new board instance, with the position and information contained within a FEN string.
@@ -293,7 +287,6 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                 byte currentPiece = PieceAtIndex(startSquare);
                 ulong total = 0;
                 ulong pawnCaptures = 0;
-                ulong pawnPushes = 0;
                 if(Piece.GetType(currentPiece) == Piece.Bishop) {
                     total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
                 } else if(Piece.GetType(currentPiece) == Piece.Rook) {
@@ -302,7 +295,6 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                     total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
                     total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
                 } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                    pawnPushes |= MaskGen.GetPawnPushes(startSquare, colorToMove);
                     pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
                 } else if(Piece.GetType(currentPiece) == Piece.Knight) {
                     total |= MaskGen.GetKnightAttacks(startSquare);
@@ -311,40 +303,15 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                 }
                 while(total != 0) {
                     int index = BitboardOperations.PopLSB(ref total);
-                    int piece = PieceAtIndex(index);
+                    byte piece = PieceAtIndex(index);
                     if(Piece.GetColor(piece) != colorToMove || Piece.GetType(piece) == Piece.None) {
-                        moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                         totalMoves++;
-                    }
-                }
-                while(pawnPushes != 0) {
-                    int index = BitboardOperations.PopLSB(ref pawnPushes);
-                    int piece = PieceAtIndex(index);
-                    if(index >> 3 == 7 * colorToMove) {
-                        // promotions
-                        if(Piece.GetType(piece) == Piece.None) {
-                            for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                totalMoves++;
-                            }
-                        }
-                    } else {
-                        if(index == startSquare + (16 * colorMultipliers[colorToMove))) {
-                            if(Piece.GetType(piece) == Piece.None &&  Piece.GetType(PieceAtIndex(startSquare + (8 * colorMultipliers[colorToMove]))) == Piece.None) {
-                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
-                                totalMoves++;
-                            }
-                        } else {
-                            if(Piece.GetType(piece) == Piece.None) {6
-                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
-                                totalMoves++;
-                            }
-                        }
                     }
                 }
                 while(pawnCaptures != 0) {
                     int index = BitboardOperations.PopLSB(ref pawnCaptures);
-                    int piece = PieceAtIndex(index);
+                    byte piece = PieceAtIndex(index);
                     if(index >> 3 == 7 * colorToMove) {
                         // promotions
                         if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
@@ -355,11 +322,36 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                         }
                     } else {
                         if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
-                            moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                             totalMoves++;
                         }
                     }
                 }
+            }
+            // pawn pushes
+            ulong pawnBitboard = GetColoredPieceBitboard(colorToMove, Piece.Pawn);
+            ulong emptyBitboard = ~GetOccupiedBitboard();
+            ulong pawnPushes = MaskGen.GetPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
+            ulong doublePawnPushes = MaskGen.GetDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
+            while(pawnPushes != 0) {
+                int index = BitboardOperations.PopLSB(ref pawnPushes);
+                int startSquare = index + directionalOffsets[colorToMove];
+                if(index >> 3 == 7 * colorToMove) {
+                     // promotions
+                    for(int type = Piece.Knight; type < Piece.King; type++) { 
+                        moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                        totalMoves++;
+                    }
+                } else {
+                    moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                    totalMoves++;
+                }
+            }
+            while(doublePawnPushes != 0) {
+                int index = BitboardOperations.PopLSB(ref doublePawnPushes);
+                int startSquare = index + directionalOffsets[colorToMove] * 2;
+                moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                totalMoves++;
             }
             Array.Resize(ref moves, totalMoves);
             return moves;
@@ -396,15 +388,15 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                 }
                 while(total != 0) {
                     int index = BitboardOperations.PopLSB(ref total);
-                    int piece = PieceAtIndex(index);
-                    if(Piece.GetColor(piece) != colorToMove || Piece.GetType(piece) == Piece.None) {
-                        moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                    byte piece = PieceAtIndex(index);
+                    if(Piece.GetColor(piece) != colorToMove) {
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                         totalMoves++;
                     }
                 }
                 while(pawnCaptures != 0) {
                     int index = BitboardOperations.PopLSB(ref pawnCaptures);
-                    int piece = PieceAtIndex(index);
+                    byte piece = PieceAtIndex(index);
                     if(index >> 3 == 7 * colorToMove) {
                         // promotions
                         if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
@@ -415,12 +407,11 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                         }
                     } else {
                         if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
-                            moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                             totalMoves++;
                         }
                     }
                 }
-            }
             }
             Array.Resize(ref moves, totalMoves);
             return moves;
@@ -461,11 +452,14 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
         /// </summary>
         /// <param name="move">The move to be made</param>
         public bool MakeMove(Move move) {
+            move.capturedPieceType = PieceAtIndex(move.endSquare);
+            byte startPiece = PieceAtIndex(move.startSquare);
+            byte endPiece = PieceAtIndex(move.endSquare);
             if(colorToMove != 1) {
                 fiftyMoveCounter++;
             }
             // fifty move counter
-            if(PieceAtIndex(move.endSquare) != 0 || (PieceAtIndex(move.startSquare) & 7) == Piece.Pawn) {
+            if(endPiece != 0 || (startPiece & 7) == Piece.Pawn) {
                 fiftyMoveCounter = 0;
             }
             // for each start one set the start square to 0
@@ -477,6 +471,7 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                 // update the bitboards
                 MovePiece(4, PieceAtIndex(4), 6, Piece.None);
                 MovePiece(7, PieceAtIndex(7), 5, Piece.None);
+                move.moveType = MoveType.WKCastling;
                 enPassantIndex = 64;
             } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
                 // castling 
@@ -486,6 +481,7 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                 // update the bitboards
                 MovePiece(4, PieceAtIndex(4), 2, Piece.None);
                 MovePiece(0, PieceAtIndex(0), 3, Piece.None);
+                move.moveType = MoveType.WQCastling;
                 enPassantIndex = 64;
             } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
                 // castling 3
@@ -495,6 +491,7 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                 // update the bitboards
                 MovePiece(60, PieceAtIndex(60), 62, Piece.None);
                 MovePiece(63, PieceAtIndex(63), 61, Piece.None);
+                move.moveType = MoveType.BKCastling;
                 enPassantIndex = 64;
             } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
                 // castling 4
@@ -504,39 +501,51 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
                 // update the bitboards
                 MovePiece(60, PieceAtIndex(60), 58, Piece.None);
                 MovePiece(56, PieceAtIndex(56), 59, Piece.None);
+                move.moveType = MoveType.BQCastling;
                 enPassantIndex = 64;
-            } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(PieceAtIndex(move.startSquare)) == Piece.Pawn) {
+            } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(startPiece) == Piece.Pawn) {
                 // en passant
                 // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
                 enPassantIndex = 64;
                 // update the bitboards
-                MovePiece(move.startSquare, PieceAtIndex(move.startSquare), move.endSquare, PieceAtIndex(move.endSquare));
+                MovePiece(move.startSquare, startPiece, move.endSquare, endPiece);
                 RemovePiece(move.endSquare + (colorToMove == 1 ? -8 : 8), (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.Black : Piece.White)));
+                move.moveType = MoveType.EnPassant;
             } else {
                 // move  normally
                 // switch first square with second
-                if((PieceAtIndex(move.startSquare) & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
+                if((startPiece & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
                     // its a double move, make the first square the en passant index
                     enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
                 } else {
                     enPassantIndex = 64;
                 }
                 // update the bitboards
-                MovePiece(move.startSquare, PieceAtIndex(move.startSquare), move.endSquare, PieceAtIndex(move.endSquare));
+                MovePiece(move.startSquare, startPiece, move.endSquare, endPiece);
+                if(move.capturedPieceType != Piece.None) {
+                    move.moveType = MoveType.Capture;
+                } else {
+                    move.moveType = MoveType.Normal;
+                }
             }
             // promotions
             if(move.promotionType != Piece.None && move.promotionType != 0) {
                 // update the bitboards
                 RemovePiece(move.endSquare, (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
                 AddPiece(move.endSquare, (byte)move.promotionType);
+                if(move.moveType == MoveType.Capture) {
+                    move.moveType = MoveType.PromotionCapture;
+                } else {
+                    move.moveType = MoveType.Promotion;
+                }
             }
             // king square updates
-            if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.King) {
+            if(Piece.GetType(endPiece) == Piece.King) {
                 kingSquares[colorToMove] = (byte)move.endSquare;
                 castlingRights[colorToMove == 1 ? 0 : 2] = false;
                 castlingRights[colorToMove == 1 ? 1 : 3] = false;
             }
-            if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.Rook) {
+            if(Piece.GetType(endPiece) == Piece.Rook) {
                 switch (move.startSquare) {
                     case 0:
                         castlingRights[1] = false;
@@ -568,6 +577,34 @@ Delete the extra branches on the local repo, establish dev as the main, and comm
         /// <param name="move"></param>
         public void UndoMove(Move move) {
             ReadBoardState(move.state); 
+            byte endPiece = PieceAtIndex(move.endSquare);
+            if(endPiece == Piece.None) Console.WriteLine(GetFenString());
+            byte startPiece = PieceAtIndex(move.startSquare);
+            if(move.moveType == MoveType.Normal || move.moveType == MoveType.Capture) {
+                MovePiece(move.endSquare, endPiece, move.startSquare, startPiece);
+            } else if(move.moveType == MoveType.WKCastling) {
+                MovePiece(6, PieceAtIndex(6), 4, Piece.None);
+                MovePiece(5, PieceAtIndex(5), 7, Piece.None);
+            } else if(move.moveType == MoveType.WQCastling) {
+                MovePiece(2, PieceAtIndex(2), 4, Piece.None);
+                MovePiece(3, PieceAtIndex(3), 0, Piece.None);
+            } else if(move.moveType == MoveType.BKCastling) {
+                MovePiece(62, PieceAtIndex(62), 60, Piece.None);
+                MovePiece(61, PieceAtIndex(61), 63, Piece.None);
+            } else if(move.moveType == MoveType.BQCastling) {
+                MovePiece(58, PieceAtIndex(58), 60, Piece.None);
+                MovePiece(59, PieceAtIndex(59), 56, Piece.None);
+            } else if(move.moveType == MoveType.Promotion || move.moveType == MoveType.PromotionCapture) {
+                MovePiece(move.endSquare, endPiece, move.startSquare, startPiece);
+                RemovePiece(move.startSquare, endPiece);
+                AddPiece(move.startSquare, (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
+            } else if(move.moveType == MoveType.EnPassant) {
+                MovePiece(move.endSquare, endPiece, move.startSquare, startPiece);
+                AddPiece(move.endSquare + directionalOffsets[colorToMove], (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
+            }
+            if(move.moveType == MoveType.Capture || move.moveType == MoveType.PromotionCapture) {
+                AddPiece(move.endSquare, move.capturedPieceType);
+            }
             plyCount--;
             colorToMove = 1 - colorToMove;
         } 

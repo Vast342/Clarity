@@ -4,8 +4,10 @@ namespace Chess {
     public struct Move {
         public int startSquare;
         public int endSquare;
-        public int promotionType;
+        public byte capturedPieceType;
+        public int promotionType = Piece.None;
         public BoardState state;
+        public int moveType;
         /// <summary>
         /// Makes a new move with the starting and ending squares.
         /// </summary>
@@ -94,5 +96,16 @@ namespace Chess {
         public static bool Equals(Move move1, Move move2) {
             return move1.startSquare == move2.startSquare && move1.endSquare == move2.endSquare && move1.promotionType == move2.promotionType;
         }
+    }
+    public static class MoveType {
+        public const int Normal = 0;
+        public const int EnPassant = 1;
+        public const int WKCastling = 2;
+        public const int WQCastling = 3;
+        public const int BKCastling = 4;
+        public const int BQCastling = 4;
+        public const int Promotion = 5;
+        public const int Capture = 6;
+        public const int PromotionCapture = 7;
     }
 }
