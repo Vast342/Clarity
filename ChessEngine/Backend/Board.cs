@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace Chess {
     public struct Board {
 /*
@@ -43,6 +41,8 @@ stuff with unsafe and fixed-size arrays
             enPassantIndex = state.enPassantIndex;
             Array.Copy(state.castlingRights, castlingRights, 4);
             fiftyMoveCounter = state.fiftyMoveCounter;
+            Array.Copy(state.coloredBitboards, coloredBitboards, 2);
+            Array.Copy(state.pieceBitboards, pieceBitboards, 6);
         }
         /// <summary>
         /// Establishes a new board instance, with the position and information contained within a FEN string.
@@ -452,7 +452,6 @@ stuff with unsafe and fixed-size arrays
         /// </summary>
         /// <param name="move">The move to be made</param>
         public bool MakeMove(Move move) {
-            move.capturedPieceType = PieceAtIndex(move.endSquare);
             byte startPiece = PieceAtIndex(move.startSquare);
             byte endPiece = PieceAtIndex(move.endSquare);
             if(colorToMove != 1) {
@@ -471,7 +470,6 @@ stuff with unsafe and fixed-size arrays
                 // update the bitboards
                 MovePiece(4, PieceAtIndex(4), 6, Piece.None);
                 MovePiece(7, PieceAtIndex(7), 5, Piece.None);
-                move.moveType = MoveType.WKCastling;
                 enPassantIndex = 64;
             } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
                 // castling 
@@ -481,7 +479,6 @@ stuff with unsafe and fixed-size arrays
                 // update the bitboards
                 MovePiece(4, PieceAtIndex(4), 2, Piece.None);
                 MovePiece(0, PieceAtIndex(0), 3, Piece.None);
-                move.moveType = MoveType.WQCastling;
                 enPassantIndex = 64;
             } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
                 // castling 3
@@ -491,7 +488,6 @@ stuff with unsafe and fixed-size arrays
                 // update the bitboards
                 MovePiece(60, PieceAtIndex(60), 62, Piece.None);
                 MovePiece(63, PieceAtIndex(63), 61, Piece.None);
-                move.moveType = MoveType.BKCastling;
                 enPassantIndex = 64;
             } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
                 // castling 4
@@ -501,7 +497,6 @@ stuff with unsafe and fixed-size arrays
                 // update the bitboards
                 MovePiece(60, PieceAtIndex(60), 58, Piece.None);
                 MovePiece(56, PieceAtIndex(56), 59, Piece.None);
-                move.moveType = MoveType.BQCastling;
                 enPassantIndex = 64;
             } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(startPiece) == Piece.Pawn) {
                 // en passant
@@ -510,7 +505,6 @@ stuff with unsafe and fixed-size arrays
                 // update the bitboards
                 MovePiece(move.startSquare, startPiece, move.endSquare, endPiece);
                 RemovePiece(move.endSquare + (colorToMove == 1 ? -8 : 8), (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.Black : Piece.White)));
-                move.moveType = MoveType.EnPassant;
             } else {
                 // move  normally
                 // switch first square with second
@@ -522,30 +516,20 @@ stuff with unsafe and fixed-size arrays
                 }
                 // update the bitboards
                 MovePiece(move.startSquare, startPiece, move.endSquare, endPiece);
-                if(move.capturedPieceType != Piece.None) {
-                    move.moveType = MoveType.Capture;
-                } else {
-                    move.moveType = MoveType.Normal;
-                }
             }
             // promotions
             if(move.promotionType != Piece.None && move.promotionType != 0) {
                 // update the bitboards
                 RemovePiece(move.endSquare, (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
                 AddPiece(move.endSquare, (byte)move.promotionType);
-                if(move.moveType == MoveType.Capture) {
-                    move.moveType = MoveType.PromotionCapture;
-                } else {
-                    move.moveType = MoveType.Promotion;
-                }
             }
             // king square updates
-            if(Piece.GetType(endPiece) == Piece.King) {
+            if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.King) {
                 kingSquares[colorToMove] = (byte)move.endSquare;
                 castlingRights[colorToMove == 1 ? 0 : 2] = false;
                 castlingRights[colorToMove == 1 ? 1 : 3] = false;
             }
-            if(Piece.GetType(endPiece) == Piece.Rook) {
+            if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.Rook) {
                 switch (move.startSquare) {
                     case 0:
                         castlingRights[1] = false;
@@ -570,41 +554,13 @@ stuff with unsafe and fixed-size arrays
                 colorToMove = 1 - colorToMove;
                 return true;
             }
-        }
+}
         /// <summary>
         /// undoes a move by reading from the move's board state
         /// </summary>
         /// <param name="move"></param>
         public void UndoMove(Move move) {
             ReadBoardState(move.state); 
-            byte endPiece = PieceAtIndex(move.endSquare);
-            if(endPiece == Piece.None) Console.WriteLine(GetFenString());
-            byte startPiece = PieceAtIndex(move.startSquare);
-            if(move.moveType == MoveType.Normal || move.moveType == MoveType.Capture) {
-                MovePiece(move.endSquare, endPiece, move.startSquare, startPiece);
-            } else if(move.moveType == MoveType.WKCastling) {
-                MovePiece(6, PieceAtIndex(6), 4, Piece.None);
-                MovePiece(5, PieceAtIndex(5), 7, Piece.None);
-            } else if(move.moveType == MoveType.WQCastling) {
-                MovePiece(2, PieceAtIndex(2), 4, Piece.None);
-                MovePiece(3, PieceAtIndex(3), 0, Piece.None);
-            } else if(move.moveType == MoveType.BKCastling) {
-                MovePiece(62, PieceAtIndex(62), 60, Piece.None);
-                MovePiece(61, PieceAtIndex(61), 63, Piece.None);
-            } else if(move.moveType == MoveType.BQCastling) {
-                MovePiece(58, PieceAtIndex(58), 60, Piece.None);
-                MovePiece(59, PieceAtIndex(59), 56, Piece.None);
-            } else if(move.moveType == MoveType.Promotion || move.moveType == MoveType.PromotionCapture) {
-                MovePiece(move.endSquare, endPiece, move.startSquare, startPiece);
-                RemovePiece(move.startSquare, endPiece);
-                AddPiece(move.startSquare, (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
-            } else if(move.moveType == MoveType.EnPassant) {
-                MovePiece(move.endSquare, endPiece, move.startSquare, startPiece);
-                AddPiece(move.endSquare + directionalOffsets[colorToMove], (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
-            }
-            if(move.moveType == MoveType.Capture || move.moveType == MoveType.PromotionCapture) {
-                AddPiece(move.endSquare, move.capturedPieceType);
-            }
             plyCount--;
             colorToMove = 1 - colorToMove;
         } 
