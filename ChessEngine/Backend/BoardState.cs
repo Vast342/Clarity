@@ -3,7 +3,7 @@ namespace Chess {
         public byte[] kingSquares = new byte[2];  
         public int enPassantIndex;
         public bool[] castlingRights = new bool[4];
-        public int fiftyMoveCounter;    
+        public byte fiftyMoveCounter;    
         public ulong[] coloredBitboards = new ulong[2];
         public ulong[] pieceBitboards = new ulong[6];
         public BoardState(Board board) {

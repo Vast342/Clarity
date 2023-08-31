@@ -16,5 +16,10 @@ namespace Chess {
             bitboard ^= 1UL << lsb;
             return lsb;
         }
+        public static int PopMSB(ref ulong bitboard) {
+            int msb = BitOperations.LeadingZeroCount(bitboard);
+            bitboard ^= 1UL << msb;
+            return msb;
+        }
     }
 }

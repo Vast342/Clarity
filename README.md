@@ -7,7 +7,7 @@ Currently, it is only the last of those 3.
 
 It is also my attempt to learn development in raw c# after using it with Unity for so long.
 
-This project now has my currently unnamed bot, a board-rep that sometimes works, some sketchy UCI support, and a few custom commands. 
+This project now has my currently unnamed engine, a board-rep that sometimes works, some sketchy UCI support, and a few custom commands. 
 
 Those commands are:
 

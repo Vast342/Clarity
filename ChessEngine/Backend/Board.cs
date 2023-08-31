@@ -1,5 +1,21 @@
 namespace Chess {
     public struct Board {
+/*
+LIST OF IDEAS
+
+make MakeMove and UndoMove better, rework readBoardState and GetMoves (remove bitboards from boardState)
+
+Figure out TT
+
+Memory management
+
+Optimizations in general
+
+Magic bitboard move generation
+
+stuff with unsafe and fixed-size arrays
+*/
+
         // board specific values
         public byte[] kingSquares = new byte[2];
         public int colorToMove = 1;
@@ -12,7 +28,7 @@ namespace Chess {
         // white kingside, white queenside, black kingside, black kingside
         public bool[] castlingRights = new bool[4];
         public int plyCount = 0;
-        public int fiftyMoveCounter;
+        public byte fiftyMoveCounter;
         private readonly static ulong[,] zobTable = new ulong[64,15];
         private static ulong zobColorToMove;
         public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
@@ -117,7 +133,7 @@ namespace Chess {
                 enPassantIndex = characters[0] - 'a' + (characters[1] - '1') * 8;
             }
             // counters 
-            fiftyMoveCounter = int.Parse(parts[4]);
+            fiftyMoveCounter = byte.Parse(parts[4]);
             plyCount = int.Parse(parts[5]) * 2 - colorToMove;
             GenerateBitboards(squares);
         }
@@ -232,6 +248,7 @@ namespace Chess {
             fen += plyCount / 2 + colorToMove;
             return fen;
         }
+        public static int[] colorMultipliers = {-1, 1};
         /// <summary>
         /// Generates a list of all the moves from the position, not including moves while in check. To filter the legal moves, check the return value of Board.MakeMove()
         /// </summary>
@@ -268,75 +285,73 @@ namespace Chess {
             while(mask != 0) {
                 int startSquare = BitboardOperations.PopLSB(ref mask);
                 byte currentPiece = PieceAtIndex(startSquare);
-                // checks if it's the right color
-                if(Piece.GetColor(currentPiece) == colorToMove) {
-                    // a check if it's a sliding piece
-                    ulong total = 0;
-                    ulong pawnCaptures = 0;
-                    ulong pawnPushes = 0;
-                    if(Piece.GetType(currentPiece) == Piece.Bishop) {
-                        total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
-                    } else if(Piece.GetType(currentPiece) == Piece.Rook) {
-                        total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard);
-                    } else if(Piece.GetType(currentPiece) == Piece.Queen) {
-                        total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
-                        total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
-                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        pawnPushes |= MaskGen.GetPawnPushes(startSquare, colorToMove, ~occupiedBitboard);
-                        pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
-                    } else if(Piece.GetType(currentPiece) == Piece.Knight) {
-                        total |= MaskGen.GetKnightAttacks(startSquare);
-                    } else if(Piece.GetType(currentPiece) == Piece.King) {
-                        total |= MaskGen.GetKingAttacks(startSquare);
+                ulong total = 0;
+                ulong pawnCaptures = 0;
+                if(Piece.GetType(currentPiece) == Piece.Bishop) {
+                    total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                } else if(Piece.GetType(currentPiece) == Piece.Rook) {
+                    total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard);
+                } else if(Piece.GetType(currentPiece) == Piece.Queen) {
+                    total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
+                    total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
+                    pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
+                } else if(Piece.GetType(currentPiece) == Piece.Knight) {
+                    total |= MaskGen.GetKnightAttacks(startSquare);
+                } else if(Piece.GetType(currentPiece) == Piece.King) {
+                    total |= MaskGen.GetKingAttacks(startSquare);
+                }
+                while(total != 0) {
+                    int index = BitboardOperations.PopLSB(ref total);
+                    byte piece = PieceAtIndex(index);
+                    if(Piece.GetColor(piece) != colorToMove || Piece.GetType(piece) == Piece.None) {
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                        totalMoves++;
                     }
-                    if(total != 0) {
-                        ulong mask2 = total;
-                        while(mask2 != 0) {
-                            int index = BitboardOperations.PopLSB(ref mask2);
-                            if(Piece.GetColor(PieceAtIndex(index)) != colorToMove || Piece.GetType(PieceAtIndex(index)) == Piece.None) {
-                                moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
+                }
+                while(pawnCaptures != 0) {
+                    int index = BitboardOperations.PopLSB(ref pawnCaptures);
+                    byte piece = PieceAtIndex(index);
+                    if(index >> 3 == 7 * colorToMove) {
+                        // promotions
+                        if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
+                            for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                                 totalMoves++;
                             }
                         }
-                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        ulong mask2 = pawnPushes;
-                        while(mask2 != 0) {
-                            int index = BitboardOperations.PopLSB(ref mask2);
-                            if(index >> 3 == 7 * colorToMove) {
-                                // promotions
-                                if(Piece.GetType(PieceAtIndex(index)) == Piece.None) {
-                                    for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                        totalMoves++;
-                                    }
-                                }
-                            } else {
-                                if(Piece.GetType(PieceAtIndex(index)) == Piece.None) {
-                                    moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
-                                    totalMoves++;
-                                }
-                            }
-                        }
-                        mask2 = pawnCaptures;
-                        while(mask2 != 0) {
-                            int index = BitboardOperations.PopLSB(ref mask2);
-                            if(index >> 3 == 7 * colorToMove) {
-                                // promotions
-                                if(Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) {
-                                    for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                        moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                        totalMoves++;
-                                    }
-                                }
-                            } else {
-                                if((Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) || index == enPassantIndex) {
-                                    moves[totalMoves] = new Move(startSquare, index, Piece.None, new(this));
-                                    totalMoves++;
-                                }
-                            }
+                    } else {
+                        if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
+                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                            totalMoves++;
                         }
                     }
                 }
+            }
+            // pawn pushes
+            ulong pawnBitboard = GetColoredPieceBitboard(colorToMove, Piece.Pawn);
+            ulong emptyBitboard = ~GetOccupiedBitboard();
+            ulong pawnPushes = MaskGen.GetPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
+            ulong doublePawnPushes = MaskGen.GetDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
+            while(pawnPushes != 0) {
+                int index = BitboardOperations.PopLSB(ref pawnPushes);
+                int startSquare = index + directionalOffsets[colorToMove];
+                if(index >> 3 == 7 * colorToMove) {
+                     // promotions
+                    for(int type = Piece.Knight; type < Piece.King; type++) { 
+                        moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                        totalMoves++;
+                    }
+                } else {
+                    moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                    totalMoves++;
+                }
+            }
+            while(doublePawnPushes != 0) {
+                int index = BitboardOperations.PopLSB(ref doublePawnPushes);
+                int startSquare = index + directionalOffsets[colorToMove] * 2;
+                moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                totalMoves++;
             }
             Array.Resize(ref moves, totalMoves);
             return moves;
@@ -355,42 +370,45 @@ namespace Chess {
             while(mask != 0) {
                 int startSquare = BitboardOperations.PopLSB(ref mask);
                 byte currentPiece = PieceAtIndex(startSquare);
-                // checks if it's the right color
-                if(Piece.GetColor(currentPiece) == colorToMove) {
-                    // a check if it's a sliding piece
-                    ulong total = 0;
-                    ulong pawnCaptures = 0;
-                    if(Piece.GetType(currentPiece) == Piece.Bishop) {
-                        total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
-                    } else if(Piece.GetType(currentPiece) == Piece.Rook) {
-                        total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard);
-                    } else if(Piece.GetType(currentPiece) == Piece.Queen) {
-                        total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
-                        total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
-                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
-                    } else if(Piece.GetType(currentPiece) == Piece.Knight) {
-                        total |= MaskGen.GetKnightAttacks(startSquare);
-                    } else if(Piece.GetType(currentPiece) == Piece.King) {
-                        total |= MaskGen.GetKingAttacks(startSquare);
+                ulong total = 0;
+                ulong pawnCaptures = 0;
+                if(Piece.GetType(currentPiece) == Piece.Bishop) {
+                    total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                } else if(Piece.GetType(currentPiece) == Piece.Rook) {
+                    total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard);
+                } else if(Piece.GetType(currentPiece) == Piece.Queen) {
+                    total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
+                    total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
+                    pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
+                } else if(Piece.GetType(currentPiece) == Piece.Knight) {
+                    total |= MaskGen.GetKnightAttacks(startSquare);
+                } else if(Piece.GetType(currentPiece) == Piece.King) {
+                    total |= MaskGen.GetKingAttacks(startSquare);
+                }
+                while(total != 0) {
+                    int index = BitboardOperations.PopLSB(ref total);
+                    byte piece = PieceAtIndex(index);
+                    if(Piece.GetColor(piece) != colorToMove) {
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                        totalMoves++;
                     }
-                    if(total != 0) {
-                        ulong mask2 = total;
-                        while(mask2 != 0) {
-                            int index = BitboardOperations.PopLSB(ref mask2);
-                            if(Piece.GetColor(PieceAtIndex(index)) != colorToMove) {
-                                moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                }
+                while(pawnCaptures != 0) {
+                    int index = BitboardOperations.PopLSB(ref pawnCaptures);
+                    byte piece = PieceAtIndex(index);
+                    if(index >> 3 == 7 * colorToMove) {
+                        // promotions
+                        if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
+                            for(int type = Piece.Knight; type < Piece.King; type++) { 
+                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                                 totalMoves++;
                             }
                         }
-                    } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
-                        ulong mask2 = pawnCaptures;
-                        while(mask2 != 0) {
-                            int index = BitboardOperations.PopLSB(ref mask2);
-                            if((Piece.GetColor(PieceAtIndex(index)) != colorToMove && Piece.GetType(PieceAtIndex(index)) != Piece.None) || index == enPassantIndex) {
-                                moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
-                                totalMoves++;
-                            }
+                    } else {
+                        if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
+                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                            totalMoves++;
                         }
                     }
                 }
@@ -434,110 +452,109 @@ namespace Chess {
         /// </summary>
         /// <param name="move">The move to be made</param>
         public bool MakeMove(Move move) {
-            if(!Move.Equals(move, Move.NullMove)) {
-                if(colorToMove != 1) {
-                    fiftyMoveCounter++;
-                }
-                // fifty move counter
-                if(PieceAtIndex(move.endSquare) != 0 || (PieceAtIndex(move.startSquare) & 7) == Piece.Pawn) {
-                    fiftyMoveCounter = 0;
-                }
-                // for each start one set the start square to 0
-                if(castlingRights[0] && move.startSquare == 4 && move.endSquare == 6) {
-                    // castling 1
-                    // switch 4 with 6 and 7 with 5
-                    castlingRights[0] = false;
-                    castlingRights[1] = false;
-                    // update the bitboards
-                    MovePiece(4, PieceAtIndex(4), 6, Piece.None);
-                    MovePiece(7, PieceAtIndex(7), 5, Piece.None);
-                    enPassantIndex = 64;
-                } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
-                    // castling 
-                    // switch 4 with 2 and 0 with 3
-                    castlingRights[0] = false;
-                    castlingRights[1] = false;
-                    // update the bitboards
-                    MovePiece(4, PieceAtIndex(4), 2, Piece.None);
-                    MovePiece(0, PieceAtIndex(0), 3, Piece.None);
-                    enPassantIndex = 64;
-                } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
-                    // castling 3
-                    // switch 60 with 62 and 63 with 61
-                    castlingRights[2] = false;
-                    castlingRights[3] = false;
-                    // update the bitboards
-                    MovePiece(60, PieceAtIndex(60), 62, Piece.None);
-                    MovePiece(63, PieceAtIndex(63), 61, Piece.None);
-                    enPassantIndex = 64;
-                } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
-                    // castling 4
-                    // switch 60 with 58 and 56 with 59
-                    castlingRights[2] = false;
-                    castlingRights[3] = false;
-                    // update the bitboards
-                    MovePiece(60, PieceAtIndex(60), 58, Piece.None);
-                    MovePiece(56, PieceAtIndex(56), 59, Piece.None);
-                    enPassantIndex = 64;
-                } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(PieceAtIndex(move.startSquare)) == Piece.Pawn) {
-                    // en passant
-                    // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
-                    enPassantIndex = 64;
-                    // update the bitboards
-                    MovePiece(move.startSquare, PieceAtIndex(move.startSquare), move.endSquare, PieceAtIndex(move.endSquare));
-                    RemovePiece(move.endSquare + (colorToMove == 1 ? -8 : 8), (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.Black : Piece.White)));
+            byte startPiece = PieceAtIndex(move.startSquare);
+            byte endPiece = PieceAtIndex(move.endSquare);
+            if(colorToMove != 1) {
+                fiftyMoveCounter++;
+            }
+            // fifty move counter
+            if(endPiece != 0 || (startPiece & 7) == Piece.Pawn) {
+                fiftyMoveCounter = 0;
+            }
+            // for each start one set the start square to 0
+            if(castlingRights[0] && move.startSquare == 4 && move.endSquare == 6) {
+                // castling 1
+                // switch 4 with 6 and 7 with 5
+                castlingRights[0] = false;
+                castlingRights[1] = false;
+                // update the bitboards
+                MovePiece(4, PieceAtIndex(4), 6, Piece.None);
+                MovePiece(7, PieceAtIndex(7), 5, Piece.None);
+                enPassantIndex = 64;
+            } else if(castlingRights[1] && move.startSquare == 4 && move.endSquare == 2) {
+                // castling 
+                // switch 4 with 2 and 0 with 3
+                castlingRights[0] = false;
+                castlingRights[1] = false;
+                // update the bitboards
+                MovePiece(4, PieceAtIndex(4), 2, Piece.None);
+                MovePiece(0, PieceAtIndex(0), 3, Piece.None);
+                enPassantIndex = 64;
+            } else if(castlingRights[2] && move.startSquare == 60 && move.endSquare == 62) {
+                // castling 3
+                // switch 60 with 62 and 63 with 61
+                castlingRights[2] = false;
+                castlingRights[3] = false;
+                // update the bitboards
+                MovePiece(60, PieceAtIndex(60), 62, Piece.None);
+                MovePiece(63, PieceAtIndex(63), 61, Piece.None);
+                enPassantIndex = 64;
+            } else if(castlingRights[3] && move.startSquare == 60 && move.endSquare == 58) {
+                // castling 4
+                // switch 60 with 58 and 56 with 59
+                castlingRights[2] = false;
+                castlingRights[3] = false;
+                // update the bitboards
+                MovePiece(60, PieceAtIndex(60), 58, Piece.None);
+                MovePiece(56, PieceAtIndex(56), 59, Piece.None);
+                enPassantIndex = 64;
+            } else if(move.endSquare != 0 && move.endSquare == enPassantIndex && Piece.GetType(startPiece) == Piece.Pawn) {
+                // en passant
+                // switch first square with second square and set the square either ahead or behind with colorToMove ? 8 : -8 to 0
+                enPassantIndex = 64;
+                // update the bitboards
+                MovePiece(move.startSquare, startPiece, move.endSquare, endPiece);
+                RemovePiece(move.endSquare + (colorToMove == 1 ? -8 : 8), (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.Black : Piece.White)));
+            } else {
+                // move  normally
+                // switch first square with second
+                if((startPiece & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
+                    // its a double move, make the first square the en passant index
+                    enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
                 } else {
-                    // move  normally
-                    // switch first square with second
-                    if((PieceAtIndex(move.startSquare) & 7) == Piece.Pawn && move.endSquare == move.startSquare + (colorToMove == 1 ? 16 : -16)) {
-                        // its a double move, make the first square the en passant index
-                        enPassantIndex = move.startSquare + (colorToMove == 1 ? 8 : -8);
-                    } else {
-                        enPassantIndex = 64;
-                    }
-                    // update the bitboards
-                    MovePiece(move.startSquare, PieceAtIndex(move.startSquare), move.endSquare, PieceAtIndex(move.endSquare));
+                    enPassantIndex = 64;
                 }
-                // promotions
-                if(move.promotionType != Piece.None && move.promotionType != 0) {
-                    // update the bitboards
-                    RemovePiece(move.endSquare, (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
-                    AddPiece(move.endSquare, (byte)move.promotionType);
-                }
-                // king square updates
-                if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.King) {
-                    kingSquares[colorToMove] = (byte)move.endSquare;
-                    castlingRights[colorToMove == 1 ? 0 : 2] = false;
-                    castlingRights[colorToMove == 1 ? 1 : 3] = false;
-                }
-                if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.Rook) {
-                    switch (move.startSquare) {
-                        case 0:
-                            castlingRights[1] = false;
-                            break;
-                        case 7:
-                            castlingRights[0] = false;
-                            break;
-                        case 56:
-                            castlingRights[3] = false;
-                            break;
-                        case 63:
-                            castlingRights[2] = false;
-                            break;
-                    }
-                }
-                plyCount++;
-                if(IsInCheck()) {
-                    UndoMove(move);
-                    colorToMove = 1 - colorToMove;
-                    return false;
-                } else {
-                    colorToMove = 1 - colorToMove;
-                    return true;
+                // update the bitboards
+                MovePiece(move.startSquare, startPiece, move.endSquare, endPiece);
+            }
+            // promotions
+            if(move.promotionType != Piece.None && move.promotionType != 0) {
+                // update the bitboards
+                RemovePiece(move.endSquare, (byte)(Piece.Pawn | (colorToMove == 1 ? Piece.White : Piece.Black)));
+                AddPiece(move.endSquare, (byte)move.promotionType);
+            }
+            // king square updates
+            if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.King) {
+                kingSquares[colorToMove] = (byte)move.endSquare;
+                castlingRights[colorToMove == 1 ? 0 : 2] = false;
+                castlingRights[colorToMove == 1 ? 1 : 3] = false;
+            }
+            if(Piece.GetType(PieceAtIndex(move.endSquare)) == Piece.Rook) {
+                switch (move.startSquare) {
+                    case 0:
+                        castlingRights[1] = false;
+                        break;
+                    case 7:
+                        castlingRights[0] = false;
+                        break;
+                    case 56:
+                        castlingRights[3] = false;
+                        break;
+                    case 63:
+                        castlingRights[2] = false;
+                        break;
                 }
             }
-            return false;
-        }
+            plyCount++;
+            if(IsInCheck()) {
+                UndoMove(move);
+                colorToMove = 1 - colorToMove;
+                return false;
+            } else {
+                colorToMove = 1 - colorToMove;
+                return true;
+            }
+}
         /// <summary>
         /// undoes a move by reading from the move's board state
         /// </summary>

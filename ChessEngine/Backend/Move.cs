@@ -4,7 +4,7 @@ namespace Chess {
     public struct Move {
         public int startSquare;
         public int endSquare;
-        public int promotionType;
+        public int promotionType = Piece.None;
         public BoardState state;
         /// <summary>
         /// Makes a new move with the starting and ending squares.

@@ -1,4 +1,4 @@
-namespace Bot.Essentials {
+namespace Engine.Essentials {
     // Values from the midgame evaluation of PeSTO.
     public static class Tables {
         public static int[] pawnTable = {

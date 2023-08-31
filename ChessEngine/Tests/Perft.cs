@@ -1,7 +1,7 @@
 using System.Diagnostics;
 
 namespace Chess {
-    public class PerftTest {
+    public struct PerftTest {
         public PerftTest(string f, int d, long e) {
             board = new Board(f);
             fen = f;
@@ -16,15 +16,14 @@ namespace Chess {
     public class Perft {
         public static void PerformTestSuite(PerftTest[] tests) {
             int i = 0;
-            int pass = 0;
-            int fail = 0;
-            int skip = 0;
+            int pass = 0, fail = 0, skip = 0;
             long total = 0;
             Stopwatch sw = Stopwatch.StartNew();
             foreach(PerftTest test in tests) {
                 i++;
                 if(test.expectedResult <= 5000000) {
                     int result = Test(test.depth, test.board);
+                    if(test.board.GetFenString() != test.fen) Console.WriteLine("Changed Fen String");
                     total += result;
                     if(result == test.expectedResult) {
                         Console.ForegroundColor = ConsoleColor.Green;

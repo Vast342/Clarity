@@ -1,9 +1,9 @@
 using Chess;
-using Bot.Essentials;
+using Engine.Essentials;
 using System.Diagnostics;
 
-public struct ChessBot {
-    public ChessBot(int i) {
+public struct ChessEngine {
+    public ChessEngine(int i) {
         NewGame();
     }
     public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
@@ -112,8 +112,8 @@ public struct ChessBot {
     /// <returns>The result of the search</returns>
     public int Negamax(int alpha, int beta, int depth, int ply) {
         if(sw.ElapsedMilliseconds > startTime / 30) return 0;
-        if(depth == 0) return QSearch(alpha, beta);
         ulong hash = board.CreateHash();
+        if(depth == 0) return QSearch(alpha, beta);
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
         Move[] moves = board.GetMoves();
