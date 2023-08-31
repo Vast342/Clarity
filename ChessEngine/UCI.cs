@@ -85,6 +85,15 @@ public class UCI {
             if(command == "make-move") {
                 engine.MakeMove(entry);
             }
+            if(command == "generate-bishop-attacks") {
+                RayGenerator.GetAllBishopAttacks();
+            }
+            if(command == "generate-rook-attacks") {
+                RayGenerator.GetAllRookAttacks();
+            }
+            if(command == "find-magics") {
+                
+            }
         }
     }
 }

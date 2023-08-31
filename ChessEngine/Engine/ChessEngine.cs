@@ -93,15 +93,15 @@ public struct ChessEngine {
     /// </summary>
     /// <returns>The number from the evaluation</returns>
     public int Evaluate() {
-        int sum = 0;
+        int mg = 0;
         ulong mask = board.GetOccupiedBitboard();
         while(mask != 0) {
             int index = BitboardOperations.PopLSB(ref mask);
             byte piece = board.PieceAtIndex(index);
-            sum += Tables.tables[Piece.GetType(piece)][index ^ colorShifters[Piece.GetColor(piece)]] * colorMultipliers[Piece.GetColor(piece)];
-            sum += pieceValues[Piece.GetType(piece)] * colorMultipliers[Piece.GetColor(piece)];
+            mg += Tables.MGTables[Piece.GetType(piece)][index ^ colorShifters[Piece.GetColor(piece)]] * colorMultipliers[Piece.GetColor(piece)];
+            mg += pieceValues[Piece.GetType(piece)] * colorMultipliers[Piece.GetColor(piece)];
         }
-        return sum * colorMultipliers[board.colorToMove];
+        return mg * colorMultipliers[board.colorToMove];
     }
     /// <summary>
     /// Searches for the legal moves up to a certain depth and rates them using a Negamax search and Alpha-Beta pruning
