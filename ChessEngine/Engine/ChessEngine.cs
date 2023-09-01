@@ -116,7 +116,8 @@ public struct ChessEngine {
         if(depth == 0) return QSearch(alpha, beta);
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
-        Move[] moves = board.GetMoves();
+        System.Span<Move> moves = stackalloc Move[256];
+        board.GetMoves(ref moves);
         int legalMoveCount = 0;
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
@@ -162,7 +163,8 @@ public struct ChessEngine {
         if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
         int originalAlpha = alpha;
-        Move[] moves = board.GetMovesQSearch();
+        System.Span<Move> moves = stackalloc Move[256];
+        board.GetMovesQSearch(ref moves);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
