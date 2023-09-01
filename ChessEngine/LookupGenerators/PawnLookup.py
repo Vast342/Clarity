@@ -1,3 +1,4 @@
+# this is a pawn lookup generator that did not end up being used.
 # offsets for the direction each pawn has to move
 directionalOffsets = [-8, 8]
 def GetPawnPushes(startSquare, colorToMove) :
