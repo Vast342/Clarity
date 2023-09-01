@@ -263,10 +263,9 @@ stuff with unsafe and fixed-size arrays
         /// Generates a list of all the moves from the position, not including moves while in check. To filter the legal moves, check the return value of Board.MakeMove()
         /// </summary>
         /// <returns>A List of the legal moves</returns>
-        public Move[] GetMoves() {
+        public void GetMoves(ref System.Span<Move> moves) {
             BoardState state = new(this);
             ulong occupiedBitboard = GetOccupiedBitboard();
-            Move[] moves = new Move[218];
             int totalMoves = 0;
             // castling
             if(!IsInCheck()) {
@@ -358,17 +357,15 @@ stuff with unsafe and fixed-size arrays
                 moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                 totalMoves++;
             }
-            Array.Resize(ref moves, totalMoves);
-            return moves;
+            moves = moves.Slice(0, totalMoves-1);
         }
         /// <summary>
         /// Gets the captures from a position, used in Q Search.
         /// </summary>
         /// <returns>A List of capture moves</returns>
-        public Move[] GetMovesQSearch() {
+        public Move[] GetMovesQSearch(ref Span<Move> moves) {
             BoardState state = new(this);
             ulong occupiedBitboard = GetOccupiedBitboard();
-            Move[] moves = new Move[218];
             int totalMoves = 0;
             ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
@@ -418,8 +415,7 @@ stuff with unsafe and fixed-size arrays
                     }
                 }
             }
-            Array.Resize(ref moves, totalMoves);
-            return moves;
+            moves = moves.Slice(0, totalMoves - 1);
         }
 
         /// <summary>
