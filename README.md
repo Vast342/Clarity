@@ -21,4 +21,4 @@ in-check [fen]: outputs if the board state read from the fen string is in check 
 
 make-move [move]: Makes the move on the board, and outputs the resulting fen. move must be in long algebraic notation.
 
-perft-suite [suite]: Performs a suite of perft tests, and outputs specified results, followed by a total effect. Currently, due to performance limitations, it will restrict the tests performed to be under a certain number of total nodes. The only currently supported suite is known as Ethereal and is a series of tests from the bot Ethereal.
+perft-suite [suite] [bool isPlural]: Performs a suite of perft tests, and outputs specified results, followed by a total effect. Currently, due to performance limitations, it will restrict the tests performed to be under a certain number of total nodes. The only currently supported suite is known as Ethereal and is a series of tests from the bot Ethereal.

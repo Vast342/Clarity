@@ -2,7 +2,7 @@ using System.Numerics;
 namespace Chess {
     public static class MaskGen {
         public static ulong GetPawnPushes(ulong pawnBitboard, ulong emptyBitboard, int colorToMove) {
-            ulong attacks = 0;
+            ulong attacks;
             if(colorToMove == 1) {
                 attacks = (pawnBitboard << 8) & emptyBitboard; 
             } else {
@@ -11,7 +11,7 @@ namespace Chess {
             return attacks;
         }
         public static ulong GetDoublePawnPushes(ulong pawnAttacks, ulong emptyBitboard, int colorToMove) {
-            ulong attacks = 0;
+            ulong attacks;
             if(colorToMove == 1) {
                 attacks = ((pawnAttacks & Mask.GetRankMask(5 - (3 * colorToMove))) << 8) & emptyBitboard;
             } else {
@@ -67,6 +67,7 @@ namespace Chess {
 
             return northWest | southEast | northEast | southWest;
         }
+
         public static ulong GetSlideRay(int startSquare, int direction) {
             return Mask.slideyPieceRays[direction, startSquare];
         }

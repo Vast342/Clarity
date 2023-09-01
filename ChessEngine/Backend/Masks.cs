@@ -1,3 +1,5 @@
+using Microsoft.VisualBasic;
+
 namespace Chess {
     public static class Mask {
         // These first 3 sets of masks (knight moves, king moves, and pawn attacks), were originally calculated by Ellie M, also known as RedBedHed, the developer of Homura.
@@ -163,6 +165,7 @@ namespace Chess {
         public static ulong GetRankMask(int rank) {
             return RankMask << (8 * rank);
         }
+        // Every number after this point is a lookup table for the possible blockers for sliding pieces
+        
     }
-    
 }

@@ -1,26 +1,39 @@
 namespace Chess {
     public struct BoardState {
-        public byte[] kingSquares = new byte[2];  
+        public byte kingSquareWhite;
+        public byte kingSquareBlack;
         public int enPassantIndex;
-        public bool[] castlingRights = new bool[4];
+        // the 4 castlings
+        public bool wk;
+        public bool wq;
+        public bool bk;
+        public bool bq;
         public byte fiftyMoveCounter;    
-        public ulong[] coloredBitboards = new ulong[2];
-        public ulong[] pieceBitboards = new ulong[6];
+        public ulong whiteBitboard;
+        public ulong blackBitboard;
+        public ulong pawnBitboard;
+        public ulong knightBitboard;
+        public ulong bishopBitboard;
+        public ulong rookBitboard;
+        public ulong queenBitboard;
+        public ulong kingBitboard;
         public BoardState(Board board) {
-            Array.Copy(board.kingSquares, kingSquares, 2);
+            kingSquareBlack = board.kingSquares[0];
+            kingSquareWhite = board.kingSquares[1];
             enPassantIndex = board.enPassantIndex;
-            Array.Copy(board.castlingRights, castlingRights, 4);
+            wk = board.castlingRights[0];
+            wq = board.castlingRights[1];
+            bk = board.castlingRights[2];
+            bq = board.castlingRights[3];
             fiftyMoveCounter = board.fiftyMoveCounter;
-            Array.Copy(board.coloredBitboards, coloredBitboards, 2);
-            Array.Copy(board.pieceBitboards, pieceBitboards, 6);
-        }
-        public BoardState(BoardState state) {
-            Array.Copy(state.kingSquares, kingSquares, 2);
-            enPassantIndex = state.enPassantIndex;
-            Array.Copy(state.castlingRights, castlingRights, 4);
-            fiftyMoveCounter = state.fiftyMoveCounter;
-            Array.Copy(state.coloredBitboards, coloredBitboards, 2);
-            Array.Copy(state.pieceBitboards, pieceBitboards, 6);
+            blackBitboard = board.coloredBitboards[0];
+            whiteBitboard = board.coloredBitboards[1];
+            pawnBitboard = board.pieceBitboards[Piece.Pawn];
+            knightBitboard = board.pieceBitboards[Piece.Knight];
+            bishopBitboard = board.pieceBitboards[Piece.Bishop];
+            rookBitboard = board.pieceBitboards[Piece.Rook];
+            queenBitboard = board.pieceBitboards[Piece.Queen];
+            kingBitboard = board.pieceBitboards[Piece.King];
         }
     }
 }

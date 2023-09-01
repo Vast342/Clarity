@@ -67,10 +67,10 @@ public class UCI {
                 }
             }
             if(command == "perft-suite") {
-                    if(entry.Split(' ')[1] == "ethereal") {
-                        Perft.PerformTestSuite(Suite.etherealSuite);
-                    }
+                if(entry.Split(' ')[1] == "ethereal") {
+                    Perft.PerformTestSuite(Suite.etherealSuite);
                 }
+            }
             if(command == "in-check") {
                 string[] segments = entry.Split(" ");
                 Board b = new(segments[1] + " " + segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6]);

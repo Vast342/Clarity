@@ -50,23 +50,34 @@ namespace Chess {
             return northWest | southEast | northEast | southWest;
         }
         public static void GetAllRookAttacks() {
-
+            using(StreamWriter outputFile = new StreamWriter("RookAttacks.txt")) {
+                for(int i = 0; i < 64; i++) {
+                    ulong attackRay = 0;
+                    for(int j = 0; j < 4; j++) {
+                        attackRay |= Mask.slideyPieceRays[j, i];
+                    }
+                    ulong[] possibleBlockers = CreateAllBlockerBitboards(attackRay);
+                    foreach(ulong blockers in possibleBlockers) {
+                        outputFile.WriteLine("{(" + i + ", " + blockers + "), " + GetRookAttacks(i, blockers) + "},");
+                    }
+                }
+                Console.WriteLine("Done, results are in RookAttacks.txt");
+            }
         }
         public static void GetAllBishopAttacks() {
-            Console.BufferHeight = short.MaxValue-1;
-            for(int i = 0; i < 32; i++) {
-                ulong attackRay = 0;
-                for(int j = 4; j < 8; j++) {
-                    attackRay |= Mask.slideyPieceRays[j, i];
+            using(StreamWriter outputFile = new StreamWriter("BishopAttacks.txt")) {
+                for(int i = 0; i < 64; i++) {
+                    ulong attackRay = 0;
+                    for(int j = 4; j < 8; j++) {
+                        attackRay |= Mask.slideyPieceRays[j, i];
+                    }
+                    ulong[] possibleBlockers = CreateAllBlockerBitboards(attackRay);
+                    foreach(ulong blockers in possibleBlockers) {
+                        outputFile.WriteLine("{(" + i + ", " + blockers + "), " + GetBishopAttacks(i, blockers) + "},");
+                    }
                 }
-                ulong[] possibleBlockers = CreateAllBlockerBitboards(attackRay);
-                Console.WriteLine("{");
-                foreach(ulong blockers in possibleBlockers) {
-                    Console.WriteLine(GetBishopAttacks(i, blockers) + ",");
-                }
-                Console.WriteLine("},");
+                Console.WriteLine("Done, results are in BishopAttacks.txt");
             }
-            Console.WriteLine("Got all blocker bitboards for all squares");
         }
         public static ulong[] CreateAllBlockerBitboards(ulong movementMask) {
             // creates a list of the squares in the movementMask
