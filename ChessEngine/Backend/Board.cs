@@ -357,13 +357,13 @@ stuff with unsafe and fixed-size arrays
                 moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                 totalMoves++;
             }
-            moves = moves.Slice(0, totalMoves-1);
+            moves = moves.Slice(0, totalMoves);
         }
         /// <summary>
         /// Gets the captures from a position, used in Q Search.
         /// </summary>
         /// <returns>A List of capture moves</returns>
-        public Move[] GetMovesQSearch(ref Span<Move> moves) {
+        public void GetMovesQSearch(ref Span<Move> moves) {
             BoardState state = new(this);
             ulong occupiedBitboard = GetOccupiedBitboard();
             int totalMoves = 0;
@@ -415,7 +415,7 @@ stuff with unsafe and fixed-size arrays
                     }
                 }
             }
-            moves = moves.Slice(0, totalMoves - 1);
+            moves = moves.Slice(0, totalMoves);
         }
 
         /// <summary>

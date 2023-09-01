@@ -34,7 +34,9 @@ public class UCI {
                     int total = 0;
                     Board b = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
                     if(segments.Length > 3) {
-                        foreach(Move m in b.GetMoves()) {
+                        Span<Move> moves = stackalloc Move[256];
+                        b.GetMoves(ref moves);
+                        foreach(Move m in moves) {
                             if(b.MakeMove(m)) {
                                 int results = Perft.Test(int.Parse(segments[1]) - 1, b);
                                 b.UndoMove(m);
@@ -51,7 +53,9 @@ public class UCI {
                     int total = 0;
                     Board b = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);  
                     if(segments.Length > 8) {
-                        foreach(Move m in b.GetMoves()) {
+                        Span<Move> moves = stackalloc Move[256];
+                        b.GetMoves(ref moves);
+                        foreach(Move m in moves) {
                             if(b.MakeMove(m)) {
                                 int results = Perft.Test(int.Parse(segments[1]) - 1, b);
                                 b.UndoMove(m);

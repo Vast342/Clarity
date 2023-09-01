@@ -190,8 +190,8 @@ public struct ChessEngine {
     /// Orders the moves using MVV-LVA
     /// </summary>
     /// <param name="moves">A reference to the list of legal moves being sorted</param>
-    public void OrderMoves(ref Move[] moves, ulong zobristHash) {
-        int[] scores = new int[moves.Length];
+    public void OrderMoves(ref Span<Move> moves, ulong zobristHash) {
+        Span<int> scores = stackalloc int[moves.Length];
         for(int i = 0; i < moves.Length; i++) {
             if(moves[i].IsCapture(board)) {
                 scores[i] = 10000 * pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].endSquare))] - pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].startSquare))];
@@ -200,8 +200,8 @@ public struct ChessEngine {
                 scores[i] += 1000000;
             }
         }
-        Array.Sort(scores, moves);
-        Array.Reverse(moves);
+        scores.Sort(moves);
+        moves.Reverse();
     }
     /// <summary>
     /// Get's the fen string of the position currently being viewed by the bot
