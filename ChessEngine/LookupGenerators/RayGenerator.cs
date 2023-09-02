@@ -49,35 +49,33 @@ namespace Chess {
 
             return northWest | southEast | northEast | southWest;
         }
+        public static Dictionary<(int, ulong), ulong> rookAttacks = new Dictionary<(int, ulong), ulong>();
+        public static Dictionary<(int, ulong), ulong> bishopAttacks = new Dictionary<(int, ulong), ulong>();
         public static void GetAllRookAttacks() {
-            using(StreamWriter outputFile = new StreamWriter("RookAttacks.txt")) {
-                for(int i = 0; i < 64; i++) {
-                    ulong attackRay = 0;
-                    for(int j = 0; j < 4; j++) {
-                        attackRay |= Mask.slideyPieceRays[j, i];
-                    }
-                    ulong[] possibleBlockers = CreateAllBlockerBitboards(attackRay);
-                    foreach(ulong blockers in possibleBlockers) {
-                        outputFile.WriteLine("{(" + i + ", " + blockers + "), " + GetRookAttacks(i, blockers) + "},");
-                    }
+            for(int i = 0; i < 64; i++) {
+                ulong attackRay = 0;
+                for(int j = 0; j < 4; j++) {
+                    attackRay |= Mask.slideyPieceRays[j, i];
                 }
-                Console.WriteLine("Done, results are in RookAttacks.txt");
+                ulong[] possibleBlockers = CreateAllBlockerBitboards(attackRay);
+                foreach(ulong blockers in possibleBlockers) {
+                    rookAttacks.Add((i, blockers), GetRookAttacks(i, blockers));
+                }
             }
+            //Console.WriteLine("Rook Lookup Initialized");
         }
         public static void GetAllBishopAttacks() {
-            using(StreamWriter outputFile = new StreamWriter("BishopAttacks.txt")) {
-                for(int i = 0; i < 64; i++) {
-                    ulong attackRay = 0;
-                    for(int j = 4; j < 8; j++) {
-                        attackRay |= Mask.slideyPieceRays[j, i];
-                    }
-                    ulong[] possibleBlockers = CreateAllBlockerBitboards(attackRay);
-                    foreach(ulong blockers in possibleBlockers) {
-                        outputFile.WriteLine("{(" + i + ", " + blockers + "), " + GetBishopAttacks(i, blockers) + "},");
-                    }
+            for(int i = 0; i < 64; i++) {
+                ulong attackRay = 0;
+                for(int j = 4; j < 8; j++) {
+                    attackRay |= Mask.slideyPieceRays[j, i];
                 }
-                Console.WriteLine("Done, results are in BishopAttacks.txt");
+                ulong[] possibleBlockers = CreateAllBlockerBitboards(attackRay);
+                foreach(ulong blockers in possibleBlockers) {
+                    bishopAttacks.Add((i, blockers), GetBishopAttacks(i, blockers));
+                }
             }
+            //Console.WriteLine("Bishop Lookup Initialized");
         }
         public static ulong[] CreateAllBlockerBitboards(ulong movementMask) {
             // creates a list of the squares in the movementMask
@@ -100,6 +98,106 @@ namespace Chess {
             }  
 
             return blockerBitboards;
+        }
+        public static ulong[] rookMagics = new ulong[64];
+        public static byte[] rookShifts = new byte[64];
+        public static ulong[] bishopMagics = new ulong[64];
+        public static byte[] bishopShifts = new byte[64];
+        public static bool isTesting = false;
+        public static Random rng = new Random();
+        public static void FindMagics() {
+            for(int i = 0; i < 64; i++) {
+                FindMagic(i);
+            }
+        }
+        public static void FindMagic(int square) {
+            Console.WriteLine(bishopMasks[square].ToString());
+            Console.WriteLine(square.ToString());
+            ulong bishopMask = bishopMasks[square];
+            ulong rookMask = rookMasks[square];
+            int bishopBits = BitOperations.PopCount(bishopMask);
+            int rookBits = BitOperations.PopCount(rookMask);
+            ulong[] used = new ulong[4096];
+            bool outcome = true;
+            Console.WriteLine("got to the loop");
+            for(int i = 0; i < 1000000000; i++) {
+                ulong decidedMagic = (ulong)(rng.Next(0, int.MaxValue) & rng.Next(0, int.MaxValue) & rng.Next(0, int.MaxValue));
+                for(int j = 0; j < 4096; j++) used[j] = 0;
+                for(int j = 0; j < 1 << bishopBits; j++) {
+                    int result = (int)(bishopMask * decidedMagic) >> (64-bishopBits);
+                    if(used[result] == 0) used[result] = 1;
+                    else if(used[result] == 1) {
+                        outcome = false;
+                        break;
+                    }
+                }
+                if(outcome)  {
+                    bishopMagics[square] = decidedMagic;
+                    bishopShifts[square] = (byte)bishopBits;
+                }
+                outcome = true;
+                for(int j = 0; j < 1 << rookBits; j++) {
+                    int result = (int)(rookMask * decidedMagic) >> (64-rookBits);
+                    if(used[result] == 0) used[result] = 1;
+                    else if(used[result] == 1) {
+                        outcome = false;
+                        break;
+                    }
+                }
+                if(outcome)  {
+                    rookMagics[square] = decidedMagic;
+                    rookShifts[square] = (byte)rookBits;
+                }
+            }
+            Console.WriteLine("Finished the loop");
+        }
+        public static void OutputMagics() {
+            isTesting = false;
+            Console.WriteLine("Rook Magics");
+
+            Console.WriteLine("Rook Shifts");
+
+            Console.WriteLine("Bishop Magics");
+
+            Console.WriteLine("Bishop Shifts");
+
+        }
+        public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
+        public static readonly byte[,] squaresToEdge = new byte[64,8];
+        public static ulong[] rookMasks = new ulong[64];
+        public static ulong[] bishopMasks = new ulong[64];
+        public static void GenerateMasks() {
+            for(byte file = 0; file < 8; file++) {
+                for(byte rank = 0; rank < 8; rank++) {
+                    byte north = (byte)(7 - rank);
+                    byte south = rank;
+                    byte east = (byte)(7 - file);
+                    byte west = file;
+                    byte index = (byte)(rank * 8 + file);
+                    squaresToEdge[index, 0] = north;
+                    squaresToEdge[index, 1] = south;
+                    squaresToEdge[index, 2] = east;
+                    squaresToEdge[index, 3] = west;
+                    squaresToEdge[index, 4] = Math.Min(north, west);
+                    squaresToEdge[index, 5] = Math.Min(south, east);
+                    squaresToEdge[index, 6] = Math.Min(north, east);
+                    squaresToEdge[index, 7] = Math.Min(south, west);
+                }
+            }
+            for(int square = 0; square < 64; square++) {
+                for(int direction = 0; direction < 4; direction++) {
+                    for(int i = 0; i < squaresToEdge[square, direction] - 1; i++) {
+                        int targetSquareIndex = square + directionalOffsets[direction] * (i + 1);
+                        rookMasks[square] |= ((ulong)1) << targetSquareIndex;
+                    }
+                }
+                for(int direction = 4; direction < 8; direction++) {
+                    for(int i = 0; i < squaresToEdge[square, direction] - 1; i++) {
+                        int targetSquareIndex = square + directionalOffsets[direction] * (i + 1);
+                        bishopMasks[square] |= ((ulong)1) << targetSquareIndex;
+                    }
+                }
+            }
         }
     }
 }
