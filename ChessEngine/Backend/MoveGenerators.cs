@@ -68,16 +68,10 @@ namespace Chess {
             return northWest | southEast | northEast | southWest;
         }
         public static ulong GetRookAttacks(int startSquare, ulong occupiedBitboard) {
-            ulong attacks = Mask.slideyPieceRays[0, startSquare] | Mask.slideyPieceRays[1, startSquare] | Mask.slideyPieceRays[2, startSquare] | Mask.slideyPieceRays[3, startSquare];
-            ulong result;
-            RayGenerator.rookAttacks.TryGetValue((startSquare, occupiedBitboard & attacks), out result);
-            return result;
+            return MagicGeneration.rookAttacks[startSquare][((occupiedBitboard & MagicGeneration.rookMasks[startSquare]) * MagicGeneration.rookMagics[startSquare]) >> (64-MagicGeneration.rookShifts[startSquare])];
         }
         public static ulong GetBishopAttacks(int startSquare, ulong occupiedBitboard) {
-            ulong attacks = Mask.slideyPieceRays[4, startSquare] | Mask.slideyPieceRays[5, startSquare] | Mask.slideyPieceRays[6, startSquare] | Mask.slideyPieceRays[7, startSquare];
-            ulong result;
-            RayGenerator.bishopAttacks.TryGetValue((startSquare, occupiedBitboard & attacks), out result);
-            return result;
+            return MagicGeneration.bishopAttacks[startSquare][((occupiedBitboard & MagicGeneration.bishopMasks[startSquare]) * MagicGeneration.bishopMagics[startSquare]) >> (64-MagicGeneration.bishopShifts[startSquare])];
         }
         public static ulong GetSlideRay(int startSquare, int direction) {
             return Mask.slideyPieceRays[direction, startSquare];

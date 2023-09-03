@@ -2,12 +2,9 @@ using Chess;
 public class UCI {
     static void Main() {
         ChessEngine engine = new(0);
-        Thread thread1 = new Thread(RayGenerator.GenerateMasks);
-        thread1.Start();
-        Thread thread2 = new Thread(RayGenerator.GetAllRookAttacks);
-        Thread thread3 = new Thread(RayGenerator.GetAllBishopAttacks);
-        thread3.Start();
-        thread2.Start();
+        MagicGeneration.GenerateMasks();
+        Console.WriteLine(MagicGeneration.rookMasks[63]);
+        MagicGeneration.FindMagics();
         while(true) {
             string? entry = Console.ReadLine();
             string? command = entry!.Split(' ')[0];
@@ -56,14 +53,9 @@ public class UCI {
             if(command == "make-move") {
                 engine.MakeMove(entry);
             }
-            if(command == "find-magics") {
-                RayGenerator.FindMagics();
-            }
-            if(command == "output-magics") {
-                RayGenerator.OutputMagics();
-            }
         }
     }
+    // I seperated this out into it's own class to avoid the compiler warning because of my usage of stackalloc here.
     public static void PerformPerft(string entry) {
         string[] segments = entry.Split(' ');
         if(segments[2] == "startpos") {
