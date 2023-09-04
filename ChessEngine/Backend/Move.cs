@@ -88,7 +88,7 @@ namespace Chess {
         /// </summary>
         /// <returns></returns>
         public int ToNumber() {
-            return (startSquare << 6) + endSquare;
+            return (promotionType << 12) | (startSquare << 6) | endSquare;
         }
         public static Move NullMove => new Move(0, 0, 0, new(new Board("8/8/8/8/8/8/8/8 - - - 0 1")));
         public static bool Equals(Move move1, Move move2) {

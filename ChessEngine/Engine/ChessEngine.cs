@@ -1,7 +1,6 @@
 using Chess;
 using Engine.Essentials;
 using System.Diagnostics;
-
 public struct ChessEngine {
     public ChessEngine(int i) {
         NewGame();
@@ -10,9 +9,8 @@ public struct ChessEngine {
     public string name = "Vast-Test";
     public string author = "Vast";
     public Move rootBestMove = Move.NullMove;
-    public static ulong mask = 0x7FFFFF;
     public TranspositionTable TT = new TranspositionTable();
-    private const sbyte EXACT = 0, LOWERBOUND = -1, UPPERBOUND = 1, INVALID = -2;
+    public MoveTable MT = new MoveTable();
     int nodes = 0;
     int numMoves = 0;
     /// <summary>
@@ -68,17 +66,28 @@ public struct ChessEngine {
     /// Thinks through the position it has been given, and writes the best move to the console once the search is done
     /// </summary>
     public void Think(string entry) {
+        MT.Clear();
+        bool alreadySearched = false;
         startTime = int.Parse(color == 1 ? entry.Split(' ')[2] : entry.Split(' ')[4]);
         nodes = 0;
         sw = Stopwatch.StartNew();
+        bool check = board.IsInCheck();
         for(int i = 1; i <= 10; i++) {
             universalDepth = i;
             previousBestMove = rootBestMove;
             int eval = Negamax(-10000000, 10000000, universalDepth, 0);
-            if(sw.ElapsedMilliseconds > startTime / 30) {
-                rootBestMove = previousBestMove;
-                break;
-            } 
+            if(check) {
+                if(!alreadySearched) {
+                    alreadySearched = true;
+                } else {
+                    break;
+                }
+            } else {
+                if(sw.ElapsedMilliseconds > startTime / 30) {
+                    rootBestMove = previousBestMove;
+                    break;
+                } 
+            }
             Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
         numMoves++;
@@ -127,8 +136,9 @@ public struct ChessEngine {
                 if(sw.ElapsedMilliseconds > startTime / 30) return 0;
                 if(score >= beta) {
                     TT.UpdateBestMove(move, hash);
+                    if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
-                    break;
+                    break; // prune the branch
                 }
                 if(score > alpha) {
                     TT.UpdateBestMove(move, hash);
@@ -168,6 +178,7 @@ public struct ChessEngine {
                 if(sw.ElapsedMilliseconds > startTime / 30) return 0;
                 if(score >= beta) {
                     TT.UpdateBestMove(move, hash);
+                    if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
                     break;
                 }
@@ -179,6 +190,9 @@ public struct ChessEngine {
         }
         return alpha;
     }
+    public int previousBestMoveScore = 100000000;
+    public int mvvlvaScore = 1000000;
+    public int historyScore = 1000;
     /// <summary>
     /// Orders the moves using MVV-LVA
     /// </summary>
@@ -187,11 +201,12 @@ public struct ChessEngine {
         Span<int> scores = stackalloc int[moves.Length];
         for(int i = 0; i < moves.Length; i++) {
             if(moves[i].IsCapture(board)) {
-                scores[i] = 10000 * pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].endSquare))] - pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].startSquare))];
+                scores[i] = mvvlvaScore * pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].endSquare))] - pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].startSquare))];
             }
             if(Move.Equals(moves[i], TT.ReadBestMove(zobristHash))) {
-                scores[i] += 1000000;
+                scores[i] += previousBestMoveScore;
             }
+            scores[i] += historyScore * MT.ReadCutoff(moves[i].ToNumber());
         }
         scores.Sort(moves);
         moves.Reverse();
