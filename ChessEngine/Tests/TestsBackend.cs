@@ -6,7 +6,8 @@ public class Tests {
     public static void BackendTests() {
         Console.WriteLine("IT'S ALIVE!!!");
         Board board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        Move[] moves = board.GetMoves();
+        Span<Move> moves = stackalloc Move[256];
+        board.GetMoves(ref moves);
         if(moves.Length == 20) {
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Move count test passed");

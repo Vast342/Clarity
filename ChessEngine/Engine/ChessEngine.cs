@@ -93,15 +93,15 @@ public struct ChessEngine {
     /// </summary>
     /// <returns>The number from the evaluation</returns>
     public int Evaluate() {
-        int sum = 0;
+        int mg = 0;
         ulong mask = board.GetOccupiedBitboard();
         while(mask != 0) {
             int index = BitboardOperations.PopLSB(ref mask);
             byte piece = board.PieceAtIndex(index);
-            sum += Tables.tables[Piece.GetType(piece)][index ^ colorShifters[Piece.GetColor(piece)]] * colorMultipliers[Piece.GetColor(piece)];
-            sum += pieceValues[Piece.GetType(piece)] * colorMultipliers[Piece.GetColor(piece)];
+            mg += Tables.MGTables[Piece.GetType(piece)][index ^ colorShifters[Piece.GetColor(piece)]] * colorMultipliers[Piece.GetColor(piece)];
+            mg += pieceValues[Piece.GetType(piece)] * colorMultipliers[Piece.GetColor(piece)];
         }
-        return sum * colorMultipliers[board.colorToMove];
+        return mg * colorMultipliers[board.colorToMove];
     }
     /// <summary>
     /// Searches for the legal moves up to a certain depth and rates them using a Negamax search and Alpha-Beta pruning
@@ -116,7 +116,8 @@ public struct ChessEngine {
         if(depth == 0) return QSearch(alpha, beta);
         int originalAlpha = alpha;
         Move bestMove = Move.NullMove;
-        Move[] moves = board.GetMoves();
+        System.Span<Move> moves = stackalloc Move[256];
+        board.GetMoves(ref moves);
         int legalMoveCount = 0;
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
@@ -162,7 +163,8 @@ public struct ChessEngine {
         if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
         int originalAlpha = alpha;
-        Move[] moves = board.GetMovesQSearch();
+        System.Span<Move> moves = stackalloc Move[256];
+        board.GetMovesQSearch(ref moves);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
@@ -188,8 +190,8 @@ public struct ChessEngine {
     /// Orders the moves using MVV-LVA
     /// </summary>
     /// <param name="moves">A reference to the list of legal moves being sorted</param>
-    public void OrderMoves(ref Move[] moves, ulong zobristHash) {
-        int[] scores = new int[moves.Length];
+    public void OrderMoves(ref Span<Move> moves, ulong zobristHash) {
+        Span<int> scores = stackalloc int[moves.Length];
         for(int i = 0; i < moves.Length; i++) {
             if(moves[i].IsCapture(board)) {
                 scores[i] = 10000 * pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].endSquare))] - pieceValues[Piece.GetType(board.PieceAtIndex(moves[i].startSquare))];
@@ -198,8 +200,8 @@ public struct ChessEngine {
                 scores[i] += 1000000;
             }
         }
-        Array.Sort(scores, moves);
-        Array.Reverse(moves);
+        scores.Sort(moves);
+        moves.Reverse();
     }
     /// <summary>
     /// Get's the fen string of the position currently being viewed by the bot

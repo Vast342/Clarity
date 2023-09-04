@@ -1,8 +1,7 @@
-using System.Numerics;
 namespace Chess {
     public static class MaskGen {
         public static ulong GetPawnPushes(ulong pawnBitboard, ulong emptyBitboard, int colorToMove) {
-            ulong attacks = 0;
+            ulong attacks;
             if(colorToMove == 1) {
                 attacks = (pawnBitboard << 8) & emptyBitboard; 
             } else {
@@ -11,7 +10,7 @@ namespace Chess {
             return attacks;
         }
         public static ulong GetDoublePawnPushes(ulong pawnAttacks, ulong emptyBitboard, int colorToMove) {
-            ulong attacks = 0;
+            ulong attacks;
             if(colorToMove == 1) {
                 attacks = ((pawnAttacks & Mask.GetRankMask(5 - (3 * colorToMove))) << 8) & emptyBitboard;
             } else {
@@ -19,7 +18,8 @@ namespace Chess {
             }
             return attacks;
         }
-        public static ulong GetRookAttacks(int startSquare, ulong occupiedBitboard) {
+        /*
+        public static ulong GetRookAttacksOld(int startSquare, ulong occupiedBitboard) {
             // North
             ulong north = Mask.slideyPieceRays[0, startSquare];
             ulong potentialBlockers = occupiedBitboard & north;
@@ -43,7 +43,7 @@ namespace Chess {
 
             return north | south | east | west;
         }
-        public static ulong GetBishopAttacks(int startSquare, ulong occupiedBitboard) {
+        public static ulong GetBishopAttacksOld(int startSquare, ulong occupiedBitboard) {
             // North-West
             ulong northWest = Mask.slideyPieceRays[4, startSquare];
             ulong potentialBlockers = occupiedBitboard & northWest;
@@ -66,6 +66,12 @@ namespace Chess {
             southWest ^= Mask.slideyPieceRays[7, 63-firstBlocker];
 
             return northWest | southEast | northEast | southWest;
+        }*/
+        public static ulong GetRookAttacks(int startSquare, ulong occupiedBitboard) {
+            return MagicGeneration.rookAttacks[(4096 * startSquare) + (int)(((occupiedBitboard & MagicGeneration.rookMasks[startSquare]) * MagicGeneration.rookMagics[startSquare]) >> MagicGeneration.rookShifts[startSquare])];
+        }
+        public static ulong GetBishopAttacks(int startSquare, ulong occupiedBitboard) {
+            return MagicGeneration.bishopAttacks[(4096 * startSquare) + (int)(((occupiedBitboard & MagicGeneration.bishopMasks[startSquare]) * MagicGeneration.bishopMagics[startSquare]) >> MagicGeneration.bishopShifts[startSquare])];
         }
         public static ulong GetSlideRay(int startSquare, int direction) {
             return Mask.slideyPieceRays[direction, startSquare];

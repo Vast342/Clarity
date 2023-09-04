@@ -37,12 +37,22 @@ stuff with unsafe and fixed-size arrays
         /// </summary>
         /// <param name="state">the boardstate in question</param>
         public void ReadBoardState(BoardState state) {
-            Array.Copy(state.kingSquares, kingSquares, 2);
+            kingSquares[0] = state.kingSquareBlack;
+            kingSquares[1] = state.kingSquareWhite;
             enPassantIndex = state.enPassantIndex;
-            Array.Copy(state.castlingRights, castlingRights, 4);
+            castlingRights[0] = state.wk;
+            castlingRights[1] = state.wq;
+            castlingRights[2] = state.bk;
+            castlingRights[3] = state.bq;
             fiftyMoveCounter = state.fiftyMoveCounter;
-            Array.Copy(state.coloredBitboards, coloredBitboards, 2);
-            Array.Copy(state.pieceBitboards, pieceBitboards, 6);
+            coloredBitboards[0] = state.blackBitboard;
+            coloredBitboards[1] = state.whiteBitboard;
+            pieceBitboards[Piece.Pawn] = state.pawnBitboard;
+            pieceBitboards[Piece.Knight] = state.knightBitboard;
+            pieceBitboards[Piece.Bishop] = state.bishopBitboard;
+            pieceBitboards[Piece.Rook] = state.rookBitboard;
+            pieceBitboards[Piece.Queen] = state.queenBitboard;
+            pieceBitboards[Piece.King] = state.kingBitboard;
         }
         /// <summary>
         /// Establishes a new board instance, with the position and information contained within a FEN string.
@@ -253,10 +263,9 @@ stuff with unsafe and fixed-size arrays
         /// Generates a list of all the moves from the position, not including moves while in check. To filter the legal moves, check the return value of Board.MakeMove()
         /// </summary>
         /// <returns>A List of the legal moves</returns>
-        public Move[] GetMoves() {
+        public void GetMoves(ref System.Span<Move> moves) {
             BoardState state = new(this);
             ulong occupiedBitboard = GetOccupiedBitboard();
-            Move[] moves = new Move[218];
             int totalMoves = 0;
             // castling
             if(!IsInCheck()) {
@@ -301,36 +310,31 @@ stuff with unsafe and fixed-size arrays
                 } else if(Piece.GetType(currentPiece) == Piece.King) {
                     total |= MaskGen.GetKingAttacks(startSquare);
                 }
+                // get rid of capturing your own pieces
+                total ^= total & coloredBitboards[colorToMove];
                 while(total != 0) {
-                    int index = BitboardOperations.PopLSB(ref total);
-                    byte piece = PieceAtIndex(index);
-                    if(Piece.GetColor(piece) != colorToMove || Piece.GetType(piece) == Piece.None) {
-                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
-                        totalMoves++;
-                    }
+                    moves[totalMoves] = new Move(startSquare, BitboardOperations.PopLSB(ref total), Piece.None, state);
+                    totalMoves++;
                 }
+                // making sure it's just capturing the opponent's pieces or doing en passant
+                pawnCaptures &= coloredBitboards[1 - colorToMove] | (1UL << enPassantIndex);
                 while(pawnCaptures != 0) {
                     int index = BitboardOperations.PopLSB(ref pawnCaptures);
-                    byte piece = PieceAtIndex(index);
                     if(index >> 3 == 7 * colorToMove) {
                         // promotions
-                        if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
-                            for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                totalMoves++;
-                            }
-                        }
-                    } else {
-                        if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
-                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                        for(int type = Piece.Knight; type < Piece.King; type++) { 
+                            moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                             totalMoves++;
                         }
+                    } else {
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                        totalMoves++;
                     }
                 }
             }
             // pawn pushes
             ulong pawnBitboard = GetColoredPieceBitboard(colorToMove, Piece.Pawn);
-            ulong emptyBitboard = ~GetOccupiedBitboard();
+            ulong emptyBitboard = ~occupiedBitboard;
             ulong pawnPushes = MaskGen.GetPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
             ulong doublePawnPushes = MaskGen.GetDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
             while(pawnPushes != 0) {
@@ -353,17 +357,15 @@ stuff with unsafe and fixed-size arrays
                 moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                 totalMoves++;
             }
-            Array.Resize(ref moves, totalMoves);
-            return moves;
+            moves = moves.Slice(0, totalMoves);
         }
         /// <summary>
         /// Gets the captures from a position, used in Q Search.
         /// </summary>
         /// <returns>A List of capture moves</returns>
-        public Move[] GetMovesQSearch() {
+        public void GetMovesQSearch(ref Span<Move> moves) {
             BoardState state = new(this);
             ulong occupiedBitboard = GetOccupiedBitboard();
-            Move[] moves = new Move[218];
             int totalMoves = 0;
             ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
@@ -413,8 +415,7 @@ stuff with unsafe and fixed-size arrays
                     }
                 }
             }
-            Array.Resize(ref moves, totalMoves);
-            return moves;
+            moves = moves.Slice(0, totalMoves);
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace Chess {
             startSquare = start;
             endSquare = end;
             promotionType = pType;
-            state = new(s);
+            state = s;
         }
         /// <summary>
         /// Converts the move to long algebraic form

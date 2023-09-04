@@ -23,7 +23,6 @@ namespace Chess {
                 i++;
                 if(test.expectedResult <= 5000000) {
                     int result = Test(test.depth, test.board);
-                    if(test.board.GetFenString() != test.fen) Console.WriteLine("Changed Fen String");
                     total += result;
                     if(result == test.expectedResult) {
                         Console.ForegroundColor = ConsoleColor.Green;
@@ -44,6 +43,7 @@ namespace Chess {
             Console.WriteLine("Passed " + pass + ", Failed " + fail + ", Skipped " + skip);
             Console.WriteLine("Tests took " + sw.Elapsed);
             Console.WriteLine("Total nodes: " + total);
+            Console.WriteLine("NPS: " + (total/(sw.ElapsedMilliseconds / 1000)));
         }
         public static void PerformTest(PerftTest test) {
             int result = Test(test.depth, test.board);
@@ -59,7 +59,8 @@ namespace Chess {
         }
         public static int Test(int depth, Board board) { 
             if(depth == 0) return 1;
-            Move[] moves = board.GetMoves();
+            System.Span<Move> moves = stackalloc Move[256];
+            board.GetMoves(ref moves);
             int count = 0;
             foreach(Move move in moves) {
                 if(board.MakeMove(move)) {

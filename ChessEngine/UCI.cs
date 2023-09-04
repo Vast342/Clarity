@@ -2,6 +2,8 @@ using Chess;
 public class UCI {
     static void Main() {
         ChessEngine engine = new(0);
+        MagicGeneration.GenerateMasks();
+        MagicGeneration.InitializeSavedMagics();
         while(true) {
             string? entry = Console.ReadLine();
             string? command = entry!.Split(' ')[0];
@@ -29,48 +31,13 @@ public class UCI {
                 }
             }
             if(command == "perft") {
-                string[] segments = entry.Split(' ');
-                if(segments[2] == "startpos") {
-                    int total = 0;
-                    Board b = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-                    if(segments.Length > 3) {
-                        foreach(Move m in b.GetMoves()) {
-                            if(b.MakeMove(m)) {
-                                int results = Perft.Test(int.Parse(segments[1]) - 1, b);
-                                b.UndoMove(m);
-                                Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
-                                total += results;
-                            }
-                        }
-                    } else {
-                        total = Perft.Test(int.Parse(segments[1]), b);
-                    }
-                    Console.WriteLine("");
-                    Console.WriteLine("Total: " + total);
-                } else {
-                    int total = 0;
-                    Board b = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);  
-                    if(segments.Length > 8) {
-                        foreach(Move m in b.GetMoves()) {
-                            if(b.MakeMove(m)) {
-                                int results = Perft.Test(int.Parse(segments[1]) - 1, b);
-                                b.UndoMove(m);
-                                Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
-                                total += results;
-                            }
-                        } 
-                    } else {
-                        total = Perft.Test(int.Parse(segments[1]), b);
-                    }
-                    Console.WriteLine("");
-                    Console.WriteLine("Total: " + total);
-                }
+                PerformPerft(entry);
             }
             if(command == "perft-suite") {
-                    if(entry.Split(' ')[1] == "ethereal") {
-                        Perft.PerformTestSuite(Suite.etherealSuite);
-                    }
+                if(entry.Split(' ')[1] == "ethereal") {
+                    Perft.PerformTestSuite(Suite.etherealSuite);
                 }
+            }
             if(command == "in-check") {
                 string[] segments = entry.Split(" ");
                 Board b = new(segments[1] + " " + segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6]);
@@ -85,6 +52,49 @@ public class UCI {
             if(command == "make-move") {
                 engine.MakeMove(entry);
             }
+        }
+    }
+    // I seperated this out into it's own class to avoid the compiler warning because of my usage of stackalloc here.
+    public static void PerformPerft(string entry) {
+        string[] segments = entry.Split(' ');
+        if(segments[2] == "startpos") {
+            int total = 0;
+            Board b = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            if(segments.Length > 3) {
+                Span<Move> moves = stackalloc Move[256];
+                b.GetMoves(ref moves);
+                foreach(Move m in moves) {
+                    if(b.MakeMove(m)) {
+                        int results = Perft.Test(int.Parse(segments[1]) - 1, b);
+                        b.UndoMove(m);
+                        Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
+                        total += results;
+                    }
+                }
+            } else {
+                total = Perft.Test(int.Parse(segments[1]), b);
+            }
+            Console.WriteLine("");
+            Console.WriteLine("Total: " + total);
+        } else {
+            int total = 0;
+            Board b = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);  
+            if(segments.Length > 8) {
+                Span<Move> moves = stackalloc Move[256];
+                b.GetMoves(ref moves);
+                foreach(Move m in moves) {
+                    if(b.MakeMove(m)) {
+                        int results = Perft.Test(int.Parse(segments[1]) - 1, b);
+                        b.UndoMove(m);
+                        Console.WriteLine(m.ConvertToLongAlgebraic() + ": " + results);
+                        total += results;
+                    }
+                } 
+            } else {
+                total = Perft.Test(int.Parse(segments[1]), b);
+            }
+            Console.WriteLine("");
+            Console.WriteLine("Total: " + total);
         }
     }
 }
