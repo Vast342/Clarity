@@ -59,7 +59,7 @@ namespace Chess {
         }
         public static int Test(int depth, Board board) { 
             if(depth == 0) return 1;
-            System.Span<Move> moves = stackalloc Move[256];
+            Span<Move> moves = stackalloc Move[256];
             board.GetMoves(ref moves);
             int count = 0;
             foreach(Move move in moves) {

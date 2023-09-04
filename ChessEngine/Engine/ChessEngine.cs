@@ -111,31 +111,29 @@ public struct ChessEngine {
     /// <param name="depth">The depth being searched to </param>
     /// <returns>The result of the search</returns>
     public int Negamax(int alpha, int beta, int depth, int ply) {
+        nodes++;
         if(sw.ElapsedMilliseconds > startTime / 30) return 0;
         ulong hash = board.CreateHash();
         if(depth == 0) return QSearch(alpha, beta);
-        int originalAlpha = alpha;
-        Move bestMove = Move.NullMove;
-        System.Span<Move> moves = stackalloc Move[256];
+        Span<Move> moves = stackalloc Move[256];
         board.GetMoves(ref moves);
         int legalMoveCount = 0;
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
            if(board.MakeMove(move)) { 
                 legalMoveCount++;
-                nodes++;
                 int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
                 if(sw.ElapsedMilliseconds > startTime / 30) return 0;
                 if(score >= beta) {
+                    TT.UpdateBestMove(move, hash);
                     alpha = beta;
                     break;
                 }
                 if(score > alpha) {
+                    TT.UpdateBestMove(move, hash);
                     alpha = score;
-                    bestMove = move;
                     if(ply == 0) rootBestMove = move;
-                    alpha = Math.Max(alpha, score);
                 }
            }    
         }
@@ -145,8 +143,6 @@ public struct ChessEngine {
             }
             return 0;
         }
-        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : UPPERBOUND;
-        TT.WriteEntry(new Transposition(hash, bestMove, depth, alpha, bound), hash);
         return alpha;
     }
     /// <summary>
@@ -156,34 +152,31 @@ public struct ChessEngine {
     /// <param name="beta">The highest score</param>
     /// <returns>The total returned value of the search</returns>
     public int QSearch(int alpha, int beta) {
+        nodes++;
         if(sw.ElapsedMilliseconds > startTime / 30) return 0;
-        Move bestMove = Move.NullMove;
         ulong hash = board.CreateHash();
         int standPat = Evaluate();
         if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
-        int originalAlpha = alpha;
-        System.Span<Move> moves = stackalloc Move[256];
+        Span<Move> moves = stackalloc Move[256];
         board.GetMovesQSearch(ref moves);
         OrderMoves(ref moves, hash);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
-                nodes++;
                 int score = -QSearch(-beta, -alpha);
                 board.UndoMove(move);
                 if(sw.ElapsedMilliseconds > startTime / 30) return 0;
                 if(score >= beta) {
+                    TT.UpdateBestMove(move, hash);
                     alpha = beta;
                     break;
                 }
                 if(score > alpha) {
-                    bestMove = move;
-                    alpha = Math.Max(alpha, score);
+                    TT.UpdateBestMove(move, hash);
+                    alpha = score;
                 }
             }
         }
-        sbyte bound = alpha >= beta ? LOWERBOUND : alpha > originalAlpha ? EXACT : UPPERBOUND;
-        TT.WriteEntry(new Transposition(hash, bestMove, 0, alpha, bound), hash);
         return alpha;
     }
     /// <summary>

@@ -263,7 +263,7 @@ stuff with unsafe and fixed-size arrays
         /// Generates a list of all the moves from the position, not including moves while in check. To filter the legal moves, check the return value of Board.MakeMove()
         /// </summary>
         /// <returns>A List of the legal moves</returns>
-        public void GetMoves(ref System.Span<Move> moves) {
+        public void GetMoves(ref Span<Move> moves) {
             BoardState state = new(this);
             ulong occupiedBitboard = GetOccupiedBitboard();
             int totalMoves = 0;
