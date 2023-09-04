@@ -334,7 +334,7 @@ stuff with unsafe and fixed-size arrays
             }
             // pawn pushes
             ulong pawnBitboard = GetColoredPieceBitboard(colorToMove, Piece.Pawn);
-            ulong emptyBitboard = ~GetOccupiedBitboard();
+            ulong emptyBitboard = ~occupiedBitboard;
             ulong pawnPushes = MaskGen.GetPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
             ulong doublePawnPushes = MaskGen.GetDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
             while(pawnPushes != 0) {

@@ -3,8 +3,7 @@ public class UCI {
     static void Main() {
         ChessEngine engine = new(0);
         MagicGeneration.GenerateMasks();
-        Console.WriteLine(MagicGeneration.rookMasks[63]);
-        MagicGeneration.FindMagics();
+        MagicGeneration.InitializeSavedMagics();
         while(true) {
             string? entry = Console.ReadLine();
             string? command = entry!.Split(' ')[0];
