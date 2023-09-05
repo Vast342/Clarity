@@ -21,5 +21,18 @@ namespace Chess {
             bitboard ^= 1UL << msb;
             return msb;
         }
+        public static ulong GetPassedPawnMask(int square, int colorToMove) {
+            int file = square & 7;
+            ulong centralFileMask = Mask.GetFileMask(file);
+            ulong leftFileMask = file == 0 ? 0 : Mask.GetFileMask(file + 1);
+            ulong rightFileMask = file == 7 ? 0 : Mask.GetFileMask(file - 1);
+            ulong mask = centralFileMask | leftFileMask | rightFileMask;
+            if(colorToMove == 1) {
+                return mask << 8 * (square >> 3);
+            } else {
+                return mask >> 8 * (square >> 3);
+            }
+        }
+
     }
 }

@@ -27,6 +27,9 @@ namespace Engine.Essentials {
         public void WriteEntry(Transposition entry, ulong z) {
             table[z & mask] = entry;
         }
+        public void WriteZobrist(ulong z) {
+            table[z & mask].zobristKey = z;
+        }
         /// <summary>
         /// Reads the best move for this position from the table
         /// </summary>
@@ -38,12 +41,17 @@ namespace Engine.Essentials {
         public Transposition ReadEntry(ulong z) {
             return table[z & mask];
         }
+        public ulong ReadZobrist(ulong z) {
+            return table[z & mask].zobristKey;
+        }
     }
     // Very limited in scope currently
     public struct Transposition {
-        public Transposition(Move m){
+        public Transposition(Move m, ulong zKey){
             bestMove = m;
+            zobristKey = zKey;
         }
+        public ulong zobristKey;
         public Move bestMove;
     }
 }

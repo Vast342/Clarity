@@ -1,5 +1,5 @@
 namespace Engine.Essentials {
-    // Values from the midgame evaluation of PeSTO.
+    // Values from the evaluation of PeSTO.
     public static class Tables {
         public static int[] pawnTableMG = {
             0,   0,   0,   0,   0,   0,  0,   0,
@@ -145,5 +145,16 @@ namespace Engine.Essentials {
             queenTableEG,
             kingTableEG
         };
+        // These are my own values that I completely made up.
+        public static int[] passedPawnBonuses = {
+            0,     0,     0,     0,     0,     0,     0,     0,
+            160, 120, 120, 120, 120, 120, 120, 160,
+            80,   60,   60,   60,   60,   60,   60,   80,
+            40,   30,   30,   30,   30,   30,   30,   40,
+            20,   15,   15,   15,   15,   15,   15,   20,
+            10,     7,     7,     7,     7,     7,     7,   10,
+                0,     0,     0,     0,     0,     0,     0,     0,
+        };
+
     }
 }
