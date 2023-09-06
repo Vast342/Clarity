@@ -1,7 +1,9 @@
 using Chess;
-public class UCI {
+public static class UCI {
+    static ChessEngine engine = new(0);
+    static Board board = new("8/8/8/8/8/8/8/8 w - - 0 1");
+    static public int numMoves = 0;
     static void Main() {
-        ChessEngine engine = new(0);
         MagicGeneration.GenerateMasks();
         MagicGeneration.InitializeSavedMagics();
         while(true) {
@@ -21,7 +23,7 @@ public class UCI {
                 engine.NewGame();
             }
             if(command == "position") {
-                engine.LoadPosition(entry);
+                LoadPosition(entry);
             }
             if(command == "test") {
                 if(entry.Split(' ')[1] == "board-rep") {
@@ -44,13 +46,13 @@ public class UCI {
                 Console.WriteLine(b.IsInCheck());
             }
             if(command == "go") {
-                engine.Think(entry);
+                engine.Think(entry, board);
             }
             if(command == "get-fen") {
-                engine.GetFen();
+                GetFen();
             }
             if(command == "make-move") {
-                engine.MakeMove(entry);
+                MakeMove(entry);
             }
         }
     }
@@ -95,6 +97,45 @@ public class UCI {
             }
             Console.WriteLine("");
             Console.WriteLine("Total: " + total);
+        }
+    }
+    /// <summary>
+    /// Get's the fen string of the position currently being viewed by the bot
+    /// </summary>
+    public static void GetFen() {
+        Console.WriteLine(board.GetFenString());
+    }
+    /// <summary>
+    /// detects a move from the command, and does it on the board.
+    /// </summary>
+    /// <param name="entry">The command being sent</param>
+    public static void MakeMove(string entry) {
+        board.MakeMove(new Move(entry.Split(' ')[1], board));
+        Console.WriteLine(board.GetFenString());
+    }
+    /// <summary>
+    /// Loads the position from a position command
+    /// </summary>
+    /// <param name="position">The position command</param>
+    public static void LoadPosition(string position) {
+        // THIS ENTIRE THING NEEDS TO BE REWRITTEN, FENS DON'T WORK, AND IT NEEDS TO LOAD IN ALL THE MOVES, NOT JUST ONE
+        string[] segments = position.Split(' ');
+        if(segments[1] == "startpos") {
+            board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+            if(segments.Length > 2) {
+                if(segments[2] == "moves") {
+                    board.MakeMove(new Move(segments[3 + numMoves], board));
+                    numMoves++;
+                }
+            }
+        } else if(segments[1] == "fen") {
+            board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
+            if(segments.Length > 8) {
+                if(segments[8] == "moves") {
+                    board.MakeMove(new Move(segments[9 + numMoves], board));
+                    numMoves++;
+                }
+            }
         }
     }
 }

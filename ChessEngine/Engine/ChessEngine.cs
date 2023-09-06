@@ -6,7 +6,6 @@ public struct ChessEngine {
         NewGame();
         InitializeTables();
     }
-    public Board board = new("8/8/8/8/8/8/8/8 w - - 0 0");
     public int timeRatio = 25;
     public string name = "Vast-Test";
     public string author = "Vast";
@@ -25,39 +24,9 @@ public struct ChessEngine {
     /// resets the bot and prepares for a new game
     /// </summary>
     public void NewGame() {
-        board = new("8/8/8/8/8/8/8/8 w - - 0 0");
         TT.Clear();
         nodes = 0;
         numMoves = 0;
-    }
-    /// <summary>
-    /// Loads the position from a position command
-    /// </summary>
-    /// <param name="position">The position command</param>
-    public void LoadPosition(string position) {
-        // THIS ENTIRE THING NEEDS TO BE REWRITTEN, FENS DON'T WORK, AND IT NEEDS TO LOAD IN ALL THE MOVES, NOT JUST ONE
-        string[] segments = position.Split(' ');
-        if(segments[1] == "startpos") {
-            if(segments.Length > 2) {
-                if(segments[2] == "moves") {
-                    board.MakeMove(new Move(segments[3 + numMoves], board));
-                    numMoves++;
-                }
-            } else {
-                board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-            }
-        } else {
-            if(segments.Length > 8) {
-                board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
-                if(segments[8] == "moves") {
-                    board.MakeMove(new Move(segments[9 + numMoves], board));
-                    numMoves++;
-                }
-            } else {
-                board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
-            }
-        }
-        color = board.colorToMove;
     }
     public int[][] MGTables = new int[6][];
     public int[][] EGTables = new int[6][];
@@ -73,8 +42,6 @@ public struct ChessEngine {
             }
         }
     }
-    public int color;
-    public int universalDepth = 0;
     public int startTime;
     public Move previousBestMove;
     public Stopwatch sw = new();
@@ -82,18 +49,16 @@ public struct ChessEngine {
     /// <summary>
     /// Thinks through the position it has been given, and writes the best move to the console once the search is done
     /// </summary>
-    public void Think(string entry) {
+    public void Think(string entry, Board board) {
         MT.Clear();
         bool alreadySearched = false;
-        ulong hash = board.CreateHash();
-        startTime = int.Parse(color == 1 ? entry.Split(' ')[2] : entry.Split(' ')[4]);
+        startTime = int.Parse(board.colorToMove == 1 ? entry.Split(' ')[2] : entry.Split(' ')[4]);
         nodes = 0;
         sw = Stopwatch.StartNew();
         bool check = board.IsInCheck();
         for(int i = 1; i <= 10; i++) {
-            universalDepth = i;
             previousBestMove = rootBestMove;
-            int eval = Negamax(-10000000, 10000000, universalDepth, 0);
+            int eval = Negamax(board, -10000000, 10000000, i, 0);
             if(check) {
                 if(!alreadySearched) {
                     alreadySearched = true;
@@ -121,7 +86,7 @@ public struct ChessEngine {
     /// A static evaluation of the position, currently only using material
     /// </summary>
     /// <returns>The number from the evaluation</returns>
-    public int Evaluate() {
+    public int Evaluate(Board board) {
         int mg = 0;
         int eg = 0;
         int phase = 0;
@@ -153,26 +118,26 @@ public struct ChessEngine {
     /// <param name="beta">The Highest score the minimising player is guaranteed</param>
     /// <param name="depth">The depth being searched to </param>
     /// <returns>The result of the search</returns>
-    public int Negamax(int alpha, int beta, int depth, int ply) {
+    public int Negamax(Board board, int alpha, int beta, int depth, int ply) {
         nodes++;
         if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
         ulong hash = board.CreateHash();
-        if(depth == 0) return QSearch(alpha, beta);
+        if(depth == 0) return QSearch(board, alpha, beta);
         Span<Move> moves = stackalloc Move[256];
         board.GetMoves(ref moves);
         int legalMoveCount = 0;
-        OrderMoves(ref moves, hash);
+        OrderMoves(board, ref moves, hash);
         foreach(Move move in moves) {
            if(board.MakeMove(move)) { 
                 legalMoveCount++;
-                int score = -Negamax(-beta, -alpha, depth - 1, ply + 1);
+                int score = -Negamax(board, -beta, -alpha, depth - 1, ply + 1);
                 board.UndoMove(move);
                 if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
                 if(score >= beta) {
                     TT.UpdateBestMove(move, hash);
                     if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
-                    break; // prune the branch
+                    return score; // prune the branch
                 }
                 if(score > alpha) {
                     TT.UpdateBestMove(move, hash);
@@ -195,26 +160,26 @@ public struct ChessEngine {
     /// <param name="alpha">The lowest score</param>
     /// <param name="beta">The highest score</param>
     /// <returns>The total returned value of the search</returns>
-    public int QSearch(int alpha, int beta) {
+    public int QSearch(Board board, int alpha, int beta) {
         nodes++;
         if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
         ulong hash = board.CreateHash();
-        int standPat = Evaluate();
+        int standPat = Evaluate(board);
         if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
         Span<Move> moves = stackalloc Move[256];
         board.GetMovesQSearch(ref moves);
-        OrderMoves(ref moves, hash);
+        OrderMoves(board, ref moves, hash);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
-                int score = -QSearch(-beta, -alpha);
+                int score = -QSearch(board, -beta, -alpha);
                 board.UndoMove(move);
                 if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
                 if(score >= beta) {
                     TT.UpdateBestMove(move, hash);
                     if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
-                    break;
+                    return score;
                 }
                 if(score > alpha) {
                     TT.UpdateBestMove(move, hash);
@@ -231,7 +196,7 @@ public struct ChessEngine {
     /// Orders the moves using MVV-LVA
     /// </summary>
     /// <param name="moves">A reference to the list of legal moves being sorted</param>
-    public void OrderMoves(ref Span<Move> moves, ulong zobristHash) {
+    public void OrderMoves(Board board, ref Span<Move> moves, ulong zobristHash) {
         Span<int> scores = stackalloc int[moves.Length];
         for(int i = 0; i < moves.Length; i++) {
             if(moves[i].IsCapture(board)) {
@@ -244,19 +209,5 @@ public struct ChessEngine {
         }
         scores.Sort(moves);
         moves.Reverse();
-    }
-    /// <summary>
-    /// Get's the fen string of the position currently being viewed by the bot
-    /// </summary>
-    public void GetFen() {
-        Console.WriteLine(board.GetFenString());
-    }
-    /// <summary>
-    /// detects a move from the command, and does it on the board.
-    /// </summary>
-    /// <param name="entry">The command being sent</param>
-    public void MakeMove(string entry) {
-        board.MakeMove(new Move(entry.Split(' ')[1], board));
-        Console.WriteLine(board.GetFenString());
     }
 }   
