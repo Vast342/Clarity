@@ -121,19 +121,27 @@ public static class UCI {
         // THIS ENTIRE THING NEEDS TO BE REWRITTEN, FENS DON'T WORK, AND IT NEEDS TO LOAD IN ALL THE MOVES, NOT JUST ONE
         string[] segments = position.Split(' ');
         if(segments[1] == "startpos") {
+            // set the board to be a board that is the in the starting position
             board = new("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
             if(segments.Length > 2) {
                 if(segments[2] == "moves") {
-                    board.MakeMove(new Move(segments[3 + numMoves], board));
-                    numMoves++;
+                    // loops through each move each time
+                    for(int i = 3; i < segments.Length; i++) {
+                        board.MakeMove(new Move(segments[i], board));
+                        numMoves++;
+                    }
                 }
             }
         } else if(segments[1] == "fen") {
+            // gets each segment of the fen string
             board = new(segments[2] + " " + segments[3] + " " + segments[4] + " " + segments[5] + " " + segments[6] + " " + segments[7]);
-            if(segments.Length > 8) {
+            // loops through the same exact way
+            if(segments.Length > 8) { 
                 if(segments[8] == "moves") {
-                    board.MakeMove(new Move(segments[9 + numMoves], board));
-                    numMoves++;
+                    for(int i = 9; i < segments.Length; i++) {
+                        board.MakeMove(new Move(segments[i], board));
+                        numMoves++;
+                    }
                 }
             }
         }

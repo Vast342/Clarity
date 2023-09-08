@@ -367,6 +367,9 @@ stuff with unsafe and fixed-size arrays
             BoardState state = new(this);
             ulong occupiedBitboard = GetOccupiedBitboard();
             int totalMoves = 0;
+            ulong kingBishopMask = MaskGen.GetBishopAttacks(kingSquares[1 - colorToMove], occupiedBitboard);
+            ulong kingRookMask = MaskGen.GetRookAttacks(kingSquares[1 - colorToMove], occupiedBitboard);
+            ulong kingKnightMask = MaskGen.GetKnightAttacks(kingSquares[1 - colorToMove]);
             ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
             while(mask != 0) {
@@ -374,44 +377,46 @@ stuff with unsafe and fixed-size arrays
                 byte currentPiece = PieceAtIndex(startSquare);
                 ulong total = 0;
                 ulong pawnCaptures = 0;
+                ulong checks = 0;
                 if(Piece.GetType(currentPiece) == Piece.Bishop) {
                     total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                    checks |= total & kingBishopMask;
                 } else if(Piece.GetType(currentPiece) == Piece.Rook) {
                     total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard);
+                    checks |= total & kingRookMask;
                 } else if(Piece.GetType(currentPiece) == Piece.Queen) {
                     total |= MaskGen.GetRookAttacks(startSquare, occupiedBitboard); 
+                    checks |= total & kingRookMask;
                     total |= MaskGen.GetBishopAttacks(startSquare, occupiedBitboard);
+                    checks |= total & kingBishopMask;
                 } else if(Piece.GetType(currentPiece) == Piece.Pawn) {
                     pawnCaptures |= MaskGen.GetPawnCaptures(startSquare, colorToMove);
                 } else if(Piece.GetType(currentPiece) == Piece.Knight) {
                     total |= MaskGen.GetKnightAttacks(startSquare);
+                    checks |= total & kingKnightMask;
                 } else if(Piece.GetType(currentPiece) == Piece.King) {
                     total |= MaskGen.GetKingAttacks(startSquare);
                 }
+                // get rid of capturing your own pieces
+                total &= coloredBitboards[1 - colorToMove];
+                total |= checks;
                 while(total != 0) {
-                    int index = BitboardOperations.PopLSB(ref total);
-                    byte piece = PieceAtIndex(index);
-                    if(Piece.GetColor(piece) != colorToMove) {
-                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
-                        totalMoves++;
-                    }
+                    moves[totalMoves] = new Move(startSquare, BitboardOperations.PopLSB(ref total), Piece.None, state);
+                    totalMoves++;
                 }
+                // making sure it's just capturing the opponent's pieces or doing en passant
+                pawnCaptures &= coloredBitboards[1 - colorToMove] | (1UL << enPassantIndex);
                 while(pawnCaptures != 0) {
                     int index = BitboardOperations.PopLSB(ref pawnCaptures);
-                    byte piece = PieceAtIndex(index);
                     if(index >> 3 == 7 * colorToMove) {
                         // promotions
-                        if(Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) {
-                            for(int type = Piece.Knight; type < Piece.King; type++) { 
-                                moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
-                                totalMoves++;
-                            }
-                        }
-                    } else {
-                        if((Piece.GetColor(piece) != colorToMove && Piece.GetType(piece) != Piece.None) || index == enPassantIndex) {
-                            moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                        for(int type = Piece.Knight; type < Piece.King; type++) { 
+                            moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
                             totalMoves++;
                         }
+                    } else {
+                        moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
+                        totalMoves++;
                     }
                 }
             }
@@ -586,26 +591,21 @@ stuff with unsafe and fixed-size arrays
         public bool SquareIsAttackedByOpponent(int square) {
             ulong rook = MaskGen.GetRookAttacks(square, GetOccupiedBitboard());
             ulong bishop = MaskGen.GetBishopAttacks(square, GetOccupiedBitboard());
-            ulong totalMask = rook & GetColoredPieceBitboard(1 - colorToMove, Piece.Rook);
+            ulong totalMask = rook & (GetColoredPieceBitboard(1 - colorToMove, Piece.Queen) | GetColoredPieceBitboard(1 - colorToMove, Piece.Rook));
             if(totalMask == 0) {
-                totalMask |= bishop & GetColoredPieceBitboard(1 - colorToMove, Piece.Bishop);
-            }
-            if(totalMask == 0) {
-                totalMask |= bishop & GetColoredPieceBitboard(1 - colorToMove, Piece.Queen);
-            }
-            if(totalMask == 0) {
-                totalMask |= rook & GetColoredPieceBitboard(1 - colorToMove, Piece.Queen);
-            }
-            if(totalMask == 0) {
-                totalMask |= MaskGen.GetKnightAttacks(square) & GetColoredPieceBitboard(1 - colorToMove, Piece.Knight);
-            }
-            if(totalMask == 0) {
-                totalMask |= MaskGen.GetPawnCaptures(square, colorToMove) & GetColoredPieceBitboard(1 - colorToMove, Piece.Pawn);
-            }
-            if(totalMask == 0) {
-                totalMask |= MaskGen.GetKingAttacks(square) & GetColoredPieceBitboard(1 - colorToMove, Piece.King);
-            }
-            return totalMask != 0;
+                totalMask |= bishop & (GetColoredPieceBitboard(1 - colorToMove, Piece.Queen) | GetColoredPieceBitboard(1 - colorToMove, Piece.Bishop));
+                if(totalMask == 0) {
+                    totalMask |= MaskGen.GetKnightAttacks(square) & GetColoredPieceBitboard(1 - colorToMove, Piece.Knight);
+                    if(totalMask == 0) {
+                        totalMask |= MaskGen.GetPawnCaptures(square, colorToMove) & GetColoredPieceBitboard(1 - colorToMove, Piece.Pawn);
+                        if(totalMask == 0) {
+                            totalMask |= MaskGen.GetKingAttacks(square) & GetColoredPieceBitboard(1 - colorToMove, Piece.King);
+                            if(totalMask != 0) return true;
+                        } else return true;
+                    } else return true;
+                } else return true;
+            } else return true;
+            return false;
         }
         /// <summary>
         /// Checks if the current color to move is under attack.
@@ -645,6 +645,9 @@ stuff with unsafe and fixed-size arrays
         }
         public ulong GetOccupiedBitboard() {
             return coloredBitboards[0] | coloredBitboards[1];
+        }
+        public void ChangeColor() {
+            colorToMove = 1 - colorToMove;
         }
     }
 } 
