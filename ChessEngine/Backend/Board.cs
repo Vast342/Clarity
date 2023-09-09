@@ -1,21 +1,7 @@
+using Microsoft.AspNetCore.Authentication;
+
 namespace Chess {
     public struct Board {
-/*
-LIST OF IDEAS
-
-make MakeMove and UndoMove better, rework readBoardState and GetMoves (remove bitboards from boardState)
-
-Figure out TT
-
-Memory management
-
-Optimizations in general
-
-Magic bitboard move generation
-
-stuff with unsafe and fixed-size arrays
-*/
-
         // board specific values
         public byte[] kingSquares = new byte[2];
         public int colorToMove = 1;
@@ -31,6 +17,7 @@ stuff with unsafe and fixed-size arrays
         public byte fiftyMoveCounter;
         private readonly static ulong[,] zobTable = new ulong[64,15];
         private static ulong zobColorToMove;
+        public ulong zobristHash = 0;
         public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
         /// <summary>
         /// Reads from a boardstate
@@ -53,6 +40,7 @@ stuff with unsafe and fixed-size arrays
             pieceBitboards[Piece.Rook] = state.rookBitboard;
             pieceBitboards[Piece.Queen] = state.queenBitboard;
             pieceBitboards[Piece.King] = state.kingBitboard;
+            zobristHash = state.zobristHash;
         }
         /// <summary>
         /// Establishes a new board instance, with the position and information contained within a FEN string.
@@ -292,7 +280,7 @@ stuff with unsafe and fixed-size arrays
             ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
             while(mask != 0) {
-                int startSquare = BitboardOperations.PopLSB(ref mask);
+                byte startSquare = BitboardOperations.PopLSB(ref mask);
                 byte currentPiece = PieceAtIndex(startSquare);
                 ulong total = 0;
                 ulong pawnCaptures = 0;
@@ -319,11 +307,11 @@ stuff with unsafe and fixed-size arrays
                 // making sure it's just capturing the opponent's pieces or doing en passant
                 pawnCaptures &= coloredBitboards[1 - colorToMove] | (1UL << enPassantIndex);
                 while(pawnCaptures != 0) {
-                    int index = BitboardOperations.PopLSB(ref pawnCaptures);
+                    byte index = BitboardOperations.PopLSB(ref pawnCaptures);
                     if(index >> 3 == 7 * colorToMove) {
                         // promotions
                         for(int type = Piece.Knight; type < Piece.King; type++) { 
-                            moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                            moves[totalMoves] = new Move(startSquare, index, (byte)(type | (colorToMove == 1 ? Piece.White : Piece.Black)), state);
                             totalMoves++;
                         }
                     } else {
@@ -338,12 +326,12 @@ stuff with unsafe and fixed-size arrays
             ulong pawnPushes = MaskGen.GetPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
             ulong doublePawnPushes = MaskGen.GetDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
             while(pawnPushes != 0) {
-                int index = BitboardOperations.PopLSB(ref pawnPushes);
-                int startSquare = index + directionalOffsets[colorToMove];
+                byte index = BitboardOperations.PopLSB(ref pawnPushes);
+                byte startSquare = (byte)(index + directionalOffsets[colorToMove]);
                 if(index >> 3 == 7 * colorToMove) {
                      // promotions
                     for(int type = Piece.Knight; type < Piece.King; type++) { 
-                        moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                        moves[totalMoves] = new Move(startSquare, index, (byte)(type | (colorToMove == 1 ? Piece.White : Piece.Black)), state);
                         totalMoves++;
                     }
                 } else {
@@ -352,8 +340,8 @@ stuff with unsafe and fixed-size arrays
                 }
             }
             while(doublePawnPushes != 0) {
-                int index = BitboardOperations.PopLSB(ref doublePawnPushes);
-                int startSquare = index + directionalOffsets[colorToMove] * 2;
+                byte index = BitboardOperations.PopLSB(ref doublePawnPushes);
+                byte startSquare = (byte)(index + directionalOffsets[colorToMove] * 2);
                 moves[totalMoves] = new Move(startSquare, index, Piece.None, state);
                 totalMoves++;
             }
@@ -373,7 +361,7 @@ stuff with unsafe and fixed-size arrays
             ulong mask = coloredBitboards[colorToMove];
             // the rest of the pieces
             while(mask != 0) {
-                int startSquare = BitboardOperations.PopLSB(ref mask);
+                byte startSquare = BitboardOperations.PopLSB(ref mask);
                 byte currentPiece = PieceAtIndex(startSquare);
                 ulong total = 0;
                 ulong pawnCaptures = 0;
@@ -407,11 +395,11 @@ stuff with unsafe and fixed-size arrays
                 // making sure it's just capturing the opponent's pieces or doing en passant
                 pawnCaptures &= coloredBitboards[1 - colorToMove] | (1UL << enPassantIndex);
                 while(pawnCaptures != 0) {
-                    int index = BitboardOperations.PopLSB(ref pawnCaptures);
+                    byte index = BitboardOperations.PopLSB(ref pawnCaptures);
                     if(index >> 3 == 7 * colorToMove) {
                         // promotions
                         for(int type = Piece.Knight; type < Piece.King; type++) { 
-                            moves[totalMoves] = new Move(startSquare, index, type | (colorToMove == 1 ? Piece.White : Piece.Black), state);
+                            moves[totalMoves] = new Move(startSquare, index, (byte)(type | (colorToMove == 1 ? Piece.White : Piece.Black)), state);
                             totalMoves++;
                         }
                     } else {
@@ -446,10 +434,10 @@ stuff with unsafe and fixed-size arrays
             if(colorToMove == 0) {
                 hash ^= zobColorToMove;
             }
-            for(int i = 0; i < 64; i++) {
-                if(PieceAtIndex(i) != 0) {
-                    hash ^= zobTable[i, PieceAtIndex(i)];
-                }
+            ulong occupied = GetOccupiedBitboard();
+            while(occupied != 0) {
+                int index = BitboardOperations.PopLSB(ref occupied);
+                hash ^= zobTable[index, PieceAtIndex(index)];
             }
             return hash;
         }
@@ -628,10 +616,12 @@ stuff with unsafe and fixed-size arrays
         public void AddPiece(int index, byte type) {
             coloredBitboards[Piece.GetColor(type)] ^= 1UL << index; 
             pieceBitboards[Piece.GetType(type)] ^=  1UL << index;
+            zobristHash ^= zobTable[index, type];
         }
         public void RemovePiece(int index, byte type) {
             coloredBitboards[Piece.GetColor(type)] ^= 1UL << index; 
             pieceBitboards[Piece.GetType(type)] ^=  1UL << index;
+            zobristHash ^= zobTable[index, type];
         }
         public void MovePiece(int index1, byte type1, int index2, byte type2) {
             RemovePiece(index1, type1);

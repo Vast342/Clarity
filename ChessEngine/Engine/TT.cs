@@ -27,6 +27,9 @@ namespace Engine.Essentials {
         public void WriteEntry(Transposition entry, ulong z) {
             table[z & mask] = entry;
         }
+        public void WriteFlag(byte flag, ulong z) {
+            table[z & mask].flag = flag;
+        }
         /// <summary>
         /// Reads the best move for this position from the table
         /// </summary>
@@ -38,12 +41,24 @@ namespace Engine.Essentials {
         public Transposition ReadEntry(ulong z) {
             return table[z & mask];
         }
+        public byte ReadFlag(ulong z) {
+            return table[z & mask].flag;
+        }
+        public bool IsEntryEqual(ulong z) {
+            return table[z & mask].zobristKey == z;
+        }
     }
     // Very limited in scope currently
     public struct Transposition {
-        public Transposition(Move m){
+        public Transposition(ulong z, Move m, byte f, int d){
+            zobristKey = z;
             bestMove = m;
+            flag = f;
+            depth = d;
         }
+        public ulong zobristKey;
         public Move bestMove;
+        public byte flag = 4;
+        public int depth;
     }
 }

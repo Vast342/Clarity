@@ -11,8 +11,8 @@ namespace Chess {
         public static bool AtLocation(ulong bitboard, int index) {
             return (bitboard & ((ulong)1 << index)) != 0;
         }
-        public static int PopLSB(ref ulong bitboard) {
-            int lsb = BitOperations.TrailingZeroCount(bitboard);
+        public static byte PopLSB(ref ulong bitboard) {
+            byte lsb = (byte)BitOperations.TrailingZeroCount(bitboard);
             bitboard ^= 1UL << lsb;
             return lsb;
         }

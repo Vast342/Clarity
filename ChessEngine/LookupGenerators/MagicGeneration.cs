@@ -3,6 +3,7 @@ namespace Chess {
     public class MagicGeneration {
         public static readonly int[] directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
         public static readonly byte[,] squaresToEdge = new byte[64,8];
+        public static readonly byte[] minDistanceToEdge = new byte[64];
         public static readonly ulong[] rookMasks = new ulong[64];
         public static readonly ulong[] bishopMasks = new ulong[64];
         public static Random rng = new Random();
@@ -24,6 +25,7 @@ namespace Chess {
                             squaresToEdge[index, 5] = Math.Min(south, east);
                             squaresToEdge[index, 6] = Math.Min(north, east);
                             squaresToEdge[index, 7] = Math.Min(south, west);
+                            minDistanceToEdge[index] = Math.Min(Math.Min(north, south), Math.Min(east, west));
                         }
                     }
                     for(int square = 0; square < 64; square++) {
@@ -143,7 +145,7 @@ namespace Chess {
             for(int i = 0; i < 4096; i++) table[i] = 0;
             foreach(ulong blockers in CreateAllBlockerBitboards(mask)) {
                 ulong moves = piece == 0 ? GetBishopAttacks(square, blockers) : GetRookAttacks(square, blockers);
-                ulong entry = CalculateMagic(magic, BitOperations.PopCount(mask), blockers);
+                ulong entry = (blockers * magic) >> (piece == 0 ? bishopShifts[square] : rookShifts[square]);
                 if(table[entry] == 0) {
                     table[entry] = moves;
                 } else if(table[entry] != moves) {

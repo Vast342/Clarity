@@ -17,6 +17,7 @@ namespace Chess {
         public ulong rookBitboard;
         public ulong queenBitboard;
         public ulong kingBitboard;
+        public ulong zobristHash;
         public BoardState(Board board) {
             kingSquareBlack = board.kingSquares[0];
             kingSquareWhite = board.kingSquares[1];
@@ -34,6 +35,7 @@ namespace Chess {
             rookBitboard = board.pieceBitboards[Piece.Rook];
             queenBitboard = board.pieceBitboards[Piece.Queen];
             kingBitboard = board.pieceBitboards[Piece.King];
+            zobristHash = board.zobristHash;
         }
     }
 }

@@ -100,7 +100,7 @@ public static class UCI {
         }
     }
     /// <summary>
-    /// Get's the fen string of the position currently being viewed by the bot
+    /// Gets the fen string of the position currently being viewed by the bot
     /// </summary>
     public static void GetFen() {
         Console.WriteLine(board.GetFenString());

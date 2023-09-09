@@ -1,7 +1,8 @@
 using Chess;
 using Engine.Essentials;
+using Microsoft.VisualBasic;
 using System.Diagnostics;
-using System.Security.Cryptography.X509Certificates;
+using System.Runtime.CompilerServices;
 public struct ChessEngine {
     public ChessEngine(int i) {
         NewGame();
@@ -17,6 +18,8 @@ public struct ChessEngine {
     // depth reduction for nmp
     int nmpR = 2;
     int nmpMin = 3;
+    public static int depthLimit = 100;
+    public Move[] pv = new Move[depthLimit];
     /// <summary>
     /// Makes the bot identify itself
     /// </summary>
@@ -49,28 +52,31 @@ public struct ChessEngine {
     public int startTime;
     public Move previousBestMove;
     public Stopwatch sw = new();
-    public Move rootBestMove = Move.NullMove;
     /// <summary>
     /// Thinks through the position it has been given, and writes the best move to the console once the search is done
     /// </summary>
     public void Think(string entry, Board board) {
+        pv = new Move[depthLimit];
         MT.Clear();
         startTime = int.Parse(board.colorToMove == 1 ? entry.Split(' ')[2] : entry.Split(' ')[4]);
         nodes = 0;
         sw = Stopwatch.StartNew();
-        bool check = board.IsInCheck();
-        for(int i = 1; i <= 10; i++) {
-            previousBestMove = rootBestMove;
-            int eval = Negamax(board, -10000000, 10000000, i, 0, true);
+        for(int depth = 1; depth <= 100; depth++) {
+            previousBestMove = TT.ReadBestMove(board.zobristHash);
+            int eval = Negamax(board, -10000000, 10000000, depth, 0, true);
             if(sw.ElapsedMilliseconds > startTime / timeRatio) {
-                rootBestMove = previousBestMove;
+                TT.UpdateBestMove(previousBestMove, board.zobristHash);
                 break;
+            }
+            string pvText = " pv ";
+            for(int i = 0; i < depth; i++) {
+                pvText += pv[i].ConvertToLongAlgebraic() + " ";
             } 
-            Console.WriteLine("info depth " + i + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
+            Console.WriteLine("info depth " + depth + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval + pvText);
         }
         numMoves++;
-        board.MakeMove(rootBestMove);
-        Console.WriteLine("bestmove " + rootBestMove.ConvertToLongAlgebraic());
+        Console.WriteLine("bestmove " + pv[0].ConvertToLongAlgebraic());
+        board.MakeMove(pv[0]);
     }
     public int[] pieceValuesMG = { 82, 337, 365, 477, 1025,  0};
     public int[] pieceValuesEG = { 94, 281, 297, 512,  936,  0};
@@ -94,7 +100,7 @@ public struct ChessEngine {
             phase += phaseIncrements[Piece.GetType(piece)];
             if(Piece.GetType(piece) == Piece.Pawn) {
                 ulong passedMask = BitboardOperations.GetPassedPawnMask(index, Piece.GetColor(piece));
-                if((passedMask & board.GetColoredPieceBitboard(1 - Piece.GetColor(piece), (byte)Piece.GetType(piece))) == 0) {
+                if((passedMask & board.GetColoredPieceBitboard(1 - Piece.GetColor(piece), Piece.Pawn)) == 0) {
                     mg += Tables.passedPawnBonuses[index ^ colorShifters[Piece.GetColor(piece)]];
                     eg += 2 * Tables.passedPawnBonuses[index ^ colorShifters[Piece.GetColor(piece)]];
                 }
@@ -103,6 +109,7 @@ public struct ChessEngine {
         int mgPhase = phase;
         if(mgPhase > 24) mgPhase = 24; // Clamping the value so that eg phase isn't negative if a pawn promotes early on
         int egPhase = 24 - mgPhase;
+        eg -= 5 * MagicGeneration.minDistanceToEdge[board.kingSquares[1 - board.colorToMove]];
         return (mg * mgPhase + eg * egPhase) / 24 * colorMultipliers[board.colorToMove];
     }
     /// <summary>
@@ -114,10 +121,10 @@ public struct ChessEngine {
     /// <returns>The result of the search</returns>
     public int Negamax(Board board, int alpha, int beta, int depth, int ply, bool nmpAllowed) {
         nodes++;
-        if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
+        if(nodes % 4096 == 0) if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
         if(depth == 0) return QSearch(board, alpha, beta);
+        bool isPV = beta - alpha > 1; // line from A_randomnoob
         int legalMoveCount = 0;
-        ulong hash = board.CreateHash();
         // could potentially detect zugzwang here, but ehhhhhh
         bool mateThreat = false;
         if(nmpAllowed & depth > nmpMin) {
@@ -134,24 +141,26 @@ public struct ChessEngine {
         }
         Span<Move> moves = stackalloc Move[256];
         board.GetMoves(ref moves);
-        OrderMoves(board, ref moves, hash);
+        OrderMoves(board, ref moves);
+        int extensions = 0;
+        if(board.IsInCheck()) extensions++;
+        if(mateThreat) extensions++;
         foreach(Move move in moves) {
-            bool isCapture = move.IsCapture(board);
-            bool isInCheck = board.IsInCheck();
             if(board.MakeMove(move)) { 
-                int score = -Negamax(board, -beta, -alpha, depth + GetDepthDelta(board, depth, isCapture, isInCheck, mateThreat, legalMoveCount), ply + 1, true);
+                int score = -Negamax(board, -beta, -alpha, depth + extensions + GetDepthDelta(board, depth, legalMoveCount, extensions), ply + 1, true);
                 legalMoveCount++;
                 board.UndoMove(move);
-                if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
+                if(nodes % 4096 == 0) if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
                 if(score >= beta) {
-                    TT.UpdateBestMove(move, hash);
+                    if(TT.ReadFlag(board.zobristHash) != 0 && TT.IsEntryEqual(board.zobristHash)) TT.WriteEntry(new(board.zobristHash, move, 1, depth + extensions + GetDepthDelta(board, depth, legalMoveCount, extensions)), board.zobristHash); // the 1 here is the flag for a beta cutoff
                     if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
                     return score; // prune the branch
                 }
                 if(score > alpha) {
-                    TT.UpdateBestMove(move, hash);
-                    if(ply == 0) rootBestMove = move;
+                    // current idea, write the flag and only overwrite it if it's not 0, and then the idea is that I can save the zobrist board.zobristHash so if the flag is zero and the board.zobristHash is different I don't overwrite it
+                    if(TT.ReadFlag(board.zobristHash) == 0 && !TT.IsEntryEqual(board.zobristHash)) TT.WriteEntry(new(board.zobristHash, move, 0, depth + extensions + GetDepthDelta(board, depth, legalMoveCount, extensions)), board.zobristHash);  
+                    if(isPV) pv[ply] = move;
                     alpha = score;
                 }
            }    
@@ -172,27 +181,26 @@ public struct ChessEngine {
     /// <returns>The total returned value of the search</returns>
     public int QSearch(Board board, int alpha, int beta) {
         nodes++;
-        if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
-        ulong hash = board.CreateHash();
+        if(nodes % 4096 == 0) if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
         int standPat = Evaluate(board);
         if(standPat >= beta) return standPat;
         if(alpha < standPat) alpha = standPat;
         Span<Move> moves = stackalloc Move[256];
         board.GetMovesQSearch(ref moves);
-        OrderMoves(board, ref moves, hash);
+        OrderMoves(board, ref moves);
         foreach(Move move in moves) {
             if(board.MakeMove(move)) {
                 int score = -QSearch(board, -beta, -alpha);
                 board.UndoMove(move);
-                if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
+                if(nodes % 4096 == 0) if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
                 if(score >= beta) {
-                    TT.UpdateBestMove(move, hash);
                     if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
                     return score;
                 }
                 if(score > alpha) {
-                    TT.UpdateBestMove(move, hash);
+                    TT.UpdateBestMove(move, board.zobristHash);
+                    TT.WriteFlag(0, board.zobristHash); // exact is 0
                     alpha = score;
                 }
             }
@@ -206,13 +214,13 @@ public struct ChessEngine {
     /// Orders the moves using MVV-LVA
     /// </summary>
     /// <param name="moves">A reference to the list of legal moves being sorted</param>
-    public void OrderMoves(Board board, ref Span<Move> moves, ulong zobristHash) {
+    public void OrderMoves(Board board, ref Span<Move> moves) {
         Span<int> scores = stackalloc int[moves.Length];
         for(int i = 0; i < moves.Length; i++) {
             if(moves[i].IsCapture(board)) {
                 scores[i] = mvvlvaScore * pieceValuesMG[Piece.GetType(board.PieceAtIndex(moves[i].endSquare))] - pieceValuesMG[Piece.GetType(board.PieceAtIndex(moves[i].startSquare))];
             }
-            if(Move.Equals(moves[i], TT.ReadBestMove(zobristHash))) {
+            if(Move.Equals(moves[i], TT.ReadBestMove(board.zobristHash))) {
                 scores[i] += previousBestMoveScore;
             }
             scores[i] += historyScore * MT.ReadCutoff(moves[i].ToNumber());
@@ -221,21 +229,13 @@ public struct ChessEngine {
         moves.Reverse();
     }
     // this function handles extensions and reductions
-    public int GetDepthDelta(Board board, int depth, bool isCapture, bool isInCheck, bool mateThreat, int number) {
-        int delta = -1;
-        bool isExtended = false;
-        if(isInCheck) {
-            delta++;
-            isExtended = true;
-        }
-        if(mateThreat) {
-            delta++;
-            isExtended = true;
-        }
-        if(!isExtended && !board.IsInCheck() && depth > 3 && !isCapture) {
-            // reductions
-            delta -= Tables.reductions[number];
-        }
-        return delta;
+    public int GetDepthDelta(Board board, int depth, int number, int extensions) {
+        if(extensions == 0) {
+            int delta = -1;
+            if(!board.IsInCheck() && depth > 3) {
+                delta += Tables.reductions[number];
+            }
+            return delta;
+        } else return -1;
     }
 }   

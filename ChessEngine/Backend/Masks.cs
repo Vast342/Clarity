@@ -162,8 +162,6 @@ namespace Chess {
         }
         public static ulong GetRankMask(int rank) {
             return RankMask << (8 * rank);
-        }
-        // Every number after this point is a lookup table for the possible blockers for sliding pieces
-        
+        }        
     }
 }

@@ -2,9 +2,9 @@ namespace Chess {
     // I spent a decent while trying to replace this format but it's probably good for now
     // potential optimisations could include detecting if it's en passant, or writing that the move was en passant when it's made, and updating the  board that way instead of through the BoardState
     public struct Move {
-        public int startSquare;
-        public int endSquare;
-        public int promotionType = Piece.None;
+        public byte startSquare;
+        public byte endSquare;
+        public byte promotionType = Piece.None;
         public BoardState state;
         /// <summary>
         /// Makes a new move with the starting and ending squares.
@@ -12,7 +12,7 @@ namespace Chess {
         /// <param name="start">Starting square of the move</param>
         /// <param name="end">Ending square of the move</param>
         /// <param name="pType">The promotion piece type, if any</param>
-        public Move(int start, int end, int pType, BoardState s) {
+        public Move(byte start, byte end, byte pType, BoardState s) {
             startSquare = start;
             endSquare = end;
             promotionType = pType;
@@ -50,28 +50,28 @@ namespace Chess {
         }
         public Move(string longAlgebraicForm, Board board) {
             char[] chars = longAlgebraicForm.ToCharArray();
-            int startRank = chars[1] - '1';
-            int startFile = chars[0] - 'a';
-            int endRank = chars[3] - '1';
-            int endFile = chars[2] - 'a';
+            byte startRank = (byte)(chars[1] - '1');
+            byte startFile = (byte)(chars[0] - 'a');
+            byte endRank = (byte)(chars[3] - '1');
+            byte endFile = (byte)(chars[2] - 'a');
             if(chars.Length > 4) {
                 switch(chars[4]) {
                     case 'n':
-                        promotionType = Piece.Knight | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        promotionType = (byte)(Piece.Knight | (board.colorToMove == 1 ? Piece.White : Piece.Black));
                         break;
                     case 'b':
-                        promotionType = Piece.Bishop | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        promotionType = (byte)(Piece.Bishop | (board.colorToMove == 1 ? Piece.White : Piece.Black));
                         break;
                     case 'r':
-                        promotionType = Piece.Rook | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        promotionType = (byte)(Piece.Rook | (board.colorToMove == 1 ? Piece.White : Piece.Black));
                         break;
                     case 'q':
-                        promotionType = Piece.Queen | (board.colorToMove == 1 ? Piece.White : Piece.Black);
+                        promotionType = (byte)(Piece.Queen | (board.colorToMove == 1 ? Piece.White : Piece.Black));
                         break;
                 }
             }
-            startSquare = startRank * 8 + startFile;
-            endSquare = endRank * 8 + endFile;
+            startSquare = (byte)(startRank * 8 + startFile);
+            endSquare = (byte)(endRank * 8 + endFile);
 
             state = new(board);
         }
