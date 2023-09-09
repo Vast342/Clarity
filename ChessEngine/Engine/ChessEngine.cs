@@ -11,7 +11,8 @@ public struct ChessEngine {
     public int timeRatio = 25;
     public string name = "Vast-Test";
     public string author = "Vast";
-    public TranspositionTable TT = new TranspositionTable();
+    public static ulong mask = 0xFFFFFF;
+    public Transposition[] TT = new Transposition[mask + 1];
     public MoveTable MT = new MoveTable();
     int nodes = 0;
     int numMoves = 0;
@@ -31,7 +32,7 @@ public struct ChessEngine {
     /// resets the bot and prepares for a new game
     /// </summary>
     public void NewGame() {
-        TT.Clear();
+        TT = new Transposition[mask + 1];
         nodes = 0;
         numMoves = 0;
     }
@@ -62,21 +63,17 @@ public struct ChessEngine {
         nodes = 0;
         sw = Stopwatch.StartNew();
         for(int depth = 1; depth <= 100; depth++) {
-            previousBestMove = TT.ReadBestMove(board.zobristHash);
+            previousBestMove = TT[board.zobristHash & mask].bestMove;
             int eval = Negamax(board, -10000000, 10000000, depth, 0, true);
             if(sw.ElapsedMilliseconds > startTime / timeRatio) {
-                TT.UpdateBestMove(previousBestMove, board.zobristHash);
+                TT[board.zobristHash & mask].bestMove = previousBestMove;
                 break;
             }
-            string pvText = " pv ";
-            for(int i = 0; i < depth; i++) {
-                pvText += pv[i].ConvertToLongAlgebraic() + " ";
-            } 
-            Console.WriteLine("info depth " + depth + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval + pvText);
+            Console.WriteLine("info depth " + depth + " time " + sw.ElapsedMilliseconds + " nodes " + nodes + " score cp " + eval);
         }
         numMoves++;
-        Console.WriteLine("bestmove " + pv[0].ConvertToLongAlgebraic());
-        board.MakeMove(pv[0]);
+        Console.WriteLine("bestmove " + TT[board.zobristHash & mask].bestMove.ConvertToLongAlgebraic());
+        board.MakeMove(TT[board.zobristHash & mask].bestMove);
     }
     public int[] pieceValuesMG = { 82, 337, 365, 477, 1025,  0};
     public int[] pieceValuesEG = { 94, 281, 297, 512,  936,  0};
@@ -152,14 +149,13 @@ public struct ChessEngine {
                 board.UndoMove(move);
                 if(nodes % 4096 == 0) if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
                 if(score >= beta) {
-                    if(TT.ReadFlag(board.zobristHash) != 0 && TT.IsEntryEqual(board.zobristHash)) TT.WriteEntry(new(board.zobristHash, move, 1, depth + extensions + GetDepthDelta(board, depth, legalMoveCount, extensions)), board.zobristHash); // the 1 here is the flag for a beta cutoff
+                    if(TT[board.zobristHash & mask].flag != 0) TT[board.zobristHash & mask] = new(board.zobristHash, move, 1, depth + extensions + GetDepthDelta(board, depth, legalMoveCount, extensions)); // the 1 here is the flag for a beta cutoff
                     if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
                     return score; // prune the branch
                 }
                 if(score > alpha) {
-                    // current idea, write the flag and only overwrite it if it's not 0, and then the idea is that I can save the zobrist board.zobristHash so if the flag is zero and the board.zobristHash is different I don't overwrite it
-                    if(TT.ReadFlag(board.zobristHash) == 0 && !TT.IsEntryEqual(board.zobristHash)) TT.WriteEntry(new(board.zobristHash, move, 0, depth + extensions + GetDepthDelta(board, depth, legalMoveCount, extensions)), board.zobristHash);  
+                    TT[board.zobristHash & mask] = new(board.zobristHash, move, 1, depth + extensions + GetDepthDelta(board, depth, legalMoveCount, extensions));
                     if(isPV) pv[ply] = move;
                     alpha = score;
                 }
@@ -194,13 +190,13 @@ public struct ChessEngine {
                 board.UndoMove(move);
                 if(nodes % 4096 == 0) if(sw.ElapsedMilliseconds > startTime / timeRatio) return 0;
                 if(score >= beta) {
+                    if(TT[board.zobristHash & mask].flag != 0) TT[board.zobristHash & mask] = new(board.zobristHash, move, 1, 0);
                     if(!move.IsCapture(board)) MT.AddCutoff(move.ToNumber());
                     alpha = beta;
                     return score;
                 }
                 if(score > alpha) {
-                    TT.UpdateBestMove(move, board.zobristHash);
-                    TT.WriteFlag(0, board.zobristHash); // exact is 0
+                    TT[board.zobristHash & mask] = new(board.zobristHash, move, 1, 0);
                     alpha = score;
                 }
             }
@@ -220,7 +216,7 @@ public struct ChessEngine {
             if(moves[i].IsCapture(board)) {
                 scores[i] = mvvlvaScore * pieceValuesMG[Piece.GetType(board.PieceAtIndex(moves[i].endSquare))] - pieceValuesMG[Piece.GetType(board.PieceAtIndex(moves[i].startSquare))];
             }
-            if(Move.Equals(moves[i], TT.ReadBestMove(board.zobristHash))) {
+            if(Move.Equals(moves[i], TT[board.zobristHash & mask].bestMove)) {
                 scores[i] += previousBestMoveScore;
             }
             scores[i] += historyScore * MT.ReadCutoff(moves[i].ToNumber());

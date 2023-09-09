@@ -1,7 +1,7 @@
 using Chess;
 
 namespace Engine.Essentials {
-    public struct TranspositionTable {
+    /*public struct TranspositionTable {
         public static ulong mask = 0xFFFFFF;
         public Transposition[] table;
         /// <summary>
@@ -47,7 +47,7 @@ namespace Engine.Essentials {
         public bool IsEntryEqual(ulong z) {
             return table[z & mask].zobristKey == z;
         }
-    }
+    }*/
     // Very limited in scope currently
     public struct Transposition {
         public Transposition(ulong z, Move m, byte f, int d){

@@ -543,9 +543,11 @@ namespace Chess {
             if(IsInCheck()) {
                 UndoMove(move);
                 colorToMove = 1 - colorToMove;
+                zobristHash ^= zobColorToMove;
                 return false;
             } else {
                 colorToMove = 1 - colorToMove;
+                zobristHash ^= zobColorToMove;
                 return true;
             }
 }
@@ -556,6 +558,7 @@ namespace Chess {
         public void UndoMove(Move move) {
             ReadBoardState(move.state); 
             plyCount--;
+            zobristHash ^= zobColorToMove;
             colorToMove = 1 - colorToMove;
         } 
         /// <summary>
