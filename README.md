@@ -3,11 +3,11 @@
 
 *logo in progress*
 
-The C++ rewrite is complete (not quite yet, but bear with me)! The engine is now faster and better, using new techniques, and I have learned a new language!
+The C++ rewrite is complete (not quite yet, but bear with me)! Clarity is now faster and better, using new techniques, and I have learned a new language!
 
-The engine has also received a name, and that is Clarity. 
+For those who didn't see the engine in its depressing, confusing, error-filled C# state, this engine was originally written in C# before I decided to switch to C++. That decision was one of the greatest I think I've ever had, as the engine is now faster, easier to read, less error-filled(hopefully), and better overall.
 
-#### Warning: Engine currently uses pext for move generation, which means that CPUs without BMI2 or CPUs with a slow implementation (Zen 2 or earlier) will not be able to use it, A replacement (magic bitboards) is underway.
+#### Warning: Clarity currently uses pext for move generation, which means that CPUs without BMI2 or CPUs with a slow implementation (Zen 2 or earlier) will not be able to use it, A replacement (magic bitboards) is underway.
 
 ### Special Thanks (in no particular order):
 
