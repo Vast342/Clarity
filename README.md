@@ -23,24 +23,22 @@ The engine has also received a name, and that is Clarity.
 
 ### Todo lists:
 
-Board Representation
+Board Representation:
   1. Zobrist hashing with incremental updates
   2. General performancey things
   3. Magic bitboards as a backup for non-bmi2 CPUs
 
-Move Ordering
-  1. MVV-LVA
-  2. Transposition table best move
-  3. History
+Move Ordering:
+  1. Transposition table best move
+  2. History
 
-Search
+Search:
   1. Transposition Table & pruning
   2. Extensions
   3. NMP
   4. LMR
 
-Evaluation
-  1. Piece square tables
-  2. Passed pawns
-  3. Pawn structure
-  4. More if I think of it
+Evaluation:
+  1. Passed pawns
+  2. Pawn structure
+  3. More if I think of it
