@@ -23,17 +23,18 @@ For those who didn't see the engine in its depressing, confusing, error-filled C
 
 ### Todo lists:
 
+General Things:
+  1. Web version of the engine
+  2. or unleash it on lichess
+
 Board Representation:
-  1. Zobrist hashing with incremental updates
-  2. General performancey things
-  3. Magic bitboards as a backup for non-bmi2 CPUs
+  1. General performancey things
+  2. Magic bitboards as a backup for non-bmi2 CPUs
 
 Move Ordering:
-  1. Transposition table best move
-  2. History
+  1. History
 
 Search:
-  1. Transposition Table & pruning
   2. Extensions
   3. NMP
   4. LMR
@@ -41,4 +42,5 @@ Search:
 Evaluation:
   1. Passed pawns
   2. Pawn structure
-  3. More if I think of it
+  3. Texel Tuning
+  4. NNUE eventually
