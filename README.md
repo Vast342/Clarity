@@ -12,15 +12,15 @@ My current Estimate of elo (calculated by playing large sums of games against en
 
 ### Special Thanks (in no particular order):
 
-  https://github.com/toanth Toanth: General help and explaining things I didn't understand before
+  [Toanth](https://github.com/toanth): General help and explaining things I didn't understand before
   
-  https://github.com/Ciekce Ciekce: Preventing the cardinal sins of C++ since day 1
+  [Ciekce](https://github.com/Ciekce): Preventing the cardinal sins of C++ since day 1
   
-  https://github.com/RedBedHed RedBedHed: Lookup tables for move generation
+  [RedBedHed](https://github.com/RedBedHed): Lookup tables for move generation
   
-  https://github.com/jw1912 JW: More random C++ things
+  [JW](https://github.com/jw1912): More random C++ things
   
-  https://github.com/mcthouacbb A_Randomnoob: Helping with a lot of random engine bits
+  [A_randomnoob](https://github.com/mcthouacbb): Helping with a lot of random engine bits
 
 ### Todo lists:
 
