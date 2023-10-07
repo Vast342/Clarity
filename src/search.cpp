@@ -160,13 +160,21 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
-            // Late Move Reductions (LMR)
-            if(extensions == -1 && depth > 4) {
-                // formula here from Fruit Reloaded
-                extensions -= reductions[depth][i];
+            // Principal Variation Search
+            if(legalMoves == 1) {
+                // searches TT move 
+                score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
+            } else {
+                // Late Move Reductions (LMR)
+                if(extensions == -1 && depth > 3) {
+                    // formula here from Fruit Reloaded
+                    extensions -= reductions[depth][i];
+                }
+                score = -negamax(board, depth + extensions, -alpha - 1, -alpha, ply + 1);
+                if(score > alpha && (score < beta || extensions != -1)) {
+                    score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
+                }
             }
-            // searches from this node, at a lower depth.
-            int score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
             board.undoMove();
 
             // backup time check
