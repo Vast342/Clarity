@@ -22,6 +22,8 @@ My current Estimate of elo (calculated by playing large sums of games against en
   
   [A_randomnoob](https://github.com/mcthouacbb): Helping with a lot of random engine bits
 
+  [zzzzz](https://github.com/zzzzz151/): Ideas, planning, and a lot that I probably forgot
+
 ### Todo lists:
 
 General Things:
