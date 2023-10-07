@@ -1,5 +1,4 @@
 # Clarity
----
 
 *logo in progress*
 
