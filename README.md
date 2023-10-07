@@ -1,15 +1,11 @@
-# Clarity
----
+# ChessEngineAgain
+The chess engine from earlier, rewritten in C++
 
-*logo in progress*
+## Note: This repo is temporary and will be merged into Vast342/ChessEngine once the board representation is done and a basic bot is created.
 
-The C++ rewrite is complete (not quite yet, but bear with me)! Clarity is now faster and better, using new techniques, and I have learned a new language!
+### Note again, this currently uses the pext instruction from bmi2, which requires either an Intel CPU or a Zen 3 or newer CPU to work. If you are using a CPU that is neither of those, switch to using the classical approach move generation in movegen.cpp.
 
-For those who didn't see the engine in its depressing, confusing, error-filled C# state, this engine was originally written in C# before I decided to switch to C++. That decision was one of the greatest I think I've ever had, as the engine is now faster, easier to read, less error-filled(hopefully), and better overall.
-
-#### Warning: Clarity currently uses pext for move generation, which means that CPUs without BMI2 or CPUs with a slow implementation (Zen 2 or earlier) will not be able to use it, A replacement (magic bitboards) is underway.
-
-### Special Thanks (in no particular order):
+Special Thanks to:
 
   https://github.com/toanth Toanth: General help and explaining things I didn't understand before
   
@@ -21,26 +17,16 @@ For those who didn't see the engine in its depressing, confusing, error-filled C
   
   https://github.com/mcthouacbb A_Randomnoob: Helping with a lot of random engine bits
 
-### Todo lists:
+  https://github.com/zzzzz151 z5: Helped find a LOT of random issues. (like a lot)
 
-General Things:
-  1. Web version of the engine
-  2. or unleash it on lichess
 
-Board Representation:
-  1. General performancey things
-  2. Magic bitboards as a backup for non-bmi2 CPUs
+THINGS TO ADD TO BOARD REPRESENTATION
+  1. GetMovesQSearch(captures and checks only)
+  2. zobrist hashing with incremental updates
+  3. general performancey things
+  4. Magic bitboards
 
-Move Ordering:
-  1. History
-
-Search:
-  2. Extensions
-  3. NMP
-  4. LMR
-
-Evaluation:
-  1. Passed pawns
-  2. Pawn structure
-  3. Texel Tuning
-  4. NNUE eventually
+General things:
+  1. UCI support w/ custom commands (get-fen, make-move, perft, perft-suite, in-check, etc)
+  2. A web version of it potentially?
+  3. unleash it on Lichess (I feel bad for anyone who has to play against it)
