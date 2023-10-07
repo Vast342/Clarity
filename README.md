@@ -1,24 +1,44 @@
-# ChessEngine
+# Clarity
 ---
 
-This project is my attempt at making a chess engine, the goal is to make it a powerful opponent, efficient, and most importantly, UCI compatible.
+*logo in progress*
 
-Currently, it is only the last of those 3.
+The C++ rewrite is complete! Clarity is now faster and better, using new techniques, and I have learned a new language!
 
-It is also my attempt to learn development in raw c# after using it with Unity for so long.
+For those who didn't see the engine in its depressing, confusing, error-filled C# state, this engine was originally written in C# before I decided to switch to C++. That decision was one of the greatest I think I've ever had, as the engine is now faster, easier to read, less error-filled(hopefully), and better overall.
 
-This project now has my currently unnamed engine, a board-rep that sometimes works, some sketchy UCI support, and a few custom commands. 
+My current Estimate of elo (calculated by playing large sums of games against engines with known CCRL ratings) is 1800.
 
-Those commands are:
+#### Warning: Clarity currently uses pext for move generation, which means that CPUs without BMI2 or CPUs with a slow implementation (Zen 2 or earlier) will not be able to use it, A replacement (magic bitboards) is underway.
 
-test: performs a specific group of tests. accepts board-rep, and outlier tests. These tests are made by me, specifically for whatever I am trying to fix or test at the time. As part of move-gen testing, it runs perft 2, 3, and 4 from the start position, and doesn't currently pass those.
+### Special Thanks (in no particular order):
 
-get-fen: Outputs the current position of the board as a fen string, just to check if a move was made correctly.
+  https://github.com/toanth Toanth: General help and explaining things I didn't understand before
+  
+  https://github.com/Ciekce Ciekce: Preventing the cardinal sins of C++ since day 1
+  
+  https://github.com/RedBedHed RedBedHed: Lookup tables for move generation
+  
+  https://github.com/jw1912 JW: More random C++ things
+  
+  https://github.com/mcthouacbb A_Randomnoob: Helping with a lot of random engine bits
 
-perft [depth] [fen/startpos] [split/ ]: The most complicated one. It can perform a perft test at various depths and from various positions. depth is the depth of the perft test, the second field is either the fen string of the position or the word startpos, and if the last field is the word split it will divide the result by move, otherwise, it can be left blank for the total nodes explored.
+### Todo lists:
 
-in-check [fen]: outputs if the board state read from the fen string is in check or not.
+General Things:
+  1. Web version of the engine
+  2. or unleash it on lichess
 
-make-move [move]: Makes the move on the board, and outputs the resulting fen. move must be in long algebraic notation.
+Board Representation:
+  1. General performancey things
+  2. Magic bitboards as a backup for non-bmi2 CPUs
 
-perft-suite [suite] [bool isPlural]: Performs a suite of perft tests, and outputs specified results, followed by a total effect. Currently, due to performance limitations, it will restrict the tests performed to be under a certain number of total nodes. The only currently supported suite is known as Ethereal and is a series of tests from the bot Ethereal.
+Search:
+  1. NMP
+  2. I am working on the list of ideas
+
+Evaluation:
+  1. Passed pawns
+  2. Pawn structure
+  3. Texel Tuning
+  4. NNUE eventually
