@@ -737,6 +737,7 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     colorToMove = 1 - colorToMove;
+    //std::cout << "Changing Color To Move from function\n";
     zobristHash ^= zobColorToMove;
 }
 
