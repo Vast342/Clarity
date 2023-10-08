@@ -12,6 +12,9 @@ int timeToSearch = 0;
 
 TranspositionTable TT;
 
+const int nmpR = 2;
+const int nmpMin = 3;
+
 std::array<std::array<int, 64>, 64> historyTable;
 
 std::chrono::steady_clock::time_point begin;
@@ -112,7 +115,7 @@ int qSearch(Board &board, int alpha, int beta) {
     return bestScore;  
 }
 
-int negamax(Board &board, int depth, int alpha, int beta, int ply) {
+int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
@@ -122,7 +125,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
     }
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta);
-
+    bool isPV = beta == alpha + 1;
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
 
@@ -134,6 +137,23 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
         return entry.score;
     }
 
+    int extensions = -1;
+    if(board.isInCheck()) extensions++;
+
+    // Reverse Futility Pruning
+    int eval = board.getEvaluation();
+    if(eval - 80 * depth >= beta && extensions == -1 && depth < 9 && !isPV) return eval - 80 * depth;
+
+/* CURRENTLY BROKEN NMP, I NEED TO RESET THE EN PASSANT SQUARE ON CHANGE COLOR AND THEN BRING IT BACK SOMEHOW
+    // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
+    if(nmpAllowed && depth > nmpMin && extensions == -1) {
+        board.changeColor();
+        int score = -negamax(board, depth - nmpR - 1, 0-beta, 1-beta, ply + 1, false);
+        board.changeColor();
+        if(score >= beta) {
+            return score;
+        }
+    }*/
 
     // get the moves
     std::array<Move, 256> moves;
@@ -145,9 +165,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
     Move bestMove;
     int flag = FailLow;
 
-    int extensions = -1;
-    if(board.isInCheck()) extensions++;
-
     // loop through the moves
     int legalMoves = 0;
     for(int i = 0; i < totalMoves; i++) {
@@ -158,18 +175,18 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
             // Principal Variation Search
             if(legalMoves == 1) {
                 // searches TT move, given first by the move ordering step.
-                score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
+                score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1, true);
             } else {
                 // Late Move Reductions (LMR)
-                if(extensions == -1 && depth > 3) {
+                if(extensions == -1 && depth > 1) {
                     // formula here from Fruit Reloaded, calculated on startup and read from here.
                     extensions -= reductions[depth][i];
                 }
                 // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + extensions, -alpha - 1, -alpha, ply + 1);
+                score = -negamax(board, depth + extensions, -alpha - 1, -alpha, ply + 1, true);
                 // and then if it fails high we search again with the better bounds
                 if(score > alpha && (score < beta || extensions != -1)) {
-                    score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
+                    score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1, true);
                 }
             }
             board.undoMove();
@@ -227,7 +244,7 @@ Move think(Board board, int timeLeft) {
 
     for(int depth = 1; depth < 100; depth++) {
         Move previousBest = rootBestMove;
-        int result = negamax(board, depth, -10000000, 10000000, 0);
+        int result = negamax(board, depth, -10000000, 10000000, 0, true);
         auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(elapsedTime > timeToSearch) {
             rootBestMove = previousBest;
@@ -236,7 +253,7 @@ Move think(Board board, int timeLeft) {
             std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(result) << std::endl;
         }
     }
-
+    // test without random mover in a bit
     std::random_device rd;
     std::mt19937_64 gen(rd());
 
