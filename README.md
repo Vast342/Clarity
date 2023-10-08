@@ -1,6 +1,6 @@
 # Clarity
 
-![Clarity Logo](resources/Clarity%20Logo.png)
+<img src="resources/Clarity%20Logo.png" width="150" height="150">
 
 The C++ rewrite is complete! Clarity is now faster and better, using new techniques, and I have learned a new language!
 
