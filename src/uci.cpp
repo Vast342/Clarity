@@ -106,6 +106,7 @@ void interpretCommand(std::string command) {
 
 int main() {
     initialize();
+    std::cout << std::to_string(sizeof(Board));
     std::string command;
     while(true) {
         std::getline(std::cin, command, '\n');
