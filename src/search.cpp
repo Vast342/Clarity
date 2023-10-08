@@ -122,6 +122,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
     }
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta);
+    bool isPV = beta == alpha + 1;
 
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
@@ -134,6 +135,22 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
         return entry.score;
     }
 
+    bool inCheck = board.isInCheck();
+
+    // Reverse Futility Pruning
+    int eval = board.getEvaluation();
+    if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
+
+/* CURRENTLY BROKEN NMP, I NEED TO RESET THE EN PASSANT SQUARE ON CHANGE COLOR AND THEN BRING IT BACK SOMEHOW
+    // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
+    if(nmpAllowed && depth > nmpMin && !inCheck) {
+        board.changeColor();
+        int score = -negamax(board, depth - nmpR - 1, 0-beta, 1-beta, ply + 1, false);
+        board.changeColor();
+        if(score >= beta) {
+            return score;
+        }
+    }*/
 
     // get the moves
     std::array<Move, 256> moves;
@@ -146,7 +163,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
     int flag = FailLow;
 
     int extensions = -1;
-    if(board.isInCheck()) extensions++;
+    if(inCheck) extensions++;
 
     // loop through the moves
     int legalMoves = 0;
@@ -161,7 +178,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
                 score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
             } else {
                 // Late Move Reductions (LMR)
-                if(extensions == -1 && depth > 3) {
+                if(extensions == -1 && depth > 1) {
                     // formula here from Fruit Reloaded, calculated on startup and read from here.
                     extensions -= reductions[depth][i];
                 }

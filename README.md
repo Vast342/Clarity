@@ -1,7 +1,5 @@
 # Clarity
 
-<img src="resources/Clarity%20Logo.png" width="150" height="150">
-
 The C++ rewrite is complete! Clarity is now faster and better, using new techniques, and I have learned a new language!
 
 For those who didn't see the engine in its depressing, confusing, error-filled C# state, this engine was originally written in C# before I decided to switch to C++. That decision was one of the greatest I think I've ever had, as the engine is now faster, easier to read, less error-filled(hopefully), and better overall.
