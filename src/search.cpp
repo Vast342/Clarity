@@ -137,17 +137,16 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         return entry.score;
     }
 
-    bool inCheck = board.isInCheck();
-    int extensions = 0;
+    int extensions = -1;
     if(board.isInCheck()) extensions++;
 
     // Reverse Futility Pruning
     int eval = board.getEvaluation();
-    if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
+    if(eval - 80 * depth >= beta && extensions == -1 && depth < 9 && !isPV) return eval - 80 * depth;
 
 /* CURRENTLY BROKEN NMP, I NEED TO RESET THE EN PASSANT SQUARE ON CHANGE COLOR AND THEN BRING IT BACK SOMEHOW
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    if(nmpAllowed && depth > nmpMin && !inCheck) {
+    if(nmpAllowed && depth > nmpMin && extensions == -1) {
         board.changeColor();
         int score = -negamax(board, depth - nmpR - 1, 0-beta, 1-beta, ply + 1, false);
         board.changeColor();
@@ -176,15 +175,15 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             // Principal Variation Search
             if(legalMoves == 1) {
                 // searches TT move, given first by the move ordering step.
-                score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
+                score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1, true);
             } else {
                 // Late Move Reductions (LMR)
-                if(extensions == 0 && depth > 1) {
+                if(extensions == -1 && depth > 1) {
                     // formula here from Fruit Reloaded, calculated on startup and read from here.
                     extensions -= reductions[depth][i];
                 }
                 // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + extensions - 1, -alpha - 1, -alpha, ply + 1, true);
+                score = -negamax(board, depth + extensions, -alpha - 1, -alpha, ply + 1, true);
                 // and then if it fails high we search again with the better bounds
                 if(score > alpha && (score < beta || extensions != -1)) {
                     score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1, true);
