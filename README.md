@@ -1,6 +1,6 @@
 # Clarity
 
-*logo in progress*
+![Clarity Logo](resources/Clarity%20Logo.png)
 
 The C++ rewrite is complete! Clarity is now faster and better, using new techniques, and I have learned a new language!
 

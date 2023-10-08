@@ -94,14 +94,12 @@ int qSearch(Board &board, int alpha, int beta) {
                 // Improve alpha
                 if(score > alpha) { 
                     flag = Exact;
-                    //bestMove = moves[i];
                     alpha = score;
                 }
 
                 // Fail-high
                 if(score >= beta) {
                     flag = BetaCutoff;
-                    //bestMove = moves[i];
                     break;
                 }
             }
@@ -109,11 +107,8 @@ int qSearch(Board &board, int alpha, int beta) {
     }
 
     // push to TT
-    //std::cout << "writing a qsearch entry at " << std::to_string(board.zobristHash) << " with score " << std::to_string(bestScore) << '\n';
-    // just doing move ordering in q search currently
     TT.setEntry(board.zobristHash, Transposition(board.zobristHash, bestMove, flag, bestScore, 0));
 
-    // fail low, if it's not cut off.
     return bestScore;  
 }
 
@@ -136,7 +131,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
                 || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
         )) {
-        //std::cout << "did a TT cutoff with hash " << std::to_string(board.zobristHash) << " and score " << std::to_string(entry.score) << '\n';
         return entry.score;
     }
 
@@ -163,15 +157,17 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
             int score = 0;
             // Principal Variation Search
             if(legalMoves == 1) {
-                // searches TT move 
+                // searches TT move, given first by the move ordering step.
                 score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
             } else {
                 // Late Move Reductions (LMR)
                 if(extensions == -1 && depth > 3) {
-                    // formula here from Fruit Reloaded
+                    // formula here from Fruit Reloaded, calculated on startup and read from here.
                     extensions -= reductions[depth][i];
                 }
+                // this is more PVS stuff, searching with a reduced margin
                 score = -negamax(board, depth + extensions, -alpha - 1, -alpha, ply + 1);
+                // and then if it fails high we search again with the better bounds
                 if(score > alpha && (score < beta || extensions != -1)) {
                     score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1);
                 }
@@ -189,8 +185,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
                 // Improve alpha
                 if(score > alpha) {
                     flag = Exact; 
-                    //bestMove = moves[i];
-                    //if(ply == 0) rootBestMove = moves[i];
                     alpha = score;
                 }
 
@@ -198,8 +192,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
                 if(score >= beta) {
                     flag = BetaCutoff;
                     historyTable[moves[i].getStartSquare()][moves[i].getEndSquare()] += depth * depth;
-                    //bestMove = moves[i];
-                    //if(ply == 0) rootBestMove = moves[i];
                     break;
                 }
             }
@@ -215,10 +207,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
     }
 
     // push to TT
-    //std::cout << "writing a regular entry at " << std::to_string(board.zobristHash) << " with score " << std::to_string(bestScore) << '\n';
     TT.setEntry(board.zobristHash, Transposition(board.zobristHash, bestMove, flag, bestScore, depth));
 
-    // if no beta cutoff, fail low
     return bestScore;
 }
 
