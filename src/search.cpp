@@ -160,6 +160,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply) {
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
+            int score = 0;
             // Principal Variation Search
             if(legalMoves == 1) {
                 // searches TT move 
