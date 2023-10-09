@@ -172,7 +172,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         researchExtensions++;
     }
 
-    const uint64_t capturable = board.getOccupiedBitboard() | (1ULL << board.getEnPassantIndex());
+    int epIndex = board.getEnPassantIndex();
+    const uint64_t capturable = board.getOccupiedBitboard() | (epIndex == 64 ? 0 : (1ULL << epIndex));
     // loop through the moves
     int legalMoves = 0;
     for(int i = 0; i < totalMoves; i++) {
