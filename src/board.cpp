@@ -743,11 +743,15 @@ void Board::changeColor() {
     enPassantIndex = 0;
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
+    isRepeated = isRepeatedPosition();
+    zobristHistory.push_back(zobristHash);
 }
 
 void Board::undoChangeColor() {
     enPassantIndex = stateHistory.back().enPassantIndex;
+    isRepeated = stateHistory.back().isRepeated;
     stateHistory.pop_back();
+    zobristHistory.pop_back();
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
 }

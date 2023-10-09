@@ -70,7 +70,7 @@ int qSearch(Board &board, int alpha, int beta) {
   
     // get the legal moves and sort them
     std::array<Move, 256> moves;
-    int totalMoves = board.getMovesQSearch(moves);
+    const int totalMoves = board.getMovesQSearch(moves);
     orderMoves(board, moves, totalMoves, entry.bestMove.getValue());
 
     // values useful for writing to TT later
@@ -82,7 +82,7 @@ int qSearch(Board &board, int alpha, int beta) {
         if(board.makeMove(moves[i])) {
             nodes++;
             // searches from this node
-            int score = -qSearch(board, -beta, -alpha);
+            const int score = -qSearch(board, -beta, -alpha);
             board.undoMove();
             // time check
             if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
@@ -124,7 +124,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta);
-    bool isPV = beta == alpha + 1;
+    const bool isPV = beta == alpha + 1;
+    const bool inCheck = board.isInCheck();
 
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
@@ -137,18 +138,16 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         return entry.score;
     }
 
-    bool inCheck = board.isInCheck();
-
     // Reverse Futility Pruning
     // side note, A_randomnoob suggested returning just eval here, but it seems to be exactly equal after a 600 game test.
-    int eval = board.getEvaluation();
+    const int eval = board.getEvaluation();
     if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    // SHOULD TEST WITH !isPV HERE AT SOME POINT
-    if(nmpAllowed && depth >= nmpMin && !inCheck) {
+    // another thing suggested by A_randomnoob was having staticEval >= beta as another condition, but the same story again.
+    if(nmpAllowed && depth >= nmpMin && !inCheck && !isPV) {
         board.changeColor();
-        int score = -negamax(board, depth - (depth+1)/3 - 1, 0-beta, 1-beta, ply + 1, false);
+        const int score = -negamax(board, depth - (depth+1)/3 - 1, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -157,7 +156,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // get the moves
     std::array<Move, 256> moves;
-    int totalMoves = board.getMoves(moves);
+    const int totalMoves = board.getMoves(moves);
     orderMoves(board, moves, totalMoves, entry.bestMove.getValue());
 
     // values useful for writing to TT later
@@ -172,7 +171,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         researchExtensions++;
     }
 
-    int epIndex = board.getEnPassantIndex();
+    const int epIndex = board.getEnPassantIndex();
     const uint64_t capturable = board.getOccupiedBitboard() | (epIndex == 64 ? 0 : (1ULL << epIndex));
     // loop through the moves
     int legalMoves = 0;
@@ -253,9 +252,9 @@ Move think(Board board, int timeLeft) {
     rootBestMove = Move();
 
     for(int depth = 1; depth < 100; depth++) {
-        Move previousBest = rootBestMove;
-        int result = negamax(board, depth, -10000000, 10000000, 0, true);
-        auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        const Move previousBest = rootBestMove;
+        const int result = negamax(board, depth, -10000000, 10000000, 0, true);
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(elapsedTime > timeToSearch) {
             rootBestMove = previousBest;
             break;
@@ -273,12 +272,12 @@ Move think(Board board, int timeLeft) {
         std::cout << "had to make a random move\n";
         // random mover as a backup
         std::array<Move, 256> moves;
-        int totalMoves = board.getMoves(moves);
+        const int totalMoves = board.getMoves(moves);
 
         std::uniform_int_distribution distribution{0, totalMoves - 1};
 
         while(true) {
-            int index = distribution(gen);
+            const int index = distribution(gen);
             if(board.makeMove(moves[index])) {
                 board.undoMove();
                 return moves[index];
