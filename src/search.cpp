@@ -165,8 +165,12 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Move bestMove;
     int flag = FailLow;
 
-    int depthDelta = -1;
-    if(inCheck) depthDelta++;
+    int extensions = 0;
+    int researchExtensions = 0;
+    if(inCheck) {
+        extensions++;
+        researchExtensions++;
+    }
 
     // loop through the moves
     int legalMoves = 0;
@@ -178,18 +182,20 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             // Principal Variation Search
             if(legalMoves == 1) {
                 // searches TT move, given first by the move ordering step.
-                score = -negamax(board, depth + depthDelta, -beta, -alpha, ply + 1, true);
+                score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
             } else {
                 // Late Move Reductions (LMR)
-                if(depthDelta == -1 && depth > 1) {
+                int depthReduction = 0;
+                if(extensions == -1 && depth > 1) {
                     // formula here from Fruit Reloaded, calculated on startup and read from here.
-                    depthDelta -= reductions[depth][i];
+                    // FIGURE OUT IN THE MORNING WHY THIS BEING CUMULAIVE IS THE REASON THAT IT ACTUALLY WORKS
+                    depthReduction = reductions[depth][i];
                 }
                 // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + depthDelta, -alpha - 1, -alpha, ply + 1, true);
+                score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
                 // and then if it fails high we search again with the better bounds
-                if(score > alpha && (score < beta || depthDelta != -1)) {
-                    score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
+                if(score > alpha && (score < beta || extensions != -1)) {
+                    score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
                 }
             }
             board.undoMove();
@@ -220,7 +226,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // checkmate / stalemate detection
     if(legalMoves == 0) {
-        if(board.isInCheck()) {
+        if(inCheck) {
             return -10000000 + ply;
         }
         return 0;
