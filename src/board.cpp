@@ -328,12 +328,14 @@ void Board::movePiece(int square1, int type1, int square2, int type2) {
 }
 
 int Board::pieceAtIndex(int index) const {
-    for(int i = Pawn; i < None; i++) {
-        if((getColoredPieceBitboard(0, i) & 1ULL << index) != 0) {
-            return i | Black;
-        }
-        if((getColoredPieceBitboard(1, i) & 1ULL << index) != 0) {
-            return i | White;
+    if((getOccupiedBitboard() & (1ULL << index)) != 0) {
+        for(int i = Pawn; i < None; i++) {
+            if((getColoredPieceBitboard(0, i) & 1ULL << index) != 0) {
+                return i | Black;
+            }
+            if((getColoredPieceBitboard(1, i) & 1ULL << index) != 0) {
+                return i | White;
+            }
         }
     }
     return None;

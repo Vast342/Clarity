@@ -172,6 +172,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         researchExtensions++;
     }
 
+    const uint64_t capturable = board.getOccupiedBitboard() | (1ULL << board.getEnPassantIndex());
     // loop through the moves
     int legalMoves = 0;
     for(int i = 0; i < totalMoves; i++) {
@@ -186,7 +187,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             } else {
                 // Late Move Reductions (LMR)
                 int depthReduction = 0;
-                if(extensions == 0 && depth > 1) {
+                bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
+                if(extensions == 0 && depth > 1 && !isCapture) {
                     depthReduction = reductions[depth][i];
                 }
                 // this is more PVS stuff, searching with a reduced margin
