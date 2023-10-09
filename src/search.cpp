@@ -166,8 +166,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Move bestMove;
     int flag = FailLow;
 
-    int depthdelta = -1;
-    if(inCheck) depthdelta++;
+    int extensions = 0;
+    if(inCheck) extensions++;
 
     // loop through the moves
     int legalMoves = 0;
@@ -179,18 +179,19 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             // Principal Variation Search
             if(legalMoves == 1) {
                 // searches TT move, given first by the move ordering step.
-                score = -negamax(board, depth + depthdelta, -beta, -alpha, ply + 1, true);
+                score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1, true);
             } else {
+                int reduction = 1;
                 // Late Move Reductions (LMR)
-                if(depthdelta == -1 && depth > 1) {
+                if(extensions == 0 && depth > 1) {
                     // formula here from Fruit Reloaded, calculated on startup and read from here.
-                    depthdelta -= reductions[depth][i];
+                    reduction += reductions[depth][i];
                 }
                 // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + depthdelta, -alpha - 1, -alpha, ply + 1, true);
+                score = -negamax(board, depth + extensions - reduction , -alpha - 1, -alpha, ply + 1, true);
                 // and then if it fails high we search again with the better bounds
-                if(score > alpha && (score < beta || depthdelta != -1)) {
-                    score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
+                if(score > alpha && (score < beta || !inCheck)) {
+                    score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
                 }
             }
             board.undoMove();

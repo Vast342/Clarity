@@ -62,7 +62,6 @@ void Board::toString() {
 
 Board::Board(std::string fen) {
     zobristHistory.clear();
-    enPassantCache.clear();
     stateHistory.clear();
     mgEval = 0;
     egEval = 0;
@@ -738,14 +737,14 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 }
 
 void Board::changeColor() {
-    enPassantCache.push_back(enPassantIndex);
+    enPassantCache = enPassantIndex;
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
 }
 
 void Board::undoChangeColor() {
-    enPassantIndex = enPassantCache.back();
-    enPassantCache.pop_back();
+    enPassantIndex = enPassantCache;
+    enPassantCache = 0;
     colorToMove = 1 - colorToMove;
 }
 
