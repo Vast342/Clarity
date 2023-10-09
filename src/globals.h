@@ -91,6 +91,7 @@ struct Board {
         int pieceAtIndex(int index) const;
         int colorAtIndex(int index) const;
         void changeColor();
+        void undoChangeColor();
         int getEvaluation();
         int getCastlingRights();
         int getEnPassantIndex();
@@ -113,6 +114,7 @@ struct Board {
         int phase;
         std::vector<BoardState> stateHistory;
         std::vector<uint64_t> zobristHistory;
+        std::vector<uint8_t> enPassantCache;
         void addPiece(int square, int type);
         void removePiece(int square, int type);
         void movePiece(int square1, int type1, int square2, int type2);
