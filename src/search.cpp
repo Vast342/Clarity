@@ -4,8 +4,7 @@
 
 const int startDepth = 3;
 
-const int nmpR = 2;
-const int nmpMin = 3;
+const int nmpMin = 2;
 
 Move rootBestMove = Move();
 
@@ -141,15 +140,15 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     bool inCheck = board.isInCheck();
 
     // Reverse Futility Pruning
-    // side note, A_randomnoob tested returning just eval here, but it seems to be exactly equal after a 600 game test.
+    // side note, A_randomnoob suggested returning just eval here, but it seems to be exactly equal after a 600 game test.
     int eval = board.getEvaluation();
     if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
 
-    // CURRENTLY BROKEN NMP, I NEED TO RESET THE EN PASSANT SQUARE ON CHANGE COLOR AND THEN BRING IT BACK SOMEHOW
+    // CURRENTLY BROKEN NMP (maybe not???)
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    if(nmpAllowed && depth > nmpMin && !inCheck) {
+    if(nmpAllowed && depth >= nmpMin && !inCheck) {
         board.changeColor();
-        int score = -negamax(board, depth - nmpR - 1, 0-beta, 1-beta, ply + 1, false);
+        int score = -negamax(board, depth - (depth+1)/3 - 1, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -166,8 +165,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Move bestMove;
     int flag = FailLow;
 
-    int extensions = 0;
-    if(inCheck) extensions++;
+    int depthDelta = -1;
+    if(inCheck) depthDelta++;
 
     // loop through the moves
     int legalMoves = 0;
@@ -179,19 +178,18 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             // Principal Variation Search
             if(legalMoves == 1) {
                 // searches TT move, given first by the move ordering step.
-                score = -negamax(board, depth + extensions, -beta, -alpha, ply + 1, true);
+                score = -negamax(board, depth + depthDelta, -beta, -alpha, ply + 1, true);
             } else {
-                int reduction = 1;
                 // Late Move Reductions (LMR)
-                if(extensions == 0 && depth > 1) {
+                if(depthDelta == -1 && depth > 1) {
                     // formula here from Fruit Reloaded, calculated on startup and read from here.
-                    reduction += reductions[depth][i];
+                    depthDelta -= reductions[depth][i];
                 }
                 // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + extensions - reduction , -alpha - 1, -alpha, ply + 1, true);
+                score = -negamax(board, depth + depthDelta, -alpha - 1, -alpha, ply + 1, true);
                 // and then if it fails high we search again with the better bounds
-                if(score > alpha && (score < beta || !inCheck)) {
-                    score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
+                if(score > alpha && (score < beta || depthDelta != -1)) {
+                    score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
                 }
             }
             board.undoMove();

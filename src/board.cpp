@@ -737,15 +737,17 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 }
 
 void Board::changeColor() {
-    enPassantCache = enPassantIndex;
+    stateHistory.push_back(generateBoardState());
+    enPassantIndex = 0;
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
 }
 
 void Board::undoChangeColor() {
-    enPassantIndex = enPassantCache;
-    enPassantCache = 0;
+    enPassantIndex = stateHistory.back().enPassantIndex;
+    stateHistory.pop_back();
     colorToMove = 1 - colorToMove;
+    zobristHash ^= zobColorToMove;
 }
 
 int Board::getEvaluation() {    
