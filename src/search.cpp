@@ -144,8 +144,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     int eval = board.getEvaluation();
     if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
 
-    // CURRENTLY BROKEN NMP (maybe not???)
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
+    // SHOULD TEST WITH !isPV HERE AT SOME POINT
     if(nmpAllowed && depth >= nmpMin && !inCheck) {
         board.changeColor();
         int score = -negamax(board, depth - (depth+1)/3 - 1, 0-beta, 1-beta, ply + 1, false);
@@ -186,15 +186,13 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             } else {
                 // Late Move Reductions (LMR)
                 int depthReduction = 0;
-                if(extensions == -1 && depth > 1) {
-                    // formula here from Fruit Reloaded, calculated on startup and read from here.
-                    // FIGURE OUT IN THE MORNING WHY THIS BEING CUMULAIVE IS THE REASON THAT IT ACTUALLY WORKS
+                if(extensions == 0 && depth > 1) {
                     depthReduction = reductions[depth][i];
                 }
                 // this is more PVS stuff, searching with a reduced margin
                 score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
                 // and then if it fails high we search again with the better bounds
-                if(score > alpha && (score < beta || extensions != -1)) {
+                if(score > alpha && (score < beta || depthReduction > 0)) {
                     score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
                 }
             }
