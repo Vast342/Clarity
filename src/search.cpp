@@ -221,6 +221,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     break;
                 }
             }
+            // Late Move Pruning (not working, needs more testing)
+            if(depth < 5 && !isPV && bestScore > -10000000 + 256 && legalMoves > (10+depth*10)) break;
         }
     }
 
