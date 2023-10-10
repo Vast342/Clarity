@@ -434,7 +434,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     while(pawnPushPromotions != 0) {
         uint8_t index = popLSB(pawnPushPromotions);
         uint8_t startSquare = (index + directionalOffsets[colorToMove]);
-        for(int type = Knight; type < King; type++) { 
+        for(int type = Knight; type < King; type++) {
             moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
             totalMoves++;
         }
@@ -472,7 +472,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     while(leftCapturePromotions != 0) {
         int index = popLSB(leftCapturePromotions);
         int startSquare = index + (colorToMove == 0 ? 9 : -7);
-        for(int type = Knight; type < King; type++) { 
+        for(int type = Knight; type < King; type++) {
             moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
             totalMoves++;
         }
@@ -480,7 +480,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     while(rightCapturePromotions != 0) {
         int index = popLSB(rightCapturePromotions);
         int startSquare = index + (colorToMove == 0 ? 7 : -9);
-        for(int type = Knight; type < King; type++) { 
+        for(int type = Knight; type < King; type++) {
             moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
             totalMoves++;
         }
@@ -489,13 +489,13 @@ int Board::getMoves(std::array<Move, 256> &moves) {
 }
 
 int Board::getMovesQSearch(std::array<Move, 256> &moves) {
-    uint64_t occupiedBitboard = getOccupiedBitboard();
+    const uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     uint64_t mask = coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
     // the rest of the pieces
     while(mask != 0) {
-        uint8_t startSquare = popLSB(mask);
-        uint8_t currentType = getType(pieceAtIndex(startSquare));
+        const uint8_t startSquare = popLSB(mask);
+        const uint8_t currentType = getType(pieceAtIndex(startSquare));
         uint64_t total = 0;
         if(currentType == Knight) {
             total = getKnightAttacks(startSquare);
@@ -516,7 +516,7 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
         }
     }
     // pawn captures
-    uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
+    const uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
     uint64_t capturable = coloredBitboards[1 - colorToMove];
     if(enPassantIndex != 64) {
         capturable |= (1ULL << enPassantIndex);
@@ -549,7 +549,7 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     while(leftCapturePromotions != 0) {
         int index = popLSB(leftCapturePromotions);
         int startSquare = index + (colorToMove == 0 ? 9 : -7);
-        for(int type = Knight; type < King; type++) { 
+        for(int type = Knight; type < King; type++) {
             moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
             totalMoves++;
         }
@@ -557,7 +557,7 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     while(rightCapturePromotions != 0) {
         int index = popLSB(rightCapturePromotions);
         int startSquare = index + (colorToMove == 0 ? 7 : -9);
-        for(int type = Knight; type < King; type++) { 
+        for(int type = Knight; type < King; type++) {
             moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
             totalMoves++;
         }
@@ -756,18 +756,18 @@ void Board::undoChangeColor() {
     zobristHash ^= zobColorToMove;
 }
 
-int Board::getEvaluation() {    
+int Board::getEvaluation() {   
     // currently disabled passed pawn bonuses, as it wasn't gaining any elo
     int egPhase = 24 - phase;
     return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
     //return (((mgEval * phase + egEval * egPhase) / 24) + getPassedPawnBonuses()) * ((2 * colorToMove) - 1);
 }
 
-int Board::getCastlingRights() {
+int Board::getCastlingRights() const {
     return castlingRights;
 }
 
-int Board::getEnPassantIndex() {
+int Board::getEnPassantIndex() const {
     return enPassantIndex;
 }
 

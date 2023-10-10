@@ -94,7 +94,7 @@ int qSearch(Board &board, int alpha, int beta) {
                 bestMove = moves[i];
 
                 // Improve alpha
-                if(score > alpha) { 
+                if(score > alpha) {
                     flag = Exact;
                     alpha = score;
                 }
@@ -144,8 +144,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    // another thing suggested by A_randomnoob was having staticEval >= beta as another condition, but the same story again.
-    if(nmpAllowed && depth >= nmpMin && !inCheck && !isPV) {
+    // another thing suggested by A_randomnoob was having staticEval >= beta and !isPV as another condition, but the same story again.
+    if(nmpAllowed && depth >= nmpMin && !inCheck) {
         board.changeColor();
         const int score = -negamax(board, depth - (depth+1)/3 - 1, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
@@ -250,19 +250,44 @@ Move think(Board board, int timeLeft) {
     begin = std::chrono::steady_clock::now();
 
     rootBestMove = Move();
+    int score = 0;
 
     for(int depth = 1; depth < 100; depth++) {
+        int delta = 25;
+        int alpha = std::max(-10000000, score - delta);
+        int beta = std::min(10000000, score + delta);
         const Move previousBest = rootBestMove;
-        const int result = negamax(board, depth, -10000000, 10000000, 0, true);
+        if(depth > 3) {
+            while (true) {
+                score = negamax(board, depth, alpha, beta, 0, true);
+
+                const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+                if(elapsedTime > timeToSearch) {
+                    return previousBest;
+                }
+                if (score >= beta) {
+                    beta = std::min(beta + delta, 10000000);
+                } else if (score <= alpha) {
+                    beta = (alpha + beta) / 2;
+                    alpha = std::max(alpha - delta, -10000000);
+                } else break;
+
+                delta *= 1.5;
+            }
+        } else {
+            score = negamax(board, depth, -10000000, 10000000, 0, true);
+        }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(elapsedTime > timeToSearch) {
-            rootBestMove = previousBest;
-            break;
-        } else {
-            std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(result) << std::endl;
+            return previousBest;
         }
+        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << std::endl;
     }
 
+    return rootBestMove;
+
+    // thing left in for a while because I was having null move issues
+    /*
     std::random_device rd;
     std::mt19937_64 gen(rd());
 
@@ -283,5 +308,5 @@ Move think(Board board, int timeLeft) {
                 return moves[index];
             }
         }
-    }
+    }*/
 }
