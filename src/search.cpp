@@ -189,7 +189,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 int depthReduction = 0;
                 bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
                 if(extensions == 0 && depth > 1 && !isCapture) {
-                    depthReduction = reductions[depth][i];
+                    depthReduction = reductions[depth][legalMoves];
                 }
                 // this is more PVS stuff, searching with a reduced margin
                 score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
@@ -222,7 +222,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 }
             }
             // Late Move Pruning (not working, needs more testing)
-            if(depth < 5 && !isPV && bestScore > -10000000 + 256 && legalMoves > (10+depth*10)) break;
+            //if(depth < 5 && !isPV && bestScore > -10000000 + 256 && legalMoves > (10+depth*10)) break;
         }
     }
 
