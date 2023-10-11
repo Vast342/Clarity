@@ -41,3 +41,36 @@ Evaluation:
   2. Pawn structure
   3. Texel Tuning
   4. NNUE eventually
+
+
+## Feature List:
+
+Board Representation:
+    1. Copymake moves
+    2. Board represented using 8 bitboards
+    3. Pext bitboards, lookups, and setwise move generation
+    4. Repetition detection
+    5. Incremental Zobrist hashing
+    6. Incremental PSQT updates
+
+Search: 
+    1. PVS search:
+        1. Aspiration windows
+        2. Transposition Table(TT) cutoffs
+        3. Reverse Futility Pruning
+        4. Null Move Pruning
+        5. Late Move Reductions (log function, generated on startup)
+        6. Fail-soft
+        7. Currently nonfunctional LMP
+    2. Qsearch
+        1. Failsoft
+        2. TT cutoffs
+
+Evaluation:
+    1. PeSTO PSQTs and piece weights (soon to be tuned)
+    2. Non-functional passed pawn detection
+
+Move ordering:
+    1. TT best move
+    2. MVV-LVA
+    3. History Heuristic
