@@ -4,7 +4,7 @@ The C++ rewrite is complete! Clarity is now faster and better, using new techniq
 
 For those who didn't see the engine in its depressing, confusing, error-filled C# state, this engine was originally written in C# before I decided to switch to C++. That decision was one of the greatest I think I've ever had, as the engine is now faster, easier to read, less error-filled(hopefully), and better overall.
 
-My current Estimate of elo (calculated by playing large sums of games against engines with known CCRL ratings) is 1800.
+My current Estimate of elo (calculated by playing large sums of games against engines with known CCRL ratings) is 2050.
 
 #### Warning: Clarity currently uses pext for move generation, which means that CPUs without BMI2 or CPUs with a slow implementation (Zen 2 or earlier) will not be able to use it, A replacement (magic bitboards) is underway.
 
@@ -33,8 +33,7 @@ Board Representation:
   2. Magic bitboards as a backup for non-bmi2 CPUs
 
 Search:
-  1. NMP
-  2. I am working on the list of ideas
+  1. I am working on the list of ideas
 
 Evaluation:
   1. Passed pawns
