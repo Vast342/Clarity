@@ -773,8 +773,8 @@ int Board::getEnPassantIndex() const {
 
 void initializeZobrist() {
     // random number stuff
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
+    //std::random_device rd;
+    std::mt19937_64 gen(0xABBABA5ED);
     std::uniform_int_distribution<uint64_t> dis;
     // color to move
     zobColorToMove = dis(gen);

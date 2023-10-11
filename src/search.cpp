@@ -20,6 +20,11 @@ std::chrono::steady_clock::time_point begin;
 
 void resetEngine() {
     TT.clearTable();
+    for(int i = 0; i < 64; i++) {
+        for(int j = 0; j < 64; j++) {
+            historyTable[i][j] = 0;
+        }
+    }
 }
 
 void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, int ttMoveValue) {
