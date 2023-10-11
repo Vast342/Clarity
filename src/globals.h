@@ -66,7 +66,7 @@ struct Move {
         int getValue();
         Move(int startSquare, int endSquare, int flag);
         Move();
-        Move(std::string longAlgebraic, Board board);
+        Move(std::string longAlgebraic, const Board& board);
     private: 
         uint16_t value;
 };
@@ -93,8 +93,8 @@ struct Board {
         void changeColor();
         void undoChangeColor();
         int getEvaluation();
-        int getCastlingRights();
-        int getEnPassantIndex();
+        int getCastlingRights() const;
+        int getEnPassantIndex() const;
         int taperValue(int mg, int eg);
         int fullEvalRegen();
         uint64_t fullZobristRegen();

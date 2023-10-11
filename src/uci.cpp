@@ -38,7 +38,7 @@ void sigmoidTest() {
 }*/
 
 void identify() {
-    std::cout << "id name Clarity V0.1.0\n";
+    std::cout << "id name Clarity V0.1.2\n";
     std::cout << "id author Vast\n";
 }
 

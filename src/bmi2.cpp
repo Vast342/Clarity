@@ -4,7 +4,7 @@
 std::array<std::array<uint64_t, 512>, 64> bishopAttackLookup;
 std::array<std::array<uint64_t, 4096>, 64> rookAttackLookup;
 
-int getBishopBlockerCombinations(std::array<uint64_t, 512> &blockers, uint64_t mask) {
+int getBishopBlockerCombinations(std::array<uint64_t, 512> &blockers, const uint64_t mask) {
     // calculates the total amount of possible blocker configuration (2^n)
     int totalPatterns = 1 << __builtin_popcountll(mask);
     assert(totalPatterns <= 512);
@@ -18,7 +18,7 @@ int getBishopBlockerCombinations(std::array<uint64_t, 512> &blockers, uint64_t m
 }
 
 // seperated so that I can have the assertions be right
-int getRookBlockerCombinations(std::array<uint64_t, 4096> &blockers, uint64_t mask) {
+int getRookBlockerCombinations(std::array<uint64_t, 4096> &blockers, const uint64_t mask) {
     // calculates the total amount of possible blocker configuration (2^n)
     int totalPatterns = 1 << __builtin_popcountll(mask);
     assert(totalPatterns <= 4096);
@@ -57,19 +57,19 @@ void generateLookups() {
 }
 
 // uses pext to calculate the index for each square and blockers
-uint64_t calculateRookIndex(uint64_t occupiedBitboard, int square) {
+uint64_t calculateRookIndex(const uint64_t occupiedBitboard, const int square) {
     return _pext_u64(occupiedBitboard, rookMasks[square]);
 }
 
-uint64_t calculateBishopIndex(uint64_t occupiedBitboard, int square) {
+uint64_t calculateBishopIndex(const uint64_t occupiedBitboard, const int square) {
     return _pext_u64(occupiedBitboard, bishopMasks[square]);
 }
 
 // gets the attacks from the tables so the values don't have to be public
-uint64_t getRookAttacksFromTable(uint64_t occupiedBitboard, int square) {
+uint64_t getRookAttacksFromTable(const uint64_t occupiedBitboard, const int square) {
     return rookAttackLookup[square][calculateRookIndex(occupiedBitboard, square)];
 }
 
-uint64_t getBishopAttacksFromTable(uint64_t occupiedBitboard, int square) {
+uint64_t getBishopAttacksFromTable(const uint64_t occupiedBitboard, const int square) {
     return bishopAttackLookup[square][calculateBishopIndex(occupiedBitboard, square)];
 }

@@ -28,26 +28,20 @@ Move::Move() {
 }
 
 // long algebraic form constructor for uci shenanigans.
-Move::Move(std::string longAlgebraic, Board board) {
-    // divide the string into a character array, 4 if non-promotion, 5 if promotion
-    char characters[longAlgebraic.length() > 4 ? 5 : 4];
-    int i = 0;
-    for(char c : longAlgebraic) {
-        characters[i] = c;
-        i++;
-    }
+Move::Move(std::string longAlgebraic, const Board& board) {
+    // the old code here was, special to say the least
     int startSquare = 0;
     int endSquare = 0;
     // read from the squares
-    startSquare += characters[0] - 'a';
-    startSquare += (characters[1] - '1') * 8;
-    endSquare += characters[2] - 'a';
-    endSquare += (characters[3] - '1') * 8;
+    startSquare += longAlgebraic[0] - 'a';
+    startSquare += (longAlgebraic[1] - '1') * 8;
+    endSquare += longAlgebraic[2] - 'a';
+    endSquare += (longAlgebraic[3] - '1') * 8;
     // flags
     int flag = 0;
     if(longAlgebraic.length() > 4) {
         // promotions
-        switch(characters[4]) {
+        switch(longAlgebraic[4]) {
             case 'n':
                 flag = promotions[0];
                 break;
