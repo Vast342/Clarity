@@ -26,14 +26,15 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
     std::array<int, 256> values;
     const uint64_t occupied = board.getOccupiedBitboard();
     for(int i = 0; i < numMoves; i++) {
-        values[i] = historyTable[moves[i].getStartSquare()][moves[i].getEndSquare()];
         if(moves[i].getValue() == ttMoveValue) {
             values[i] = 1000000000;
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
             // mvv lva (ciekce was here)
             const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
             const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-            values[i] = eg_value[victim] - eg_value[attacker];
+            values[i] = 100 * eg_value[victim] - eg_value[attacker];
+        } else {
+            values[i] = historyTable[moves[i].getStartSquare()][moves[i].getEndSquare()];
         }
         values[i] = -values[i];
         // incremental sort was broken, I need to come back to it at some point
@@ -177,6 +178,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
+            bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
             int score = 0;
             // Principal Variation Search
             if(legalMoves == 1) {
@@ -185,7 +187,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             } else {
                 // Late Move Reductions (LMR)
                 int depthReduction = 0;
-                bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
                 if(extensions == 0 && depth > 1 && !isCapture) {
                     depthReduction = reductions[depth][legalMoves];
                 }
@@ -215,7 +216,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 // Fail-high
                 if(score >= beta) {
                     flag = BetaCutoff;
-                    historyTable[moves[i].getStartSquare()][moves[i].getEndSquare()] += depth * depth;
+                    if(!isCapture) historyTable[moves[i].getStartSquare()][moves[i].getEndSquare()] += depth * depth;
                     break;
                 }
             }
