@@ -18,6 +18,8 @@ std::array<std::array<int, 64>, 64> historyTable;
 
 std::chrono::steady_clock::time_point begin;
 
+bool timesUp = false;
+
 void resetEngine() {
     TT.clearTable();
     for(int i = 0; i < 64; i++) {
@@ -53,6 +55,7 @@ int qSearch(Board &board, int alpha, int beta) {
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
+            timesUp = true;
             return 0;
         }
     }
@@ -91,7 +94,7 @@ int qSearch(Board &board, int alpha, int beta) {
             const int score = -qSearch(board, -beta, -alpha);
             board.undoMove();
             // time check
-            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
+            if(timesUp) {
                 return 0;
             }
 
@@ -125,6 +128,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
+            timesUp = true;
             return 0 ;
         }
     }
@@ -205,7 +209,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             board.undoMove();
 
             // backup time check
-            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) return 0;
+            if(timesUp) {
+                return 0
+            };
 
             if(score > bestScore) {
                 bestScore = score;
@@ -244,6 +250,17 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     return bestScore;
 }
 
+// yes cloning the board is intentional here.
+std::string getPV(Board board) {
+    std::string pv = "";
+    Move bestMove = TT.getBestMove(board.zobristHash);
+    if(bestMove.getValue() != 0 && board.makeMove(bestMove)) {
+        std::string restOfPV = getPV(board);
+        pv = toLongAlgebraic(bestMove) + " " + restOfPV;
+    }
+    return pv;
+}
+
 Move think(Board board, int timeLeft) {
     for(int i = 0; i < 64; i++) {
         for(int j = 0; j < 64; j++) {
@@ -252,6 +269,7 @@ Move think(Board board, int timeLeft) {
     }
     nodes = 0;
     timeToSearch = timeLeft / 30;
+    timesUp = false;
 
     begin = std::chrono::steady_clock::now();
 
@@ -259,6 +277,7 @@ Move think(Board board, int timeLeft) {
     int score = 0;
 
     for(int depth = 1; depth < 100; depth++) {
+        timesUp = false;
         int delta = 25;
         int alpha = std::max(-10000000, score - delta);
         int beta = std::min(10000000, score + delta);
@@ -266,9 +285,7 @@ Move think(Board board, int timeLeft) {
         if(depth > 3) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true);
-
-                const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-                if(elapsedTime > timeToSearch) {
+                if(timesUp) {
                     return previousBest;
                 }
                 if (score >= beta) {
@@ -284,10 +301,11 @@ Move think(Board board, int timeLeft) {
             score = negamax(board, depth, -10000000, 10000000, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        if(elapsedTime > timeToSearch) {
+        if(elapsedTime > timeToSearch || timesUp) {
             return previousBest;
         }
-        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << std::endl;
+        std::string pv = getPV(Board);
+        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
     }
 
     return rootBestMove;
