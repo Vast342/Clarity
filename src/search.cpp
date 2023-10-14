@@ -2,9 +2,9 @@
 #include "psqt.h"
 #include "tt.h"
 
-const int startDepth = 3;
+constexpr int startDepth = 3;
 
-const int nmpMin = 2;
+constexpr int nmpMin = 2;
 
 Move rootBestMove = Move();
 
@@ -14,19 +14,27 @@ int timeToSearch = 0;
 
 TranspositionTable TT;
 
-std::array<std::array<int, 64>, 64> historyTable;
+std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 
 std::chrono::steady_clock::time_point begin;
 
+constexpr int historyCap = 16384;
+
 bool timesUp = false;
+
+void clearHistory() {
+    for(int h = 0; h < 2; h++) {
+        for(int i = 0; i < 64; i++) {
+            for(int j = 0; j < 64; j++) {
+                historyTable[h][i][j] = 0;
+            }
+        }
+    }
+}
 
 void resetEngine() {
     TT.clearTable();
-    for(int i = 0; i < 64; i++) {
-        for(int j = 0; j < 64; j++) {
-            historyTable[i][j] = 0;
-        }
-    }
+    clearHistory();
 }
 
 void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, int ttMoveValue) {
@@ -41,7 +49,7 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
             values[i] = 100 * eg_value[victim] - eg_value[attacker];
         } else {
-            values[i] = historyTable[moves[i].getStartSquare()][moves[i].getEndSquare()];
+            values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
         }
         values[i] = -values[i];
         // incremental sort was broken, I need to come back to it at some point
@@ -121,6 +129,12 @@ int qSearch(Board &board, int alpha, int beta) {
     TT.setEntry(board.zobristHash, Transposition(board.zobristHash, bestMove, flag, bestScore, 0));
 
     return bestScore;  
+}
+
+void updateHistory(const int start, const int end, const int depth, const int colorToMove) {
+    const int bonus = depth * depth;
+    const int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
+    historyTable[colorToMove][start][end] += thingToAdd;
 }
 
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
@@ -227,7 +241,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 // Fail-high
                 if(score >= beta) {
                     flag = BetaCutoff;
-                    if(!isCapture) historyTable[moves[i].getStartSquare()][moves[i].getEndSquare()] += depth * depth;
+                    if(!isCapture) {
+                        updateHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
+                    }
                     break;
                 }
             }
@@ -264,11 +280,7 @@ std::string getPV(Board board) {
 }
 
 Move think(Board board, int timeLeft) {
-    for(int i = 0; i < 64; i++) {
-        for(int j = 0; j < 64; j++) {
-            historyTable[i][j] = 0;
-        }
-    }
+    clearHistory();
     nodes = 0;
     timeToSearch = timeLeft / 30;
     timesUp = false;

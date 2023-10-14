@@ -84,7 +84,7 @@ struct Board {
         bool isInCheck();
         bool squareIsUnderAttack(int square);
         void toString();
-        uint8_t getColorToMove();
+        uint8_t getColorToMove() const;
         uint64_t getCurrentPlayerBitboard() const;
         uint64_t getOccupiedBitboard() const;
         uint64_t getColoredPieceBitboard(int color, int piece) const;
@@ -99,6 +99,7 @@ struct Board {
         int fullEvalRegen();
         uint64_t fullZobristRegen();
         bool isRepeatedPosition();
+        int detectPassedPawns();
     private:
         std::array<uint64_t, 2> coloredBitboards;
         std::array<uint64_t, 6> pieceBitboards;

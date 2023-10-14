@@ -94,11 +94,11 @@ void interpretCommand(std::string command) {
         std::cout << "evaluation " << board.getEvaluation() << '\n';
     } else if(bits[0] == "showstate") {
         board.toString();    
-    } else if(bits[0] == "geterror") {
-        double averageError = calculateAverageError();
-        std::cout << "average error: " << std::to_string(averageError) << '\n';
-    } else if(bits[0] == "tunek") {
-        tuneK();
+    } else if(bits[0] == "detectpassers") {
+        const int passed = board.detectPassedPawns();
+        std::cout << "passed pawns: " << passed << '\n';
+    }  else if(bits[0] == "masktest") {
+        std::cout << "mask: " << getPassedPawnMask(43, 1) << '\n';
     } else {
         std::cout << "invalid command\n";
     }

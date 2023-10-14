@@ -565,7 +565,7 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     return totalMoves;
 }
 
-uint8_t Board::getColorToMove() {
+uint8_t Board::getColorToMove() const {
     return colorToMove;
 }
 
@@ -759,8 +759,8 @@ void Board::undoChangeColor() {
 int Board::getEvaluation() {   
     // currently disabled passed pawn bonuses, as it wasn't gaining any elo
     int egPhase = 24 - phase;
-    return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
-    //return (((mgEval * phase + egEval * egPhase) / 24) + getPassedPawnBonuses()) * ((2 * colorToMove) - 1);
+    //return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
+    return (((mgEval * phase + egEval * egPhase) / 24) + getPassedPawnBonuses()) * ((2 * colorToMove) - 1);
 }
 
 int Board::getCastlingRights() const {
@@ -832,12 +832,13 @@ int Board::getPassedPawnBonuses() {
     int egBonuses = 0;
     uint64_t mask = pieceBitboards[Pawn];
     uint64_t allPawns = mask;
+    std::array<uint64_t, 2> opponentPawns = {mask & coloredBitboards[0], mask & coloredBitboards[1]};
     while(mask != 0) {
         int index = popLSB(mask);
         int color = colorAtIndex(index);
         assert(color != 2);
         
-        if((getPassedPawnMask(index, color) & allPawns) == 0) {
+        if((getPassedPawnMask(index, color) & opponentPawns[1 - color]) == 0) {
             int square = color == 1 ? flipIndex(index) : index;
             int colorMultiplier = 2 * color - 1;
             mgBonuses += mgPassedPawnBonusTable[square] * colorMultiplier;
@@ -846,6 +847,24 @@ int Board::getPassedPawnBonuses() {
     }
 
     return taperValue(mgBonuses, egBonuses);
+}
+
+int Board::detectPassedPawns() {
+    uint64_t mask = pieceBitboards[Pawn];
+    uint64_t allPawns = mask;
+    int total = 0;
+    while(mask != 0) {
+        int index = popLSB(mask);
+        int color = colorAtIndex(index);
+        assert(color != 2);
+        
+        if((getPassedPawnMask(index, color) & allPawns) == 0) {
+            std::cout << "Passed pawn of color " << color << " at index " << index << '\n';
+            total++;
+        }
+    }
+    std::cout << "loop done\n";
+    return total;
 }
 
 bool Board::isRepeatedPosition() {
