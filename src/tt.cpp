@@ -54,3 +54,9 @@ void TranspositionTable::setDepth(uint64_t zkey, uint16_t depth) {
 void TranspositionTable::clearTable() {
     std::fill(table.begin(), table.end(), Transposition());
 }
+
+void TranspositionTable::resize(int newSize) {
+    mask = newSize - 1;
+    table.resize(newSize, Transposition());
+    clearTable();
+}

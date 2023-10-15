@@ -32,6 +32,10 @@ void clearHistory() {
     }
 }
 
+void resizeTT(int newSize) {
+    TT.resize(newSize);
+}
+
 void resetEngine() {
     TT.clearTable();
     clearHistory();
@@ -201,6 +205,12 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
+            // passed pawn extension, also didn't gain.
+            //int perMoveExtensions = 0;
+            //int moveRank = moves[i].getEndSquare() / 8;
+            //if(getType(board.pieceAtIndex(moves[i].getEndSquare())) == Pawn && (moveRank == 6 || moveRank == 1)) perMoveExtensions++;
+            // Late Move Pruning (not working, needs moreit  testing)
+            //if(depth < 4 && !isPV && bestScore > -10000000 + 256 && legalMoves > (3+depth*10)) break;
             bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
             int score = 0;
             // Principal Variation Search
@@ -247,8 +257,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     break;
                 }
             }
-            // Late Move Pruning (not working, needs moreit  testing)
-            //if(depth < 4 && !isPV && bestScore > -10000000 + 256 && legalMoves > (10+depth*10)) break;
         }
     }
 

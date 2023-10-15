@@ -8,7 +8,19 @@ Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 
 int rootColorToMove;
 
-void loadPosition(std::vector<std::string> bits) {
+void setOption(const std::vector<std::string>& bits) {
+    if(bits[2] == "Hash") {
+        int newSizeMB = std::stoi(bits[4]);
+        int newSizeB = newSizeMB * 1024 * 1024;
+        // this should be 16 bytes
+        int entrySizeB = sizeof(Transposition);
+        int newSizeEntries = newSizeB / entrySizeB;
+        std::cout << log2(newSizeEntries);
+        resizeTT(newSizeEntries);
+    }
+}
+
+void loadPosition(const std::vector<std::string>& bits) {
     if(bits[1] == "startpos") {
         board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         for(int i = 3; i < static_cast<int>(bits.size()); i++) {
@@ -40,6 +52,7 @@ void sigmoidTest() {
 void identify() {
     std::cout << "id name Clarity V0.1.2\n";
     std::cout << "id author Vast\n";
+    std::cout << "option name Hash type spin default 256 min 1 max 2048\n";
 }
 
 void go(std::vector<std::string> bits) {
@@ -99,6 +112,8 @@ void interpretCommand(std::string command) {
         std::cout << "passed pawns: " << passed << '\n';
     }  else if(bits[0] == "masktest") {
         std::cout << "mask: " << getPassedPawnMask(43, 1) << '\n';
+    } else if(bits[0] == "setoption") {
+        setOption(bits);
     } else {
         std::cout << "invalid command\n";
     }

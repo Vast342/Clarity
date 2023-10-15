@@ -343,8 +343,7 @@ int Board::pieceAtIndex(int index) const {
 int Board::colorAtIndex(int index) const {
     if((coloredBitboards[0] & (1ULL << index)) != 0) {
         return 0;
-    }
-    if((coloredBitboards[1] & (1ULL << index)) != 0) {
+    } else if((coloredBitboards[1] & (1ULL << index)) != 0) {
         return 1;
     }
     // invalid result, bad
@@ -759,8 +758,8 @@ void Board::undoChangeColor() {
 int Board::getEvaluation() {   
     // currently disabled passed pawn bonuses, as it wasn't gaining any elo
     int egPhase = 24 - phase;
-    //return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
-    return (((mgEval * phase + egEval * egPhase) / 24) + getPassedPawnBonuses()) * ((2 * colorToMove) - 1);
+    return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
+    //return (((mgEval * phase + egEval * egPhase) / 24) + getPassedPawnBonuses()) * ((2 * colorToMove) - 1);
 }
 
 int Board::getCastlingRights() const {
@@ -830,16 +829,16 @@ uint64_t Board::fullZobristRegen() {
 int Board::getPassedPawnBonuses() {
     int mgBonuses = 0;
     int egBonuses = 0;
-    uint64_t mask = pieceBitboards[Pawn];
-    uint64_t allPawns = mask;
-    std::array<uint64_t, 2> opponentPawns = {mask & coloredBitboards[0], mask & coloredBitboards[1]};
+    uint64_t mask = pieceBitboards[Pawn];   
+    std::array<uint64_t, 2> opponentPawns = {getColoredPieceBitboard(1, Pawn), getColoredPieceBitboard(0, Pawn)};
     while(mask != 0) {
         int index = popLSB(mask);
         int color = colorAtIndex(index);
         assert(color != 2);
         
-        if((getPassedPawnMask(index, color) & opponentPawns[1 - color]) == 0) {
+        if((getPassedPawnMask(index, color) & opponentPawns[colorToMove]) == 0) {
             int square = color == 1 ? flipIndex(index) : index;
+            // make 0,1 into -1,1
             int colorMultiplier = 2 * color - 1;
             mgBonuses += mgPassedPawnBonusTable[square] * colorMultiplier;
             egBonuses += egPassedPawnBonusTable[square] * colorMultiplier;
@@ -859,11 +858,9 @@ int Board::detectPassedPawns() {
         assert(color != 2);
         
         if((getPassedPawnMask(index, color) & allPawns) == 0) {
-            std::cout << "Passed pawn of color " << color << " at index " << index << '\n';
             total++;
         }
     }
-    std::cout << "loop done\n";
     return total;
 }
 

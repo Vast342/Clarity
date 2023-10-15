@@ -2,14 +2,15 @@
 
 #include "globals.h"
 
-constexpr uint64_t mask = 0x7FFFFF;
+// at 16 bytes per entry, this gives me a 256mb hash table
+constexpr uint64_t defaultSize = 16777216;
 
 struct Transposition {
     uint64_t zobristKey;
     int score;
-    int depth;
     Move bestMove;
     uint8_t flag;
+    uint8_t depth;
     Transposition() {
         zobristKey = 0;
         bestMove = Move();
@@ -17,7 +18,7 @@ struct Transposition {
         score = 0;
         depth = 0;
     }
-    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _score, int _depth) {
+    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _score, uint8_t _depth) {
         zobristKey = _zobristKey;
         bestMove = _bestMove;
         flag = _flag;
@@ -41,6 +42,16 @@ struct TranspositionTable {
         void setFlag(uint64_t zkey, uint8_t flag);
         void setDepth(uint64_t zkey, uint16_t depth);
         void clearTable();
+        void resize(int newSize);
+        TranspositionTable() {
+            resize(defaultSize);
+            clearTable();
+        }
+        TranspositionTable(int newSize) {
+            resize(newSize);
+            clearTable();
+        }
+        uint64_t mask;
     private:
-        std::array<Transposition, mask + 1> table;
+        std::vector<Transposition> table;
 };
