@@ -3,10 +3,24 @@
 #include "search.h"
 #include "tuner.h"
 #include "tt.h"
+#include "bench.h"
 
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 
 int rootColorToMove;
+
+void runBench(int depth) {
+    uint64_t total = 0;
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    for(std::string fen : fens) {
+        Board benchBoard(fen);
+        int j = benchSearch(benchBoard, depth);
+        total += j;
+    }
+    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+    std::cout << "searched 50 positions to a depth of " << depth << ", total nodes " << total << '\n';
+    std::cout << "bench took " << elapsedTime << "ms\n";
+}
 
 void setOption(const std::vector<std::string>& bits) {
     if(bits[2] == "Hash") {
@@ -15,7 +29,7 @@ void setOption(const std::vector<std::string>& bits) {
         // this should be 16 bytes
         int entrySizeB = sizeof(Transposition);
         int newSizeEntries = newSizeB / entrySizeB;
-        std::cout << log2(newSizeEntries);
+        //std::cout << log2(newSizeEntries);
         resizeTT(newSizeEntries);
     }
 }
@@ -110,10 +124,12 @@ void interpretCommand(std::string command) {
     } else if(bits[0] == "detectpassers") {
         const int passed = board.detectPassedPawns();
         std::cout << "passed pawns: " << passed << '\n';
-    }  else if(bits[0] == "masktest") {
+    } else if(bits[0] == "masktest") {
         std::cout << "mask: " << getPassedPawnMask(43, 1) << '\n';
     } else if(bits[0] == "setoption") {
         setOption(bits);
+    } else if(bits[0] == "bench") {
+        runBench(std::stoi(bits[1]));
     } else {
         std::cout << "invalid command\n";
     }

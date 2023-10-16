@@ -298,6 +298,8 @@ void Board::addPiece(int square, int type) {
     int colorMultiplier = 2 * getColor(type) - 1;
     mgEval += mgTables[getType(type)][index] * colorMultiplier;
     egEval += egTables[getType(type)][index] * colorMultiplier;
+    //mgEval += mg_value[getType(type)] * colorMultiplier;
+    //egEval += eg_value[getType(type)] * colorMultiplier;
     zobristHash ^= zobTable[square][type];
 }
 
@@ -314,6 +316,8 @@ void Board::removePiece(int square, int type) {
     int colorMultiplier = 2 * getColor(type) - 1;
     mgEval -= mgTables[getType(type)][index] * colorMultiplier;
     egEval -= egTables[getType(type)][index] * colorMultiplier;
+    //mgEval -= mg_value[getType(type)] * colorMultiplier;
+    //egEval -= eg_value[getType(type)] * colorMultiplier;
     zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
