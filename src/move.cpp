@@ -1,18 +1,18 @@
 #include "globals.h"
 
-int Move::getValue() {
+int Move::getValue() const {
     return value;
 }
 
-int Move::getStartSquare() {
+int Move::getStartSquare() const {
     return value & 0b111111;
 }
 
-int Move::getEndSquare() {
+int Move::getEndSquare() const {
     return (value >> 6) & 0b111111;
 }
 
-int Move::getFlag() {
+int Move::getFlag() const {
     return value >> 12;
 }
 

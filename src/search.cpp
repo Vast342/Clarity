@@ -279,7 +279,8 @@ std::string getPV(Board board) {
     std::string pv = "";
     if(TT.matchZobrist(board.zobristHash)) {
         Move bestMove = TT.getBestMove(board.zobristHash);
-        if(bestMove.getValue() != 0 && board.makeMove(bestMove)) {
+        // need a move.isLegal() to make sure that the move is legal in the position, not just that it doesn't put you in check
+        if(board.isLegalMove(bestMove) && board.makeMove(bestMove)) {
             std::string restOfPV = getPV(board);
             pv = toLongAlgebraic(bestMove) + " " + restOfPV;
         }
@@ -328,7 +329,7 @@ Move think(Board board, int timeLeft) {
         }
         //std::string pv = getPV(board);
         //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
-        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
 
     return rootBestMove;

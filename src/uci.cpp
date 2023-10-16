@@ -64,7 +64,7 @@ void sigmoidTest() {
 }*/
 
 void identify() {
-    std::cout << "id name Clarity V0.1.2\n";
+    std::cout << "id name Clarity V1.0.0\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 256 min 1 max 2048\n";
 }
@@ -119,13 +119,6 @@ void interpretCommand(std::string command) {
         splitPerft(board, std::stoi(bits[1]));
     } else if(bits[0] == "evaluate") {
         std::cout << "evaluation " << board.getEvaluation() << '\n';
-    } else if(bits[0] == "showstate") {
-        board.toString();    
-    } else if(bits[0] == "detectpassers") {
-        const int passed = board.detectPassedPawns();
-        std::cout << "passed pawns: " << passed << '\n';
-    } else if(bits[0] == "masktest") {
-        std::cout << "mask: " << getPassedPawnMask(43, 1) << '\n';
     } else if(bits[0] == "setoption") {
         setOption(bits);
     } else if(bits[0] == "bench") {

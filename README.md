@@ -4,7 +4,7 @@ The C++ rewrite is complete! Clarity is now faster and better, using new techniq
 
 For those who didn't see the engine in its depressing, confusing, error-filled C# state, this engine was originally written in C# before I decided to switch to C++. That decision was one of the greatest I think I've ever had, as the engine is now faster, easier to read, less error-filled(hopefully), and better overall.
 
-My current Estimate of elo (calculated by playing large sums of games against engines with known CCRL ratings) is 2050.
+My current Estimate of elo (calculated by playing large sums of games against engines with known CCRL ratings) is 2200.
 
 #### Warning: Clarity currently uses pext for move generation, which means that CPUs without BMI2 or CPUs with a slow implementation (Zen 2 or earlier) will not be able to use it, A replacement (magic bitboards) is underway.
 
@@ -43,6 +43,17 @@ Evaluation:
 
 
 ## Feature List:
+
+CLI:
+  1. UCI Implementation
+  2. printstate: shows the state of the board.
+  3. perftsuite <suite>: performs a suite of perft tests, currently only supports the suite ethereal.
+  4. perft <depth>: performs a perft test from the current position and outputs the result.
+  5. splitperft <depth>: performs a perft test from the current position and outputs the result seperated by which move is the first one done.
+  6: getfen: outputs a string of Forsyth-Edwards Notation (FEN) that encodes the current position.
+  7: incheck: outputs if the current position is in check or not.
+  8: evaluate: outputs the evaluation of the current position.
+  9: bench <depth>: performs the bench test, a fixed depth search on a series of 50 positions.
 
 Board Representation:
   1. Copymake moves

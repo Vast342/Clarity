@@ -760,7 +760,7 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
-    // currently disabled passed pawn bonuses, as it wasn't gaining any elo
+    // currently disabled passed pawn bonuses, as it wasn't gaining any elo, even after my goofy and probablly messed up tuning
     int egPhase = 24 - phase;
     return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
     //return (((mgEval * phase + egEval * egPhase) / 24) + getPassedPawnBonuses()) * ((2 * colorToMove) - 1);
@@ -872,6 +872,41 @@ bool Board::isRepeatedPosition() {
     for(int i = std::ssize(zobristHistory) - 2; i >= std::ssize(zobristHistory) - hundredPlyCounter; i--) {
         if(zobristHistory[i] == zobristHash) {
             return true;
+        }
+    }
+    return false;
+}
+
+bool Board::isLegalMove(const Move& move) {
+    if(move.getValue() != 0) {
+        int startSquare = move.getStartSquare();
+        uint64_t occupiedBitboard = getOccupiedBitboard();
+        int movePiece = getType(pieceAtIndex(startSquare));
+        if(movePiece != None) {
+            uint64_t total = 0;
+            if(movePiece == Pawn) {
+                total = getPawnAttacks(startSquare, colorToMove);
+                uint64_t capturable = coloredBitboards[1 - colorToMove];
+                if(enPassantIndex != 64) {
+                    capturable |= (1ULL << enPassantIndex);
+                }
+                total &= capturable;
+                total |= (1ULL << (startSquare + directionalOffsets[colorToMove])) & ~occupiedBitboard;
+            } else {
+                if(movePiece == Knight) {
+                    total = getKnightAttacks(startSquare);
+                } else if(movePiece == Bishop) {
+                    total = getBishopAttacks(startSquare, occupiedBitboard);
+                } else if(movePiece == Rook) {
+                    total = getRookAttacks(startSquare, occupiedBitboard);
+                } else if(movePiece == Queen) {
+                    total = getRookAttacks(startSquare, occupiedBitboard) | getBishopAttacks(startSquare, occupiedBitboard);
+                } else if(movePiece == King) {
+                    total = getKingAttacks(startSquare);
+                }
+                total ^= (total & coloredBitboards[colorToMove]);
+            }
+            if((total & (1ULL << move.getEndSquare())) != 0) return true;
         }
     }
     return false;

@@ -60,10 +60,10 @@ struct BoardState {
 
 struct Move {
     public:
-        int getStartSquare();
-        int getEndSquare();
-        int getFlag();
-        int getValue();
+        int getStartSquare() const;
+        int getEndSquare() const;
+        int getFlag() const;
+        int getValue() const;
         Move(int startSquare, int endSquare, int flag);
         Move();
         Move(std::string longAlgebraic, const Board& board);
@@ -100,6 +100,7 @@ struct Board {
         uint64_t fullZobristRegen();
         bool isRepeatedPosition();
         int detectPassedPawns();
+        bool isLegalMove(const Move& move);
     private:
         std::array<uint64_t, 2> coloredBitboards;
         std::array<uint64_t, 6> pieceBitboards;
