@@ -357,3 +357,35 @@ Move think(Board board, int timeLeft) {
         }
     }*/
 }
+
+int benchSearch(Board board, int depthToSearch) {
+    clearHistory();
+    nodes = 0;
+    timeToSearch = 1215752192;
+    
+    int score = 0;
+
+    for(int depth = 1; depth <= depthToSearch; depth++) {
+        timesUp = false;
+        int delta = 25;
+        int alpha = std::max(-10000000, score - delta);
+        int beta = std::min(10000000, score + delta);
+        if(depth > 3) {
+            while (true) {
+                score = negamax(board, depth, alpha, beta, 0, true);
+                
+                if (score >= beta) {
+                    beta = std::min(beta + delta, 10000000);
+                } else if (score <= alpha) {
+                    beta = (alpha + beta) / 2;
+                    alpha = std::max(alpha - delta, -10000000);
+                } else break;
+
+                delta *= 1.5;
+            }
+        } else {
+            score = negamax(board, depth, -10000000, 10000000, 0, true);
+        }
+    }
+    return nodes;
+}
