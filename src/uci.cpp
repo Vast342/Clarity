@@ -29,7 +29,7 @@ void setOption(const std::vector<std::string>& bits) {
         // this should be 16 bytes
         int entrySizeB = sizeof(Transposition);
         int newSizeEntries = newSizeB / entrySizeB;
-        std::cout << log2(newSizeEntries);
+        //std::cout << log2(newSizeEntries);
         resizeTT(newSizeEntries);
     }
 }
