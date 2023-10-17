@@ -71,12 +71,24 @@ void identify() {
 
 void go(std::vector<std::string> bits) {
     int time = 0;
-    if(board.getColorToMove() == 0) {
-        time = std::stoi(bits[4]);
-    } else {
-        time = std::stoi(bits[2]);
+    int depth = 0;
+    for(int i = 1; i < std::ssize(bits); i+=2) {
+        if(bits[i] == "wtime" && board.getColorToMove() == 1) {
+            time = std::stoi(bits[i+1]);
+        }
+        if(bits[i] == "btime" && board.getColorToMove() == 0) {
+            time = std::stoi(bits[i+1]);
+        }
+        if(bits[i] == "depth") {
+            depth = std::stoi(bits[i+1]);
+        }
     }
-    Move bestMove = think(board, time);
+    Move bestMove;
+    if(depth != 0) {
+        bestMove = fixedDepthSearch(board, depth);
+    } else {
+        bestMove = think(board, time);
+    }
     std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
     board.makeMove(bestMove);
 }

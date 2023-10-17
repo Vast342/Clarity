@@ -9,5 +9,5 @@ add_executable(Clarity_Native src/bench.h src/board.cpp src/globals.cpp src/glob
 
 target_compile_options(Clarity_BMI2 PRIVATE -Wall -Wextra -march=haswell)
 target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -march=native)
-target_link_libraries(Clarity_BMI2 -static-libgcc -static-libstdc++)
-target_link_libraries(Clarity_Native -static-libgcc -static-libstdc++)
+target_link_libraries(Clarity_BMI2 -static)
+target_link_libraries(Clarity_Native -static)

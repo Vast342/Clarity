@@ -390,3 +390,40 @@ int benchSearch(Board board, int depthToSearch) {
     }
     return nodes;
 }
+
+Move fixedDepthSearch(Board board, int depthToSearch) {
+    clearHistory();
+    nodes = 0;
+    timeToSearch = 1215752192;
+    begin = std::chrono::steady_clock::now();
+    
+    int score = 0;
+
+    for(int depth = 1; depth <= depthToSearch; depth++) {
+        timesUp = false;
+        int delta = 25;
+        int alpha = std::max(-10000000, score - delta);
+        int beta = std::min(10000000, score + delta);
+        if(depth > 3) {
+            while (true) {
+                score = negamax(board, depth, alpha, beta, 0, true);
+                
+                if (score >= beta) {
+                    beta = std::min(beta + delta, 10000000);
+                } else if (score <= alpha) {
+                    beta = (alpha + beta) / 2;
+                    alpha = std::max(alpha - delta, -10000000);
+                } else break;
+
+                delta *= 1.5;
+            }
+        } else {
+            score = negamax(board, depth, -10000000, 10000000, 0, true);
+        }
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        //std::string pv = getPV(board);
+        //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+    }
+    return rootBestMove;
+}
