@@ -64,7 +64,7 @@ void sigmoidTest() {
 }*/
 
 void identify() {
-    std::cout << "id name Clarity V1.0.0\n";
+    std::cout << "id name Clarity V1.0.2\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 256 min 1 max 2048\n";
 }

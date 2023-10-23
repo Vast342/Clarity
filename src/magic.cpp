@@ -1,9 +1,24 @@
 #include "slidey.h"
-#include "immintrin.h"
+#include "magic.h"
 
 // the nested arrays used to lookup the attacks
 std::array<std::array<uint64_t, 512>, 64> bishopAttackLookup;
 std::array<std::array<uint64_t, 4096>, 64> rookAttackLookup;
+
+// yoooo thanks ciekce
+[[nodiscard]] constexpr auto pdep(uint64_t v, uint64_t mask)
+{
+    uint64_t dst{};
+
+    for (uint64_t bit = 1; mask != 0; bit <<= 1)
+    {
+        if ((v & bit) != 0)
+            dst |= mask & -mask;
+        mask &= mask - 1;
+    }
+
+    return dst;
+}
 
 int getBishopBlockerCombinations(std::array<uint64_t, 512> &blockers, const uint64_t mask) {
     // calculates the total amount of possible blocker configuration (2^n)
@@ -12,7 +27,7 @@ int getBishopBlockerCombinations(std::array<uint64_t, 512> &blockers, const uint
 
     // generates them, using pdep
     for(int i = 0; i < totalPatterns; i++) {
-        blockers[i] = _pdep_u64(i, mask);
+        blockers[i] = pdep(i, mask);
     }
 
     return totalPatterns;
@@ -26,7 +41,7 @@ int getRookBlockerCombinations(std::array<uint64_t, 4096> &blockers, const uint6
 
     // generates them, using pdep
     for(int i = 0; i < totalPatterns; i++) {
-        blockers[i] = _pdep_u64(i, mask);
+        blockers[i] = pdep(i, mask);
     }
 
     return totalPatterns;
@@ -43,7 +58,6 @@ void generateLookups() {
         // calculate the moves for each one
         for(int j = 0; j < rookPatterns; j++) {
             rookAttackLookup[i][calculateRookIndex(rookBlockers[j], i)] = getRookAttacksOld(i, rookBlockers[j]);
-            //std::cout << std::to_string(rookAttackLookup[i][calculateRookIndex(rookBlockers[j], i)]) << '\n';
         }
 
         // bishop blocker patterns
@@ -59,11 +73,11 @@ void generateLookups() {
 
 // uses pext to calculate the index for each square and blockers
 uint64_t calculateRookIndex(const uint64_t occupiedBitboard, const int square) {
-    return _pext_u64(occupiedBitboard, rookMasks[square]);
+    return ((occupiedBitboard & rookMasks[square]) * rookMagics[square]) >> (64 - __builtin_popcountll(rookMasks[square]));
 }
 
 uint64_t calculateBishopIndex(const uint64_t occupiedBitboard, const int square) {
-    return _pext_u64(occupiedBitboard, bishopMasks[square]);
+    return ((occupiedBitboard & bishopMasks[square]) * bishopMagics[square]) >> (64 - __builtin_popcountll(bishopMasks[square]));
 }
 
 // gets the attacks from the tables so the values don't have to be public

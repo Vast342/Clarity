@@ -1,5 +1,5 @@
 #include "masks.h"
-#include "bmi2.h"
+#include "slidey.h"
 
 // classical approach move generation
 uint64_t getRookAttacksOld(int square, uint64_t occupiedBitboard) {

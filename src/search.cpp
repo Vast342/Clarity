@@ -12,6 +12,8 @@ int nodes = 0;
 
 int timeToSearch = 0;
 
+int seldepth = 0;
+
 TranspositionTable TT;
 
 std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
@@ -32,13 +34,24 @@ void clearHistory() {
     }
 }
 
+void ageHistory() {
+    for(int h = 0; h < 2; h++) {
+        for(int i = 0; i < 64; i++) {
+            for(int j = 0; j < 64; j++) {
+                // mess around with values of this, looks like /= 8 is slightly losing, as is 2
+                historyTable[h][i][j] /= 2;
+            }
+        }
+    }
+}
+
 void resizeTT(int newSize) {
     TT.resize(newSize);
 }
 
 void resetEngine() {
     TT.clearTable();
-    clearHistory();
+    clearHistory(); 
 }
 
 void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, int ttMoveValue) {
@@ -56,13 +69,11 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
         }
         values[i] = -values[i];
-        // incremental sort was broken, I need to come back to it at some point
-        //incrementalSort(values, moves, numMoves, i);
     }
     sortMoves(values, moves, numMoves);
 }
 
-int qSearch(Board &board, int alpha, int beta) {
+int qSearch(Board &board, int alpha, int beta, int ply) {
     if(board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
@@ -71,7 +82,7 @@ int qSearch(Board &board, int alpha, int beta) {
             return 0;
         }
     }
-
+    if(ply > seldepth) seldepth = ply;
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
 
@@ -103,7 +114,7 @@ int qSearch(Board &board, int alpha, int beta) {
         if(board.makeMove(moves[i])) {
             nodes++;
             // searches from this node
-            const int score = -qSearch(board, -beta, -alpha);
+            const int score = -qSearch(board, -beta, -alpha, ply + 1);
             board.undoMove();
             // time check
             if(timesUp) {
@@ -151,7 +162,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         }
     }
     // activate q search if at the end of a branch
-    if(depth <= 0) return qSearch(board, alpha, beta);
+    if(depth <= 0) return qSearch(board, alpha, beta, ply);
+    if(ply > seldepth) seldepth = ply;
     const bool isPV = beta == alpha + 1;
     const bool inCheck = board.isInCheck();
 
@@ -289,9 +301,10 @@ std::string getPV(Board board) {
 }
 
 Move think(Board board, int timeLeft) {
-    clearHistory();
+    ageHistory();
     nodes = 0;
     timeToSearch = timeLeft / 30;
+    seldepth = 0;
     timesUp = false;
 
     begin = std::chrono::steady_clock::now();
@@ -300,6 +313,7 @@ Move think(Board board, int timeLeft) {
     int score = 0;
 
     for(int depth = 1; depth < 100; depth++) {
+        seldepth = 0;
         timesUp = false;
         int delta = 25;
         int alpha = std::max(-10000000, score - delta);
@@ -329,7 +343,7 @@ Move think(Board board, int timeLeft) {
         }
         //std::string pv = getPV(board);
         //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
-        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
 
     return rootBestMove;
@@ -360,7 +374,7 @@ Move think(Board board, int timeLeft) {
 }
 
 int benchSearch(Board board, int depthToSearch) {
-    clearHistory();
+    ageHistory();
     nodes = 0;
     timeToSearch = 1215752192;
     
@@ -392,14 +406,16 @@ int benchSearch(Board board, int depthToSearch) {
 }
 
 Move fixedDepthSearch(Board board, int depthToSearch) {
-    clearHistory();
+    ageHistory();
     nodes = 0;
+    seldepth = 0;
     timeToSearch = 1215752192;
     begin = std::chrono::steady_clock::now();
     
     int score = 0;
 
     for(int depth = 1; depth <= depthToSearch; depth++) {
+        seldepth = 0;
         timesUp = false;
         int delta = 25;
         int alpha = std::max(-10000000, score - delta);
@@ -423,7 +439,7 @@ Move fixedDepthSearch(Board board, int depthToSearch) {
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         //std::string pv = getPV(board);
         //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
-        std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
     return rootBestMove;
 }

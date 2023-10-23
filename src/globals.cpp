@@ -1,5 +1,5 @@
 #include "globals.h"
-#include "bmi2.h"
+#include "slidey.h"
 #include "psqt.h"
 
 int getType(int value) {

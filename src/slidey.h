@@ -3,7 +3,6 @@
 
 #include "globals.h"
 #include "masks.h"
-#include "immintrin.h"
 
 uint64_t calculateRookIndex(uint64_t occupiedBitboard, int square);
 uint64_t calculateBishopIndex(uint64_t occupiedBitboard, int square);
