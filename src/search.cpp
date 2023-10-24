@@ -18,6 +18,8 @@ TranspositionTable TT;
 
 std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 
+std::array<std::array<int, 2>, 100> killerTable;
+
 std::chrono::steady_clock::time_point begin;
 
 constexpr int historyCap = 16384;
@@ -54,11 +56,12 @@ void resetEngine() {
     clearHistory(); 
 }
 
-void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, int ttMoveValue) {
+void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, int ttMoveValue, int ply) {
     std::array<int, 256> values;
     const uint64_t occupied = board.getOccupiedBitboard();
     for(int i = 0; i < numMoves; i++) {
-        if(moves[i].getValue() == ttMoveValue) {
+        const int moveValue = moves[i].getValue();
+        if(moveValue == ttMoveValue) {
             values[i] = 1000000000;
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
             // mvv lva (ciekce was here)
@@ -66,7 +69,16 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
             values[i] = 100 * eg_value[victim] - eg_value[attacker];
         } else {
+            // read from history
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
+            // if not in qsearch
+            if(ply != -1) {
+                if(moveValue == killerTable[ply][0]) {
+                    values[i] = 100000;
+                } else if(moveValue == killerTable[ply][1]) {
+                    values[i] = 50000;
+                } 
+            }
         }
         values[i] = -values[i];
     }
@@ -103,7 +115,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     // get the legal moves and sort them
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
-    orderMoves(board, moves, totalMoves, entry.bestMove.getValue());
+    orderMoves(board, moves, totalMoves, entry.bestMove.getValue(), -1);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -197,7 +209,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // get the moves
     std::array<Move, 256> moves;
     const int totalMoves = board.getMoves(moves);
-    orderMoves(board, moves, totalMoves, entry.bestMove.getValue());
+    orderMoves(board, moves, totalMoves, entry.bestMove.getValue(), ply);
 
     // values useful for writing to TT later
     int bestScore = -10000000;
@@ -237,7 +249,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 }
                 // this is more PVS stuff, searching with a reduced margin
                 score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
-                // and then if it fails high we search again with the better bounds
+                // and then if it fails high we search again with the original bounds
                 if(score > alpha && (score < beta || depthReduction > 0)) {
                     score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
                 }
@@ -265,6 +277,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     flag = BetaCutoff;
                     if(!isCapture) {
                         updateHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
+                        killerTable[ply][1] = killerTable[ply][0];
+                        killerTable[ply][0] = moves[i].getValue();
                     }
                     break;
                 }
@@ -301,7 +315,8 @@ std::string getPV(Board board) {
 }
 
 Move think(Board board, int timeLeft) {
-    ageHistory();
+    //ageHistory();
+    clearHistory();
     nodes = 0;
     timeToSearch = timeLeft / 30;
     seldepth = 0;
@@ -374,7 +389,8 @@ Move think(Board board, int timeLeft) {
 }
 
 int benchSearch(Board board, int depthToSearch) {
-    ageHistory();
+    //ageHistory();
+    clearHistory();
     nodes = 0;
     timeToSearch = 1215752192;
     
@@ -406,7 +422,8 @@ int benchSearch(Board board, int depthToSearch) {
 }
 
 Move fixedDepthSearch(Board board, int depthToSearch) {
-    ageHistory();
+    //ageHistory();
+    clearHistory();
     nodes = 0;
     seldepth = 0;
     timeToSearch = 1215752192;
