@@ -10,8 +10,7 @@ Move rootBestMove = Move();
 
 int nodes = 0;
 
-int softTimeBound = 0;
-int hardTimeBound = 0;
+int timeToSearch = 0;
 
 int seldepth = 0;
 
@@ -19,7 +18,7 @@ TranspositionTable TT;
 
 std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 
-std::array<std::array<uint16_t, 2>, 100> killerTable;
+std::array<std::array<int, 2>, 100> killerTable;
 
 std::chrono::steady_clock::time_point begin;
 
@@ -42,7 +41,7 @@ void ageHistory() {
         for(int i = 0; i < 64; i++) {
             for(int j = 0; j < 64; j++) {
                 // mess around with values of this, looks like /= 8 is slightly losing, as is 2
-                historyTable[h][i][j] /= 5;
+                historyTable[h][i][j] /= 2;
             }
         }
     }
@@ -68,16 +67,16 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             // mvv lva (ciekce was here)
             const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
             const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-            values[i] = 200 * eg_value[victim] - eg_value[attacker];
+            values[i] = 100 * eg_value[victim] - eg_value[attacker];
         } else {
             // read from history
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
-            // if not in qsearch, Killers
+            // if not in qsearch
             if(ply != -1) {
                 if(moveValue == killerTable[ply][0]) {
-                    values[i] = 18000;
+                    values[i] = 100000;
                 } else if(moveValue == killerTable[ply][1]) {
-                    values[i] = 17000;
+                    values[i] = 50000;
                 } 
             }
         }
@@ -90,8 +89,10 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     if(board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        hardTimeCheck();
-        if(timesUp) return 0;
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
+            timesUp = true;
+            return 0;
+        }
     }
     if(ply > seldepth) seldepth = ply;
     // TT check
@@ -157,35 +158,20 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     return bestScore;  
 }
 
-int addHistory(const int start, const int end, const int depth, const int colorToMove) {
+void updateHistory(const int start, const int end, const int depth, const int colorToMove) {
     const int bonus = depth * depth;
     const int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
-    assert(historyTable[colorToMove][start][end] <= historyCap);
-    return thingToAdd;
-}
-
-void subtractHistory(const Board& board, int bonus, std::array<Move, 256>& moves, int i) {
-    const int epIndex = board.getEnPassantIndex();
-    const uint64_t capturable = board.getOccupiedBitboard() | (epIndex == 64 ? 0 : (1ULL << epIndex));
-    const int colorToMove = board.getColorToMove();
-    while(i > 0) {
-        i--;
-        const int start = moves[i].getStartSquare();
-        const bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
-        if(!isCapture) {
-            const int end = moves[i].getEndSquare();
-            historyTable[colorToMove][start][end] -= bonus;
-        }
-    }
 }
 
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        hardTimeCheck();
-        if(timesUp) return 0;
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
+            timesUp = true;
+            return 0 ;
+        }
     }
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
@@ -212,8 +198,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // another thing suggested by A_randomnoob was having staticEval >= beta and !isPV as another condition, but the same story again.
     if(nmpAllowed && depth >= nmpMin && !inCheck) {
-        board.changeColor(); 
-        const int score = -negamax(board, depth - 3 - depth / 3 - std::max(0, std::min(eval - 200, 3)), 0-beta, 1-beta, ply + 1, false);
+        board.changeColor();
+        const int score = -negamax(board, depth - (depth+1)/3 - 1, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -247,6 +233,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             //int perMoveExtensions = 0;
             //int moveRank = moves[i].getEndSquare() / 8;
             //if(getType(board.pieceAtIndex(moves[i].getEndSquare())) == Pawn && (moveRank == 6 || moveRank == 1)) perMoveExtensions++;
+            // Late Move Pruning (not working, needs moreit  testing)
+            //if(depth < 4 && !isPV && bestScore > -10000000 + 256 && legalMoves > (3+depth*10)) break;
             bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
             int score = 0;
             // Principal Variation Search
@@ -288,8 +276,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 if(score >= beta) {
                     flag = BetaCutoff;
                     if(!isCapture) {
-                        int bonus = addHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
-                        subtractHistory(board, bonus, moves, i);
+                        updateHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
                         killerTable[ply][1] = killerTable[ply][0];
                         killerTable[ply][0] = moves[i].getValue();
                     }
@@ -327,12 +314,11 @@ std::string getPV(Board board) {
     return pv;
 }
 
-Move think(Board board, int softBound, int hardBound) {
+Move think(Board board, int timeLeft) {
     //ageHistory();
+    clearHistory();
     nodes = 0;
-    // current best values are 40 and 20, I've tested a few so far though
-    softTimeBound = softBound;
-    hardTimeBound = hardBound;
+    timeToSearch = timeLeft / 30;
     seldepth = 0;
     timesUp = false;
 
@@ -367,7 +353,7 @@ Move think(Board board, int softBound, int hardBound) {
             score = negamax(board, depth, -10000000, 10000000, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        if(timesUp > softTimeBound || timesUp) {
+        if(elapsedTime > timeToSearch || timesUp) {
             return previousBest;
         }
         //std::string pv = getPV(board);
@@ -404,9 +390,9 @@ Move think(Board board, int softBound, int hardBound) {
 
 int benchSearch(Board board, int depthToSearch) {
     //ageHistory();
+    clearHistory();
     nodes = 0;
-    hardTimeBound = 1215752192;
-    softTimeBound = 1215752192;
+    timeToSearch = 1215752192;
     
     int score = 0;
 
@@ -437,10 +423,10 @@ int benchSearch(Board board, int depthToSearch) {
 
 Move fixedDepthSearch(Board board, int depthToSearch) {
     //ageHistory();
+    clearHistory();
     nodes = 0;
     seldepth = 0;
-    hardTimeBound = 1215752192;
-    softTimeBound = 1215752192;
+    timeToSearch = 1215752192;
     begin = std::chrono::steady_clock::now();
     
     int score = 0;
@@ -473,18 +459,4 @@ Move fixedDepthSearch(Board board, int depthToSearch) {
         std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
     return rootBestMove;
-}
-
-void softTimeCheck() {
-    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-    if(elapsedTime > softTimeBound) {
-        timesUp = true;
-    }
-}
-
-void hardTimeCheck() {
-    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-    if(elapsedTime > hardTimeBound) {
-        timesUp = true;
-    }
 }
