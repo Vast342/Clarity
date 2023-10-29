@@ -2,40 +2,13 @@
 #include "psqt.h"
 #include <cstdlib>
 
-/*
-    This is where the majority of the board representation is handled.
-    The board is stored with 8 bitboards, 1 for each color, and one for each piece type.
-*/
-
 // zobrist hashing values 
 std::array<std::array<uint64_t, 14>, 64> zobTable;
+// if black is to move this value is xor'ed
 uint64_t zobColorToMove;
 
-// these are offsets for each direction, used for shifting indices
 int directionalOffsets[] = {8, -8, 1, -1, 7, -7, 9, -9};
 
-
-/*
-    prints the board to the console, like this:
-    r       k     r
-    p   p p q p b
-    b n     p n p
-        P N
-    p     P
-        N     Q   p
-    P P P B B P P P
-    R       K     R
-    Ply count: 1
-    Fifty-move count: 0
-    Hash: 1400092907862384207
-    Castling rights: 1111
-    En passant square: none
-    Color to move: white
-    Midgame eval: 34
-    Endgame eval: -47
-    Phase: 24
-    Total eval: 34
-*/
 void Board::toString() {
     for(int rank = 7; rank >= 0; rank--) {
         for(int file = 0; file < 8; file++) {
@@ -87,19 +60,8 @@ void Board::toString() {
     std::cout << "Total eval: " << std::to_string(getEvaluation()) << '\n';
 }
 
-/* generates a board from a string of Forsyth-Edwards notation
-    For example, r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1 (also known as KiwiPete)
-    becomes this position: 
-    r       k     r
-    p   p p q p b
-    b n     p n p
-        P N
-    p     P
-        N     Q   p
-    P P P B B P P P
-    R       K     R
-*/
 Board::Board(std::string fen) {
+    zobristHistory.clear();
     stateHistory.clear();
     mgEval = 0;
     egEval = 0;
@@ -214,11 +176,9 @@ Board::Board(std::string fen) {
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
 }
 
-// converts the current state of the board to a fen string
 std::string Board::getFenString() {
     // essentially copy and pasted from my c# engine lol
     std::string fen = "";
-    // loop through each square
     for (int rank = 7; rank >= 0; rank--) {
         int numEmptyFiles = 0;
         for (int file = 0; file < 8; file++) {
@@ -229,7 +189,6 @@ std::string Board::getFenString() {
                     numEmptyFiles = 0;
                 }
                 bool isBlack = getColor(piece) == 0;
-                // type of pieces
                 int pieceType = getType(piece);
                 char pieceChar = ' ';
                 switch (pieceType)
@@ -253,7 +212,6 @@ std::string Board::getFenString() {
                         pieceChar = 'P';
                         break;
                 }
-                // lowercase if the piece is a black piece
                 fen += isBlack ? tolower(pieceChar) : pieceChar;
             }
             else {
@@ -274,22 +232,24 @@ std::string Board::getFenString() {
     fen += (colorToMove == 0 ? 'b' : 'w');
     // castling rights
     fen += ' ';
-    if(castlingRights != 0) {
-        if((castlingRights & 1) != 0) {
-            fen += 'K'; 
-        }
-        if((castlingRights & 2) != 0) {
-            fen += 'Q'; 
-        }
-        if((castlingRights & 4) != 0) {
-            fen += 'k'; 
-        }
-        if((castlingRights & 8) != 0) {
-            fen += 'q'; 
-        }
-    } else {
-        fen += '-';
+    bool thingAdded = false;
+    if((castlingRights & 1) != 0) {
+        fen += 'K'; 
+        thingAdded = true;
     }
+    if((castlingRights & 2) != 0) {
+        fen += 'Q'; 
+        thingAdded = true;
+    }
+    if((castlingRights & 4) != 0) {
+        fen += 'k'; 
+        thingAdded = true;
+    }
+    if((castlingRights & 8) != 0) {
+        fen += 'q'; 
+        thingAdded = true;
+    }
+    if(thingAdded == false) fen += '-';
     // en passant square
     fen += ' ';
     if(enPassantIndex == 64) {
@@ -306,12 +266,12 @@ std::string Board::getFenString() {
     return fen;
 }
 
-// adds a piece of a type at an index, and adjusts eval, hash, and the bitboards accordingly.
 void Board::addPiece(int square, int type) {
     assert(type != None);
     assert(square < 64);
     assert(pieceAtIndex(square) == None);
     assert(square >= 0);
+    //std::cout << "Adding piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
     coloredBitboards[getColor(type)] ^= (1ULL << square);
     pieceBitboards[getType(type)] ^= (1ULL << square);
     assert(pieceAtIndex(square) == type);
@@ -320,15 +280,17 @@ void Board::addPiece(int square, int type) {
     int colorMultiplier = 2 * getColor(type) - 1;
     mgEval += mgTables[getType(type)][index] * colorMultiplier;
     egEval += egTables[getType(type)][index] * colorMultiplier;
+    //mgEval += mg_value[getType(type)] * colorMultiplier;
+    //egEval += eg_value[getType(type)] * colorMultiplier;
     zobristHash ^= zobTable[square][type];
 }
 
-// removes a piece of a type at an index, and adjusts eval, hash, and the bitboards accordingly.
 void Board::removePiece(int square, int type) {
     assert(type != None);
     assert(square < 64);
     assert(pieceAtIndex(square) == type);
     assert(square >= 0);
+    //std::cout << "Removing piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
     coloredBitboards[getColor(type)] ^= (1ULL << square);
     pieceBitboards[getType(type)] ^= (1ULL << square);
     phase -= phaseIncrements[getType(type)];
@@ -336,11 +298,12 @@ void Board::removePiece(int square, int type) {
     int colorMultiplier = 2 * getColor(type) - 1;
     mgEval -= mgTables[getType(type)][index] * colorMultiplier;
     egEval -= egTables[getType(type)][index] * colorMultiplier;
+    //mgEval -= mg_value[getType(type)] * colorMultiplier;
+    //egEval -= eg_value[getType(type)] * colorMultiplier;
     zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
 
-// moves a piece of a type to another square, and captures if necessary
 void Board::movePiece(int square1, int type1, int square2, int type2) {
     assert(type1 != None);
     assert(square1 < 64);
@@ -350,7 +313,6 @@ void Board::movePiece(int square1, int type1, int square2, int type2) {
     removePiece(square1, type1);
 }
 
-// returns the piece at a given index
 int Board::pieceAtIndex(int index) const {
     if((getOccupiedBitboard() & (1ULL << index)) != 0) {
         for(int i = Pawn; i < None; i++) {
@@ -364,8 +326,6 @@ int Board::pieceAtIndex(int index) const {
     }
     return None;
 }
-
-// returns the color of the puiece at a specific index, or returns 2 if there is no piece there.
 int Board::colorAtIndex(int index) const {
     if((coloredBitboards[0] & (1ULL << index)) != 0) {
         return 0;
@@ -376,12 +336,10 @@ int Board::colorAtIndex(int index) const {
     return 2;
 }
 
-// returns the bitboard of a specific piece of a specific color
 uint64_t Board::getColoredPieceBitboard(int color, int piece) const {
     return pieceBitboards[piece] & coloredBitboards[color];
 }
 
-// returns the total bitboard of all pieces
 uint64_t Board::getOccupiedBitboard() const {
     return coloredBitboards[0] | coloredBitboards[1];
 }
@@ -415,7 +373,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
         }
     }
     uint64_t mask = coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
-    // non-pawns
+    // the rest of the pieces
     while(mask != 0) {
         uint8_t startSquare = popLSB(mask);
         uint8_t currentType = getType(pieceAtIndex(startSquare));
@@ -433,13 +391,11 @@ int Board::getMoves(std::array<Move, 256> &moves) {
         }
         // get rid of capturing your own pieces
         total ^= (total & coloredBitboards[colorToMove]); 
-        // convert attack bitboard to individual moves
         while(total != 0) {
             moves[totalMoves] = Move(startSquare, popLSB(total), Normal);
             totalMoves++;
         }
     }
-
     // pawn pushes
     uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
     uint64_t emptyBitboard = ~occupiedBitboard;
@@ -447,8 +403,6 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     uint64_t doublePawnPushes = getDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
     uint64_t pawnPushPromotions = pawnPushes & getRankMask(7 * colorToMove);
     pawnPushes ^= pawnPushPromotions;
-
-    // 3 seperate loops, one for each type of pawn move
     while(pawnPushes != 0) {
         uint8_t index = popLSB(pawnPushes);
         uint8_t startSquare = (index + directionalOffsets[colorToMove]);
@@ -470,16 +424,12 @@ int Board::getMoves(std::array<Move, 256> &moves) {
             totalMoves++;
         }
     }
-
     // pawn captures
     uint64_t capturable = coloredBitboards[1 - colorToMove];
     if(enPassantIndex != 64) {
         capturable |= (1ULL << enPassantIndex);
     }
 
-    // divided into left and right because it's much easier to do it that way.
-    // I did also just notice that I never checked if this was actually any faster
-    // than using the lookup table I once did, I'll test that at some point.
     uint64_t leftCaptures = (colorToMove == 0 ? pawnBitboard >> 9 : pawnBitboard << 7);
     leftCaptures &= ~getFileMask(7);
     leftCaptures &= capturable;
@@ -713,6 +663,7 @@ bool Board::makeMove(Move move) {
     }
     plyCount++;
     isRepeated = isRepeatedPosition();
+    zobristHistory.push_back(zobristHash);
     if(isInCheck()) {
         undoMove();
         colorToMove = 1 - colorToMove;
@@ -730,6 +681,7 @@ void Board::undoMove() {
     loadBoardState(stateHistory.back());
     plyCount--;
     stateHistory.pop_back();  
+    zobristHistory.pop_back();
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
@@ -777,11 +729,14 @@ void Board::changeColor() {
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
     isRepeated = isRepeatedPosition();
+    zobristHistory.push_back(zobristHash);
 }
 
 void Board::undoChangeColor() {
-    loadBoardState(stateHistory.back());
+    enPassantIndex = stateHistory.back().enPassantIndex;
+    isRepeated = stateHistory.back().isRepeated;
     stateHistory.pop_back();
+    zobristHistory.pop_back();
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
 }
@@ -802,9 +757,9 @@ int Board::getEnPassantIndex() const {
 }
 
 void initializeZobrist() {
-    // random number stuff]
-    // seeded using the word accolades because it is just what I decided to use
-    std::mt19937_64 gen(0xACC01ADE5);
+    // random number stuff
+    //std::random_device rd;
+    std::mt19937_64 gen(0xABBABA5ED);
     std::uniform_int_distribution<uint64_t> dis;
     // color to move
     zobColorToMove = dis(gen);
@@ -816,13 +771,11 @@ void initializeZobrist() {
     }
 }
 
-// taper any value using the current phase of the board
 int Board::taperValue(int mg, int eg) {
     int egPhase = 24 - phase;
     return ((mg * phase + eg * egPhase) / 24);
 }
 
-// fully regenerates the eval, used to test that incremental was working
 int Board::fullEvalRegen() {
     uint64_t mask = getOccupiedBitboard();
     int midgame = 0;
@@ -841,22 +794,24 @@ int Board::fullEvalRegen() {
     return ((midgame * currentPhase + endgame * egPhase) / 24) * ((2 * colorToMove) - 1);
 }
 
-// fully regenerates the hash, used to test that incremental was working.
 uint64_t Board::fullZobristRegen() {
+    //std::cout << "Beginning Full Regen\n";
     uint64_t mask = getOccupiedBitboard();
     uint64_t result = 0;
     while(mask != 0) {
         int index = popLSB(mask);
         int piece = pieceAtIndex(index);
+        //std::cout << "Adding piece of type " << std::to_string(piece) << " at index " << std::to_string(index) << '\n';
         result ^= zobTable[index][piece];
     }
     if(colorToMove == 1) {
+        //std::cout << "Changing Color To Move in full regen\n";
         result ^= zobColorToMove;
     }
+    //std::cout << "Result: " << std::to_string(result) << '\n';
     return result;
 }
 
-// detects passed pawns, and then gives bonuses accordingly.
 int Board::getPassedPawnBonuses() {
     int mgBonuses = 0;
     int egBonuses = 0;
@@ -879,7 +834,6 @@ int Board::getPassedPawnBonuses() {
     return taperValue(mgBonuses, egBonuses);
 }
 
-// detects passed pawns, and outputs how many there are
 int Board::detectPassedPawns() {
     uint64_t mask = pieceBitboards[Pawn];
     uint64_t allPawns = mask;
@@ -896,18 +850,15 @@ int Board::detectPassedPawns() {
     return total;
 }
 
-// detects repitition, performed on each node.
 bool Board::isRepeatedPosition() {
-    for(int i = std::ssize(stateHistory) - 2; i >= std::ssize(stateHistory) - hundredPlyCounter; i--) {
-        if(stateHistory[i].zobristHash == zobristHash) {
+    for(int i = std::ssize(zobristHistory) - 2; i >= std::ssize(zobristHistory) - hundredPlyCounter; i--) {
+        if(zobristHistory[i] == zobristHash) {
             return true;
         }
     }
     return false;
 }
 
-// detects if a move is legal in the current position, not just based on check state
-// I have not actually confirmed that this works yet
 bool Board::isLegalMove(const Move& move) {
     if(move.getValue() != 0) {
         int startSquare = move.getStartSquare();

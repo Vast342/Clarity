@@ -58,9 +58,9 @@ std::string toLongAlgebraic(Move move) {
 std::array<std::array<uint8_t, 218>, 50> reductions;
 
 void calculateReductions() {
-    for(int i = 0; i < 50; i++) {
-        for(int j = 0; j < 218; j++) {
-            reductions[i][j] = uint8_t(0.77 + log(i) * log(j) * 0.42);
+    for(int depth = 0; depth < 50; depth++) {
+        for(int move = 0; move < 218; move++) {
+            reductions[depth][move] = uint8_t(0.77 + log(depth) * log(move) * 0.42);
         }
     }
 }

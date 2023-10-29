@@ -335,6 +335,7 @@ Move think(Board board, int timeLeft) {
     clearHistory();
     nodes = 0;
     timeToSearch = timeLeft / 20;
+    int softTimeLimit = timeLeft / 40;
     seldepth = 0;
     timesUp = false;
 
@@ -372,7 +373,7 @@ Move think(Board board, int timeLeft) {
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // soft time bounds check
-        if(elapsedTime > (timeLeft / 40) || timesUp) {
+        if(elapsedTime > softTimeLimit || timesUp) {
             return previousBest;
         }
         // outputs info which is picked up by the user
