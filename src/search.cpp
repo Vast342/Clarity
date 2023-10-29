@@ -12,7 +12,7 @@ Move rootBestMove = Move();
 
 int nodes = 0;
 
-int timeToSearch = 0;
+int hardLimit = 0;
 
 int seldepth = 0;
 
@@ -102,7 +102,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     if(board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
             timesUp = true;
             return 0;
         }
@@ -183,15 +183,13 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > timeToSearch) {
+        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
             timesUp = true;
             return 0 ;
         }
     }
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
-    // update seldepth, useful for outputting
-    if(ply > seldepth) seldepth = ply;
     const bool isPV = beta == alpha + 1;
     const bool inCheck = board.isInCheck();
 
@@ -209,7 +207,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // Reverse Futility Pruning
     const int eval = board.getEvaluation();
-    if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval;
+    if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // potential conditions to add: staticEval >= beta and !isPV, however they seem to be roughly equal after I tested them in the past. I could test it again soon but ehhh I'm a bit busy
@@ -330,12 +328,11 @@ std::string getPV(Board board) {
 }
 
 // the usual think function, where you give it the amount of time it has left, and it will think in increasing depth steps until it runs out of time
-Move think(Board board, int timeLeft) {
+Move think(Board board, int softBound, int hardBound) {
     //ageHistory();
     clearHistory();
     nodes = 0;
-    timeToSearch = timeLeft / 20;
-    int softTimeLimit = timeLeft / 40;
+    hardLimit = hardBound;
     seldepth = 0;
     timesUp = false;
 
@@ -347,7 +344,7 @@ Move think(Board board, int timeLeft) {
     // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
     for(int depth = 1; depth < 100; depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
-        seldepth = 0;
+        seldepth = depth;
         timesUp = false;
         int delta = 25;
         int alpha = std::max(-10000000, score - delta);
@@ -373,13 +370,14 @@ Move think(Board board, int timeLeft) {
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // soft time bounds check
-        if(elapsedTime > softTimeLimit || timesUp) {
+        if(timesUp) {
             return previousBest;
         }
         // outputs info which is picked up by the user
         //std::string pv = getPV(board);
         //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
         std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        if(elapsedTime > softBound) break;
     }
 
     return rootBestMove;
@@ -390,7 +388,7 @@ int benchSearch(Board board, int depthToSearch) {
     //ageHistory();
     clearHistory();
     nodes = 0;
-    timeToSearch = 1215752192;
+    hardLimit = 1215752192;
     
     int score = 0;
 
@@ -425,7 +423,7 @@ Move fixedDepthSearch(Board board, int depthToSearch) {
     clearHistory();
     nodes = 0;
     seldepth = 0;
-    timeToSearch = 1215752192;
+    hardLimit = 1215752192;
     begin = std::chrono::steady_clock::now();
     
     int score = 0;
