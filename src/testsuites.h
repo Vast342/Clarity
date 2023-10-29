@@ -1,7 +1,8 @@
-// something something header guards, blame toanth if it doesn't work
+// something something header guards
 #pragma once
 #include "testessentials.h"
 
+// this is the perft suite from the engine Ethereal
 PerftTest etherealSuite[] = {
     PerftTest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 1, 20),
     PerftTest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 2, 400),
@@ -759,3 +760,4 @@ PerftTest etherealSuite[] = {
     PerftTest("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1", 5, 3605103),
     PerftTest("n1n5/PPPk4/8/8/8/8/4Kppp/5N1N b - - 0 1", 6, 71179139),
 };
+// if you are reading this comment, why

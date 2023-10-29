@@ -1,7 +1,9 @@
 #include "testessentials.h"
 #include "testsuites.h"
 
+// runs a single perft test
 int perft(Board board, int depth) {
+    // tests to make sure incremental updates were working
     //std::cout << "incremental says: "<< std::to_string(board.getEvaluation()) << ", full regen says " << std::to_string(board.fullEvalRegen()) << " at position " << board.getFenString() << '\n';
     //assert(board.getEvaluation() == board.fullEvalRegen());
     //uint64_t regenerated = board.fullZobristRegen();
@@ -20,6 +22,7 @@ int perft(Board board, int depth) {
     return result;
 }
 
+// runs an entire suite of perft tests
 void runPerftSuite(int number) {
     if(number == 0) {
         int i = 0;
@@ -53,6 +56,7 @@ void runPerftSuite(int number) {
     }
 }
 
+// runs perft split by what the first move that is done is
 void splitPerft(Board board, int depth) {
     std::array<Move, 256> moves;
     int numMoves = board.getMoves(moves);
@@ -72,6 +76,7 @@ void splitPerft(Board board, int depth) {
     std::cout << "NPS: " << std::to_string(total / ((end-start)/static_cast<double>(1000))) << '\n';
 }
 
+// runs an individual perft test, and outputs the results
 void individualPerft(Board board, int depth) {
     clock_t start = clock();
     int result = perft(board, depth);

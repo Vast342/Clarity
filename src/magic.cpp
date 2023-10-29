@@ -5,7 +5,7 @@
 std::array<std::array<uint64_t, 512>, 64> bishopAttackLookup;
 std::array<std::array<uint64_t, 4096>, 64> rookAttackLookup;
 
-// yoooo thanks ciekce
+// yoooo thanks ciekce, pdep made in code because some cpus don't support it but it's still quite useful
 [[nodiscard]] constexpr auto pdep(uint64_t v, uint64_t mask)
 {
     uint64_t dst{};
@@ -71,7 +71,7 @@ void generateLookups() {
     }
 }
 
-// uses pext to calculate the index for each square and blockers
+// uses magic to calculate the index for each square and blockers
 uint64_t calculateRookIndex(const uint64_t occupiedBitboard, const int square) {
     return ((occupiedBitboard & rookMasks[square]) * rookMagics[square]) >> (64 - __builtin_popcountll(rookMasks[square]));
 }

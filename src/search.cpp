@@ -2,6 +2,8 @@
 #include "psqt.h"
 #include "tt.h"
 
+// The main search functions
+
 constexpr int startDepth = 3;
 
 constexpr int nmpMin = 2;
@@ -26,6 +28,7 @@ constexpr int historyCap = 16384;
 
 bool timesUp = false;
 
+// resets the history, done when ucinewgame is sent, and at the start of each turn
 void clearHistory() {
     for(int h = 0; h < 2; h++) {
         for(int i = 0; i < 64; i++) {
@@ -36,6 +39,7 @@ void clearHistory() {
     }
 }
 
+// ages the history values, which could be done at the start of turns, however I am not currently doing so until I test it more
 void ageHistory() {
     for(int h = 0; h < 2; h++) {
         for(int i = 0; i < 64; i++) {
@@ -47,15 +51,23 @@ void ageHistory() {
     }
 }
 
+// resizes the transposition table
 void resizeTT(int newSize) {
     TT.resize(newSize);
 }
 
+// resets the engine, done when ucinewgame is sent
 void resetEngine() {
     TT.clearTable();
     clearHistory(); 
 }
 
+/* orders the moves based on the following order:
+    1: TT Best move: the result of a previous search, if any
+    2: MVV-LVA (soon to be SEE) for captures, sorting them by the ratio of the piece capturing to the piece being captured
+    3: Killer moves: moves that are proven to be good from earlier, being indexed by ply
+    4: History: scores of how many times a move has caused a beta cutoff
+*/
 void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, int ttMoveValue, int ply) {
     std::array<int, 256> values;
     const uint64_t occupied = board.getOccupiedBitboard();
@@ -67,16 +79,16 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             // mvv lva (ciekce was here)
             const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
             const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-            values[i] = 100 * eg_value[victim] - eg_value[attacker];
+            values[i] = 200 * eg_value[victim] - eg_value[attacker];
         } else {
             // read from history
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
-            // if not in qsearch
+            // if not in qsearch, killer
             if(ply != -1) {
                 if(moveValue == killerTable[ply][0]) {
-                    values[i] = 100000;
+                    values[i] = 18000;
                 } else if(moveValue == killerTable[ply][1]) {
-                    values[i] = 50000;
+                    values[i] = 17000;
                 } 
             }
         }
@@ -85,6 +97,7 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
     sortMoves(values, moves, numMoves);
 }
 
+// Quiecense search, searching all the captures until there aren't any more as a slightly faster but less accurate search
 int qSearch(Board &board, int alpha, int beta, int ply) {
     if(board.isRepeated) return 0;
     // time check every 4096 nodes
@@ -103,7 +116,6 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
             || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
             || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
     )) {
-        //std::cout << "did a TT cutoff with hash " << std::to_string(board.zobristHash) << " and score " << std::to_string(entry.score) << '\n';
         return entry.score;
     }
 
@@ -158,13 +170,16 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     return bestScore;  
 }
 
-void updateHistory(const int start, const int end, const int depth, const int colorToMove) {
+// adds to the history of a particular move
+void addHistory(const int start, const int end, const int depth, const int colorToMove) {
     const int bonus = depth * depth;
     const int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
 }
 
+// The main search function, oh boy commenting all of this is gonna be fun
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
+    // if it's a repeated position, it's a draw
     if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
@@ -175,6 +190,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
+    // update seldepth, useful for outputting
     if(ply > seldepth) seldepth = ply;
     const bool isPV = beta == alpha + 1;
     const bool inCheck = board.isInCheck();
@@ -182,6 +198,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
 
+    // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     if(ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
             entry.flag == Exact // exact score
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
@@ -191,15 +208,14 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // Reverse Futility Pruning
-    // side note, A_randomnoob suggested returning just eval here, but it seems to be exactly equal after a 600 game test.
     const int eval = board.getEvaluation();
-    if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
+    if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    // another thing suggested by A_randomnoob was having staticEval >= beta and !isPV as another condition, but the same story again.
+    // potential conditions to add: staticEval >= beta and !isPV, however they seem to be roughly equal after I tested them in the past. I could test it again soon but ehhh I'm a bit busy
     if(nmpAllowed && depth >= nmpMin && !inCheck) {
         board.changeColor();
-        const int score = -negamax(board, depth - (depth+1)/3 - 1, 0-beta, 1-beta, ply + 1, false);
+        const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -216,11 +232,13 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Move bestMove;
     int flag = FailLow;
 
+    // extensions, currently only extending if you are in check
     int extensions = 0;
     if(inCheck) {
         extensions++;
     }
 
+    // capturable squares to determine if a move is a capture.
     const int epIndex = board.getEnPassantIndex();
     const uint64_t capturable = board.getOccupiedBitboard() | (epIndex == 64 ? 0 : (1ULL << epIndex));
     // loop through the moves
@@ -229,17 +247,13 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
-            // passed pawn extension, also didn't gain.
-            //int perMoveExtensions = 0;
-            //int moveRank = moves[i].getEndSquare() / 8;
-            //if(getType(board.pieceAtIndex(moves[i].getEndSquare())) == Pawn && (moveRank == 6 || moveRank == 1)) perMoveExtensions++;
-            // Late Move Pruning (not working, needs moreit  testing)
+            // Late Move Pruning (not working, needs more testing)
             //if(depth < 4 && !isPV && bestScore > -10000000 + 256 && legalMoves > (3+depth*10)) break;
             bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
             int score = 0;
             // Principal Variation Search
             if(legalMoves == 1) {
-                // searches TT move, given first by the move ordering step.
+                // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
                 score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
             } else {
                 // Late Move Reductions (LMR)
@@ -249,7 +263,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 }
                 // this is more PVS stuff, searching with a reduced margin
                 score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
-                // and then if it fails high we search again with the original bounds
+                // and then if it fails high or low we search again with the original bounds
                 if(score > alpha && (score < beta || depthReduction > 0)) {
                     score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
                 }
@@ -276,7 +290,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 if(score >= beta) {
                     flag = BetaCutoff;
                     if(!isCapture) {
-                        updateHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
+                        // adds to the move's history and adjusts the killer table accordingly
+                        addHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
                         killerTable[ply][1] = killerTable[ply][0];
                         killerTable[ply][0] = moves[i].getValue();
                     }
@@ -286,7 +301,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         }
     }
 
-    // checkmate / stalemate detection
+    // checkmate / stalemate detection, if I did legal move generation instead of pseudolegal I could probably do this first and it would be faster
     if(legalMoves == 0) {
         if(inCheck) {
             return -10000000 + ply;
@@ -301,11 +316,11 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 }
 
 // yes cloning the board is intentional here.
+// this crashes, which is why you only see me outputting the currently believed best move for the position
 std::string getPV(Board board) {
     std::string pv = "";
     if(TT.matchZobrist(board.zobristHash)) {
         Move bestMove = TT.getBestMove(board.zobristHash);
-        // need a move.isLegal() to make sure that the move is legal in the position, not just that it doesn't put you in check
         if(board.isLegalMove(bestMove) && board.makeMove(bestMove)) {
             std::string restOfPV = getPV(board);
             pv = toLongAlgebraic(bestMove) + " " + restOfPV;
@@ -314,11 +329,12 @@ std::string getPV(Board board) {
     return pv;
 }
 
+// the usual think function, where you give it the amount of time it has left, and it will think in increasing depth steps until it runs out of time
 Move think(Board board, int timeLeft) {
     //ageHistory();
     clearHistory();
     nodes = 0;
-    timeToSearch = timeLeft / 30;
+    timeToSearch = timeLeft / 20;
     seldepth = 0;
     timesUp = false;
 
@@ -327,7 +343,9 @@ Move think(Board board, int timeLeft) {
     rootBestMove = Move();
     int score = 0;
 
+    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
     for(int depth = 1; depth < 100; depth++) {
+        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = 0;
         timesUp = false;
         int delta = 25;
@@ -353,41 +371,20 @@ Move think(Board board, int timeLeft) {
             score = negamax(board, depth, -10000000, 10000000, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        if(elapsedTime > timeToSearch || timesUp) {
+        // soft time bounds check
+        if(elapsedTime > (timeLeft / 40) || timesUp) {
             return previousBest;
         }
+        // outputs info which is picked up by the user
         //std::string pv = getPV(board);
         //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
         std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
 
     return rootBestMove;
-
-    // thing left in for a while because I was having null move issues
-    /*
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
-
-    if(rootBestMove.getValue() != 0) {
-        return rootBestMove;
-    } else {
-        std::cout << "had to make a random move\n";
-        // random mover as a backup
-        std::array<Move, 256> moves;
-        const int totalMoves = board.getMoves(moves);
-
-        std::uniform_int_distribution distribution{0, totalMoves - 1};
-
-        while(true) {
-            const int index = distribution(gen);
-            if(board.makeMove(moves[index])) {
-                board.undoMove();
-                return moves[index];
-            }
-        }
-    }*/
 }
 
+// searches done for bench, returns the number of nodes searched.
 int benchSearch(Board board, int depthToSearch) {
     //ageHistory();
     clearHistory();
@@ -421,6 +418,7 @@ int benchSearch(Board board, int depthToSearch) {
     return nodes;
 }
 
+// searches to a fixed depth when the user says go depth x
 Move fixedDepthSearch(Board board, int depthToSearch) {
     //ageHistory();
     clearHistory();

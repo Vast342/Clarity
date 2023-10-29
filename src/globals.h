@@ -1,4 +1,4 @@
-// something something header guards, blame toanth if it doesn't work
+// something something header guards, I don't actually know much about this
 #pragma once
 // libraries that I think are probably what I need to use
 #include <iostream>
@@ -43,6 +43,7 @@ constexpr int White = 8;
 // structs and stuff
 struct Board;
 
+// holds the state of the board, specifically the factors that can't be brought back after a move is made
 struct BoardState {
     std::array<uint64_t, 2> coloredBitboards;
     std::array<uint64_t, 6> pieceBitboards;
@@ -58,6 +59,7 @@ struct BoardState {
     bool isRepeated;
 };
 
+// a single move, stored in 16 bits
 struct Move {
     public:
         int getStartSquare() const;
@@ -71,6 +73,7 @@ struct Move {
         uint16_t value;
 };
 
+// the board itself
 struct Board {
     public:
         uint64_t zobristHash;
@@ -115,7 +118,6 @@ struct Board {
         int egEval;
         int phase;
         std::vector<BoardState> stateHistory;
-        std::vector<uint64_t> zobristHistory;
         void addPiece(int square, int type);
         void removePiece(int square, int type);
         void movePiece(int square1, int type1, int square2, int type2);
@@ -147,7 +149,7 @@ void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int n
 void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves, int i);
 int flipIndex(int index);
 uint64_t getPassedPawnMask(int square, int colorToMove);
-extern int rootColorToMove;
+
 // flags for moves
 constexpr uint8_t Normal = 0b0000;
 constexpr std::array<uint8_t, 4> castling = {0b0001, 0b0010, 0b0011, 0b0100};

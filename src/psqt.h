@@ -2,6 +2,11 @@
 
 #include "globals.h"
 
+/*
+    Piece square tables, for every square and for every piece a value is assigned.
+    Those values are added up to get the final evaluation
+*/
+
 constexpr int mg_value[6] = {64, 271, 299, 375, 769, 0};
 constexpr int eg_value[6] = {112, 351, 361, 627, 1187, 0};
 
@@ -128,7 +133,7 @@ inline int egRookBonusTable[64] = {
 -3, 6, 14, 12, 5, 0, -4, -12,
  };
 
-inline int egQueenBonusTable[64] = { // queen eg
+inline int egQueenBonusTable[64] = {
 18, 32, 48, 35, 32, 25, -19, 12,
 -17, 26, 60, 77, 94, 54, 38, 13,
 -6, 12, 53, 55, 69, 49, 12, -0,
