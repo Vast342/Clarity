@@ -1,21 +1,34 @@
 #include "globals.h"
 
+/*
+    Moves are stored internally using 16 bits, with the following format:
+    FFFFEEEEEESSSSSS
+    F is the flag, which says what type of move it is
+    E is the end square, where the piece ends up
+    S is the start square, where the piece starts out
+*/
+
+// gets the internal value of the move
 int Move::getValue() const {
     return value;
 }
 
+// gets the start square
 int Move::getStartSquare() const {
     return value & 0b111111;
 }
 
+// gets the end square
 int Move::getEndSquare() const {
     return (value >> 6) & 0b111111;
 }
 
+// gets the flag
 int Move::getFlag() const {
     return value >> 12;
 }
 
+// generates the move using the 3 internal values, and checks that they are in the normal range
 Move::Move(int startSquare, int endSquare, int flag) {
     assert(startSquare < 64);
     assert(endSquare < 64);
@@ -23,6 +36,7 @@ Move::Move(int startSquare, int endSquare, int flag) {
     value = ((flag << 12) | (endSquare << 6) | startSquare);
 }
 
+// null move, a1a1
 Move::Move() {
     value = 0;
 }

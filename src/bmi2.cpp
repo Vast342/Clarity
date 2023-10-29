@@ -43,7 +43,6 @@ void generateLookups() {
         // calculate the moves for each one
         for(int j = 0; j < rookPatterns; j++) {
             rookAttackLookup[i][calculateRookIndex(rookBlockers[j], i)] = getRookAttacksOld(i, rookBlockers[j]);
-            //std::cout << std::to_string(rookAttackLookup[i][calculateRookIndex(rookBlockers[j], i)]) << '\n';
         }
 
         // bishop blocker patterns

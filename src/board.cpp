@@ -73,9 +73,9 @@ Board::Board(std::string fen) {
     for(int i = 0; i < 2; i++) {
         coloredBitboards[i] = 0ULL;
     }
-    auto segments = views::split(fen, ' ');
-    auto backwardRanks = views::split(segments.front(), '/');
-    std::vector ranks(backwardRanks.begin(), backwardRanks.end());
+    // main board state, segment 1
+    std::vector<std::string> segments = split(fen, ' ');
+    std::vector<std::string> ranks = split(segments[0], '/');
     std::ranges::reverse(ranks);
     int i = 0;
     for (const auto& rank : ranks) {
@@ -137,29 +137,12 @@ Board::Board(std::string fen) {
             }
         }
     }
-    auto segmentIter = segments.begin();
-    ++segmentIter; // we've already parsed the board position
-    auto colorSegment = *segmentIter;
-    std::string color(colorSegment.begin(), colorSegment.end());
-    ++segmentIter;
-    auto castlingSegment = *segmentIter;
-    std::string castling(castlingSegment.begin(), castlingSegment.end());
-    ++segmentIter;
-    auto enPassantSegment = *segmentIter;
-    std::string enPassant(enPassantSegment.begin(), enPassantSegment.end());
-    ++segmentIter;
-    auto fiftyMoveSegment = *segmentIter;
-    std::string fiftyMoveString(fiftyMoveSegment.begin(), fiftyMoveSegment.end());
-    ++segmentIter;
-    auto plyCountSegment = *segmentIter;
-    std::string plyString(plyCountSegment.begin(), plyCountSegment.end());
-    int ply = std::stoi(plyString);
     // convert color to move into 0 or 1, segment 2
-    colorToMove = (color == "w" ? 1 : 0);
+    colorToMove = (segments[1] == "w" ? 1 : 0);
     if(colorToMove == 1) zobristHash ^= zobColorToMove;
     // decode the castling rights into the 4 bit number, segment 3
     castlingRights = 0;
-    for(char c : castling) {
+    for(char c : segments[2]) {
         if(c == 'K') {
             castlingRights |= 1;
         } else if(c == 'Q') {
@@ -171,10 +154,10 @@ Board::Board(std::string fen) {
         }
     }
     // decode the en passant index, segment 4
-    if(enPassant != "-") {
+    if(segments[3] != "-") {
         int i = 0;
         int num = 0;
-        for(char c : enPassant) {
+        for(char c : segments[3]) {
             if(i == 0) {
                 num += (c - 'a');
             } else {
@@ -187,11 +170,10 @@ Board::Board(std::string fen) {
         enPassantIndex = 64;
     }
     // 50 move counter, segment 5
-    fiftyMoveCounter = std::stoi(fiftyMoveString);
+    fiftyMoveCounter = std::stoi(segments[4]);
     hundredPlyCounter = 0;
     // ply count, segment 6
-    plyCount = ply * 2 - colorToMove;
-    //std::cout << "Parsed fen, hash is now " << std::to_string(zobristHash) << '\n';
+    plyCount = std::stoi(segments[5]) * 2 - colorToMove;
 }
 
 std::string Board::getFenString() {

@@ -1,7 +1,8 @@
-// something something header guards, blame toanth if it doesn't work
+// something something header guards
 #pragma once
 #include "globals.h"
 
+// perft tests
 struct PerftTest {
     public:
         std::string fen;

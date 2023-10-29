@@ -5,10 +5,15 @@
 #include "tt.h"
 #include "bench.h"
 
+/*
+    The entirety of the implementation of UCI, read the standard for that if you want more information
+*/
+
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 
 int rootColorToMove;
 
+// runs a fixed depth search on a fixed set of positions, to see if a test changes how the engine behaves
 void runBench(int depth) {
     uint64_t total = 0;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -22,6 +27,7 @@ void runBench(int depth) {
     std::cout << "bench took " << elapsedTime << "ms\n";
 }
 
+// sets options, though currently just the hash size
 void setOption(const std::vector<std::string>& bits) {
     if(bits[2] == "Hash") {
         int newSizeMB = std::stoi(bits[4]);
@@ -34,6 +40,7 @@ void setOption(const std::vector<std::string>& bits) {
     }
 }
 
+// loads a position, either startpos, kiwipete(not part of uci but IO just felt like I should), or from a fen string
 void loadPosition(const std::vector<std::string>& bits) {
     if(bits[1] == "startpos") {
         board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -56,22 +63,18 @@ void loadPosition(const std::vector<std::string>& bits) {
     rootColorToMove = board.getColorToMove();
 }
 
-/* leftover from debugging tuning
-void sigmoidTest() {
-    for(int i = -200; i <= 200; i++) {
-        std::cout << std::to_string(i) << ", " << std::to_string(sigmoid(i)) << '\n';
-    }
-}*/
-
+// has the engine identify itself when the GUI says uci
 void identify() {
     std::cout << "id name Clarity V1.0.2\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 256 min 1 max 2048\n";
 }
 
+// tells the engine to search, with support for a few different types
 void go(std::vector<std::string> bits) {
     int time = 0;
     int depth = 0;
+    int inc = 0;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
             time = std::stoi(bits[i+1]);
@@ -82,22 +85,35 @@ void go(std::vector<std::string> bits) {
         if(bits[i] == "depth") {
             depth = std::stoi(bits[i+1]);
         }
+        if(bits[i] == "winc" && board.getColorToMove() == 1) {
+            inc = std::stoi(bits[i+1]);
+        }
+        if(bits[i] == "binc" && board.getColorToMove() == 0) {
+            inc = std::stoi(bits[i+1]);
+        }
     }
     Move bestMove;
+    // go depth x
     if(depth != 0) {
         bestMove = fixedDepthSearch(board, depth);
     } else {
-        bestMove = think(board, time);
+        // go wtime x btime x
+        // the formulas here are former formulas from Stormphrax
+        const int softBound = 0.6 * (time / 20 + inc * 3 / 4);
+        const int hardBound = time / 2;
+        bestMove = think(board, softBound, hardBound);
     }
     std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
     board.makeMove(bestMove);
 }
 
+// resets everything
 void newGame() {
     resetEngine();
     board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
 }
 
+// interprets the command
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
 

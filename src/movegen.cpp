@@ -28,6 +28,7 @@ uint64_t getBishopAttacksOld(int square, uint64_t occupiedBitboard) {
     }
 	return attacks;
 }
+// this is getting the attacks from either pext or magic bitboard move generation, which is decided by which build is being done
 uint64_t getRookAttacks(int square, uint64_t occupiedBitboard) {
     assert(square < 64);
     return getRookAttacksFromTable(occupiedBitboard, square);
@@ -36,6 +37,7 @@ uint64_t getBishopAttacks(int square, uint64_t occupiedBitboard) {
     assert(square < 64);
     return getBishopAttacksFromTable(occupiedBitboard, square);
 }
+// pawn pushes
 uint64_t getPawnPushes(uint64_t pawnBitboard, uint64_t emptyBitboard, int colorToMove) {
 	return (colorToMove == 0 ? pawnBitboard >> 8 : pawnBitboard << 8) & emptyBitboard;
 }

@@ -1,5 +1,7 @@
 #include "tt.h"
 
+// all the functions for the transposition table
+
 int TranspositionTable::getScore(uint64_t zkey) {
     return table[zkey & mask].score;
 }
