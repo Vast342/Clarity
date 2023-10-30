@@ -64,14 +64,15 @@ void resetEngine() {
     clearHistory(); 
 }
 
-bool see(const Board& board, Move move, int threshold) {
+bool see(const Board& board, Move move) {
     const int start = move.getStartSquare();
     const int end = move.getEndSquare();
     int balance = 0;
     int nextVictim = board.pieceAtIndex(start);
-    balance -= nextVictim;
+    balance -= eg_value[nextVictim];
     uint64_t occupied = board.getOccupiedBitboard();
     occupied ^= (1ULL << start);
+    occupied ^= (1ULL << end);
     uint64_t attackers = board.getAttackers(end) & occupied;
     int color = 1 - board.getColorToMove();
     while(true) {
@@ -84,14 +85,15 @@ bool see(const Board& board, Move move, int threshold) {
         }
         // todo: care about newly revealed attackers
         occupied ^= (1ULL << std::countr_zero(myAttackers & board.getColoredPieceBitboard(color, nextVictim)));
+        attackers &= occupied;
         color = 1 - color;
-        balance = -balance - 1 - nextVictim;
+        balance = -balance - 1 - eg_value[nextVictim];
         if(balance >= 0) {
             // todo: care about move legality
             break;
         }
     }
-    return board.getColorToMove() == 1 ? balance > 0 : balance < 0;
+    return board.getColorToMove() != color;
 }
 
 /* orders the moves based on the following order:
@@ -109,11 +111,11 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             values[i] = 1000000000;
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
             // Captures!
-            if(see(board, moves[i], 5)) {
+            if(see(board, moves[i])) {
                 // mvv lva (ciekce was here)
                 const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
                 const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-                // technically I could use 175 here and still have some wiggle room
+                // technically I could use 175 here and still have some wiggle room111
                 // with 200 that gives me a range of:
                 // min: (200*112)-1187=21213
                 // max: (200*1187)-112=237288

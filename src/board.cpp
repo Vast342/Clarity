@@ -895,7 +895,13 @@ bool Board::isLegalMove(const Move& move) {
 }
 
 uint64_t Board::getAttackers(int square) const {
-
+    uint64_t occupied = getOccupiedBitboard();
+    return (getPawnAttacks(square, 0) & getColoredPieceBitboard(1, Pawn))
+        | (getPawnAttacks(square, 1) & getColoredPieceBitboard(0, Pawn))
+        | (getKnightAttacks(square) & pieceBitboards[Knight])
+        | (getRookAttacks(square, occupied) & (pieceBitboards[Rook] | pieceBitboards[Queen]))
+        | (getBishopAttacks(square, occupied) & (pieceBitboards[Bishop] | pieceBitboards[Queen]))
+        | (getKingAttacks(square) & pieceBitboards[King]);
 }
 
 uint64_t Board::getColoredBitboard(int color) const {
