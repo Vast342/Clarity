@@ -893,3 +893,11 @@ bool Board::isLegalMove(const Move& move) {
     }
     return false;
 }
+
+uint64_t Board::getAttackers(int square) const {
+
+}
+
+uint64_t Board::getColoredBitboard(int color) const {
+    return coloredBitboards[color];
+}

@@ -32,26 +32,23 @@ Board Representation:
 ### Divided by release:
 
 #### Clarity V2.0.0 Plans:
-  1. Killer move table shenanigans
-  2. CMH+FMH (also known as continuation history (conthist))
   3. SEE for move ordering, pruning, etc
   4. try again with LMP
-  5. tune some search things
-  6. Maybe 2500 at this point
 
 #### Clarity V3.0.0 Plans:
   1. nnue
   
 #### Clarity V4.0.0 Plans:
-  1. actual futility pruning (not reverse)
-  2. Razoring
-  3. Delta pruning in qsearch
-  4. Syzgyzy tablebase support (oh no not the 3000 uncommented lines)
-  5. history pruning
-  6. mate distance pruning
-  7. capture history heuristic?
-  8. singular extensions (huh)
-  9. multicut(huh)
+  1. Conthist
+  2. actual futility pruning (not reverse)
+  3. Razoring
+  4. Delta pruning in qsearch
+  5. Syzgyzy tablebase support (oh no not the 3000 uncommented lines)
+  6. history pruning
+  7. mate distance pruning
+  8. capture history heuristic?
+  9. singular extensions (huh)
+  10. multicut(huh)
 
 
 
