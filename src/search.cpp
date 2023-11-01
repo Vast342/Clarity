@@ -65,31 +65,61 @@ void resetEngine() {
 }
 
 bool see(const Board& board, Move move) {
+    // establishing stuff
     const int start = move.getStartSquare();
     const int end = move.getEndSquare();
-    int balance = 0;
-    int nextVictim = board.pieceAtIndex(start);
-    balance -= eg_value[nextVictim];
+    const int flag = move.getFlag();
     uint64_t occupied = board.getOccupiedBitboard();
+    int nextVictim = 0;
+    // handle promotions
+    for(int i = 0; i < 4; i++) {
+        if(flag == promotions[i]) {
+            nextVictim = i + 1;
+            break;
+        } else {
+            nextVictim = getType(board.pieceAtIndex(start));
+        }
+    }
+    // doing first move
+    int balance = getType(board.pieceAtIndex(end));
+    balance -= nextVictim + 1;
     occupied ^= (1ULL << start);
     occupied ^= (1ULL << end);
-    uint64_t attackers = board.getAttackers(end) & occupied;
+    if (flag == EnPassant) occupied ^= (1ULL << board.getEnPassantIndex());
     int color = 1 - board.getColorToMove();
+    // get the attackers, for detecting revealed attackers
+    const uint64_t bishops = board.getPieceBitboard(Bishop) | board.getPieceBitboard(Queen);
+    const uint64_t rooks = board.getPieceBitboard(Rook) | board.getPieceBitboard(Queen);
+    // generate the attackers (not including the first move)
+    uint64_t attackers = board.getAttackers(end) & occupied;
     while(true) {
+        // get the attackers
         uint64_t myAttackers = attackers & board.getColoredBitboard(color);
+        // if no attackers, you're done
         if (myAttackers == 0ULL) break;
+        // find lowest value attacker
         for (nextVictim = Pawn; nextVictim <= Queen; nextVictim++) {
             if ((myAttackers & board.getColoredPieceBitboard(color, nextVictim)) != 0) {
                 break;
             }
         }
-        // todo: care about newly revealed attackers
+        // diagonal moves may reveal more attackers
+        if(nextVictim == Pawn || nextVictim == Bishop || nextVictim == Queen) {
+            attackers |= (getBishopAttacks(end, occupied) & bishops);
+        }
+        // orthogonal moves may reveal more attackers
+        if(nextVictim == Rook || nextVictim == Queen) {
+            attackers |= (getRookAttacks(end, occupied) & rooks);
+        }
         occupied ^= (1ULL << std::countr_zero(myAttackers & board.getColoredPieceBitboard(color, nextVictim)));
         attackers &= occupied;
         color = 1 - color;
-        balance = -balance - 1 - eg_value[nextVictim];
+        balance = -balance - nextVictim;
         if(balance >= 0) {
-            // todo: care about move legality
+            // speedrunning legality check
+            if(nextVictim == King && ((attackers & board.getColoredBitboard(color)) != 0)) {
+                color = 1 - color;
+            }
             break;
         }
     }
@@ -112,21 +142,23 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
             // Captures!
             if(see(board, moves[i])) {
+                // good captures
                 // mvv lva (ciekce was here)
                 const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
                 const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-                // technically I could use 175 here and still have some wiggle room111
+                // technically I could use 175 here and still have some wiggle room
                 // with 200 that gives me a range of:
                 // min: (200*112)-1187=21213
                 // max: (200*1187)-112=237288
                 values[i] = 200 * eg_value[victim] - eg_value[attacker];
             } else {
+                // bad captures
                 values[i] = 19000;
             }
         } else {
             // read from history
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
-            // if not in qsearch, killer
+            // if not in qsearch, killers
             if(ply != -1) {
                 if(moveValue == killerTable[ply][0]) {
                     values[i] = 18000;

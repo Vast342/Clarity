@@ -106,6 +106,7 @@ struct Board {
         bool isLegalMove(const Move& move);
         uint64_t getAttackers(int square) const;
         uint64_t getColoredBitboard(int color) const;
+        uint64_t getPieceBitboard(int piece) const;
     private:
         std::array<uint64_t, 2> coloredBitboards;
         std::array<uint64_t, 6> pieceBitboards;

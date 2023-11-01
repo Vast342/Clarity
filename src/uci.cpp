@@ -117,6 +117,7 @@ void newGame() {
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
 
+
     if(bits.empty()) {
         return;
     } else if(bits[0] == "printstate") {
@@ -151,6 +152,8 @@ void interpretCommand(std::string command) {
         setOption(bits);
     } else if(bits[0] == "bench") {
         runBench(std::stoi(bits[1]));
+    } else if(bits[0] == "testcapture") {
+        std::cout << (see(board, Move(bits[1], board)) ? "true\n" : "false\n");    
     } else {
         std::cout << "invalid command\n";
     }

@@ -907,3 +907,6 @@ uint64_t Board::getAttackers(int square) const {
 uint64_t Board::getColoredBitboard(int color) const {
     return coloredBitboards[color];
 }
+uint64_t Board::getPieceBitboard(int piece) const {
+    return pieceBitboards[piece];
+}
