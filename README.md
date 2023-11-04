@@ -1,56 +1,8 @@
 # Clarity
 
-The C++ rewrite is complete! Clarity is now faster and better, using new techniques, and I have learned a new language!
+<img src="assets/Clarity%20Logo.png" width="150" height="150">
 
-For those who didn't see the engine in its depressing, confusing, error-filled C# state, this engine was originally written in C# before I decided to switch to C++. That decision was one of the greatest I think I've ever had, as the engine is now faster, easier to read, less error-filled(hopefully), and better overall.
-
-My current Estimate of elo (calculated by playing large sums of games against engines with known CCRL ratings) is 2250.
-
-### Special Thanks (in no particular order):
-
-  [Toanth](https://github.com/toanth): General help and explaining things I didn't understand before
-  
-  [Ciekce](https://github.com/Ciekce): Preventing the cardinal sins of C++ since day 1
-  
-  [RedBedHed](https://github.com/RedBedHed): Lookup tables for move generation
-  
-  [JW](https://github.com/jw1912): More random C++ things
-  
-  [A_randomnoob](https://github.com/mcthouacbb): Helping with a lot of random engine bits
-
-  [zzzzz](https://github.com/zzzzz151/): Ideas, planning, and a lot that I probably forgot
-
-### Todo lists:
-
-General Things:
-  1. Web version of the engine
-  2. or unleash it on lichess
-
-Board Representation:
-  1. General performancey things
-
-### Divided by release:
-
-#### Clarity V2.0.0 Plans:
-  3. SEE for move ordering, pruning, etc
-  4. try again with LMP
-
-#### Clarity V3.0.0 Plans:
-  1. nnue
-  
-#### Clarity V4.0.0 Plans:
-  1. Conthist
-  2. actual futility pruning (not reverse)
-  3. Razoring
-  4. Delta pruning in qsearch
-  5. Syzgyzy tablebase support (oh no not the 3000 uncommented lines)
-  6. history pruning
-  7. mate distance pruning
-  8. capture history heuristic?
-  9. singular extensions (huh)
-  10. multicut(huh)
-
-
+> Relatively strong UCI chess engine
 
 ## Feature List:
 
@@ -81,13 +33,27 @@ Search:
   5. Null Move Pruning
   6. Late Move Reductions (log function, generated on startup)
   7. Fail-soft
-  8. Currently nonfunctional LMP
 
 Evaluation:
-  1. PeSTO PSQTs and piece weights (soon to be tuned)
-  2. Non-functional passed pawn detection
+  1. Tuned PSQTs (soon to be NNUE)
 
 Move ordering:
   1. TT best move
   2. MVV-LVA
-  3. History Heuristic
+  3. Killer Move Heuristic
+  4. History Heuristic
+
+
+### Special Thanks (in no particular order):
+
+  [Toanth](https://github.com/toanth): General help and explaining things I didn't understand before
+  
+  [Ciekce](https://github.com/Ciekce): Preventing the cardinal sins of C++ since day 1
+  
+  [RedBedHed](https://github.com/RedBedHed): Lookup tables for move generation
+  
+  [JW](https://github.com/jw1912): More random C++ things
+  
+  [A_randomnoob](https://github.com/mcthouacbb): Helping with a lot of random engine bits
+
+  [zzzzz](https://github.com/zzzzz151/): Ideas, planning, and a lot that I probably forgot
