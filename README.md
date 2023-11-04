@@ -12,10 +12,10 @@ CLI:
   3. perftsuite <suite>: performs a suite of perft tests, currently only supports the suite ethereal.
   4. perft <depth>: performs a perft test from the current position and outputs the result.
   5. splitperft <depth>: performs a perft test from the current position and outputs the result seperated by which move is the first one done.
-  6: getfen: outputs a string of Forsyth-Edwards Notation (FEN) that encodes the current position.
-  7: incheck: outputs if the current position is in check or not.
-  8: evaluate: outputs the evaluation of the current position.
-  9: bench <depth>: performs the bench test, a fixed depth search on a series of 50 positions.
+  6. getfen: outputs a string of Forsyth-Edwards Notation (FEN) that encodes the current position.
+  7. incheck: outputs if the current position is in check or not.
+  8. evaluate: outputs the evaluation of the current position.
+  9. bench <depth>: performs the bench test, a fixed depth search on a series of 50 positions.
 
 Board Representation:
   1. Copymake moves
