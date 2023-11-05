@@ -11,7 +11,7 @@ src/board.cpp
 src/globals.cpp 
 src/move.cpp 
 src/movegen.cpp 
-src/psqt.cpp
+src/eval.cpp
 src/search.cpp
 src/tests.cpp
 src/tt.cpp)
@@ -21,7 +21,7 @@ add_executable(Clarity_Pext ${Common_SRC_Files} src/bmi2.cpp src/uci.cpp)
 add_executable(Clarity_Magic ${Common_SRC_Files} src/magic.cpp src/uci.cpp)
 add_executable(Clarity_Native ${Common_SRC_Files} src/bmi2.cpp src/uci.cpp)
 
-# data generator build
+# data generator build (NOT CURRENTLY WORKING)
 add_executable(Clarity_Datagen ${Common_SRC_Files} src/bmi2.cpp src/datagen.cpp)
 
 # building with all warnings for all of these so that I can try to pick up on issues

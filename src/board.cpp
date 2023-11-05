@@ -54,18 +54,13 @@ void Board::toString() {
         std::cout << "En passant square: " << squareNames[enPassantIndex] << '\n';
     }
     std::cout << "Color to move: " << (colorToMove == 0 ? "black" : "white") << '\n';
-    std::cout << "Midgame eval: " << std::to_string(mgEval) << '\n';
-    std::cout << "Endgame eval: " << std::to_string(egEval) << '\n';
-    std::cout << "Phase: " << std::to_string(phase) << '\n';
-    std::cout << "Total eval: " << std::to_string(getEvaluation()) << '\n';
+    std::cout << "Evaluation: " << std::to_string(getEvaluation()) << '\n';
 }
 
 Board::Board(std::string fen) {
     zobristHistory.clear();
     stateHistory.clear();
-    mgEval = 0;
-    egEval = 0;
-    phase = 0;
+    nnueState.reset();
     zobristHash = 0;
     for(int i = 0; i < 6; i++) {
         pieceBitboards[i] = 0ULL;
@@ -275,13 +270,7 @@ void Board::addPiece(int square, int type) {
     coloredBitboards[getColor(type)] ^= (1ULL << square);
     pieceBitboards[getType(type)] ^= (1ULL << square);
     assert(pieceAtIndex(square) == type);
-    phase += phaseIncrements[getType(type)];
-    int index = getColor(type) == 1 ? flipIndex(square) : square;
-    int colorMultiplier = 2 * getColor(type) - 1;
-    mgEval += mgTables[getType(type)][index] * colorMultiplier;
-    egEval += egTables[getType(type)][index] * colorMultiplier;
-    //mgEval += mg_value[getType(type)] * colorMultiplier;
-    //egEval += eg_value[getType(type)] * colorMultiplier;
+    nnueState.activateFeature(square, type);
     zobristHash ^= zobTable[square][type];
 }
 
@@ -293,13 +282,7 @@ void Board::removePiece(int square, int type) {
     //std::cout << "Removing piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
     coloredBitboards[getColor(type)] ^= (1ULL << square);
     pieceBitboards[getType(type)] ^= (1ULL << square);
-    phase -= phaseIncrements[getType(type)];
-    int index = getColor(type) == 1 ? flipIndex(square) : square;
-    int colorMultiplier = 2 * getColor(type) - 1;
-    mgEval -= mgTables[getType(type)][index] * colorMultiplier;
-    egEval -= egTables[getType(type)][index] * colorMultiplier;
-    //mgEval -= mg_value[getType(type)] * colorMultiplier;
-    //egEval -= eg_value[getType(type)] * colorMultiplier;
+    nnueState.disableFeature(square, type);
     zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
@@ -589,6 +572,7 @@ bool Board::squareIsUnderAttack(int square) {
 
 bool Board::makeMove(Move move) {
     stateHistory.push_back(generateBoardState());
+    nnueState.push();
     if(colorToMove != 1) fiftyMoveCounter++;
     hundredPlyCounter++;
     int movedPiece = pieceAtIndex(move.getStartSquare());
@@ -682,6 +666,7 @@ void Board::undoMove() {
     plyCount--;
     stateHistory.pop_back();  
     zobristHistory.pop_back();
+    nnueState.pop();
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
@@ -695,9 +680,6 @@ void Board::loadBoardState(BoardState state) {
     fiftyMoveCounter = state.fiftyMoveCounter;
     castlingRights = state.castlingRights;
     zobristHash = state.zobristHash;
-    mgEval = state.mgEval;
-    egEval = state.egEval;
-    phase = state.phase;
     isRepeated = state.isRepeated;
     hundredPlyCounter = state.hundredPlyCounter;
 }
@@ -711,9 +693,6 @@ BoardState Board::generateBoardState() {
     state.fiftyMoveCounter = fiftyMoveCounter;
     state.castlingRights = castlingRights;
     state.zobristHash = zobristHash;
-    state.mgEval = mgEval;
-    state.egEval = egEval;
-    state.phase = phase;
     state.isRepeated = isRepeated;
     state.hundredPlyCounter = hundredPlyCounter;
     return state;
@@ -742,10 +721,7 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
-    // currently disabled passed pawn bonuses, as it wasn't gaining any elo, even after my goofy and probablly messed up tuning
-    int egPhase = 24 - phase;
-    return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
-    //return (((mgEval * phase + egEval * egPhase) / 24) + getPassedPawnBonuses()) * ((2 * colorToMove) - 1);
+    return nnueState.evaluate(colorToMove) / 2;
 }
 
 int Board::getCastlingRights() const {
@@ -771,29 +747,6 @@ void initializeZobrist() {
     }
 }
 
-int Board::taperValue(int mg, int eg) {
-    int egPhase = 24 - phase;
-    return ((mg * phase + eg * egPhase) / 24);
-}
-
-int Board::fullEvalRegen() {
-    uint64_t mask = getOccupiedBitboard();
-    int midgame = 0;
-    int endgame = 0;
-    int currentPhase = 0;
-    while(mask != 0) {
-        int index = popLSB(mask);
-        int piece = pieceAtIndex(index);
-        int pieceType = getType(piece);
-        int pieceColor = getColor(piece);
-        midgame += mgTables[pieceType][pieceColor == 1 ? flipIndex(index) : index] * ((2 * pieceColor) - 1);
-        endgame += egTables[pieceType][pieceColor == 1 ? flipIndex(index) : index] * ((2 * pieceColor) - 1);
-        currentPhase += phaseIncrements[pieceType];
-    }
-    int egPhase = 24 - currentPhase;
-    return ((midgame * currentPhase + endgame * egPhase) / 24) * ((2 * colorToMove) - 1);
-}
-
 uint64_t Board::fullZobristRegen() {
     //std::cout << "Beginning Full Regen\n";
     uint64_t mask = getOccupiedBitboard();
@@ -810,44 +763,6 @@ uint64_t Board::fullZobristRegen() {
     }
     //std::cout << "Result: " << std::to_string(result) << '\n';
     return result;
-}
-
-int Board::getPassedPawnBonuses() {
-    int mgBonuses = 0;
-    int egBonuses = 0;
-    uint64_t mask = pieceBitboards[Pawn];   
-    std::array<uint64_t, 2> opponentPawns = {getColoredPieceBitboard(1, Pawn), getColoredPieceBitboard(0, Pawn)};
-    while(mask != 0) {
-        int index = popLSB(mask);
-        int color = colorAtIndex(index);
-        assert(color != 2);
-        
-        if((getPassedPawnMask(index, color) & opponentPawns[colorToMove]) == 0) {
-            int square = color == 1 ? flipIndex(index) : index;
-            // make 0,1 into -1,1
-            int colorMultiplier = 2 * color - 1;
-            mgBonuses += mgPassedPawnBonusTable[square] * colorMultiplier;
-            egBonuses += egPassedPawnBonusTable[square] * colorMultiplier;
-        }
-    }
-
-    return taperValue(mgBonuses, egBonuses);
-}
-
-int Board::detectPassedPawns() {
-    uint64_t mask = pieceBitboards[Pawn];
-    uint64_t allPawns = mask;
-    int total = 0;
-    while(mask != 0) {
-        int index = popLSB(mask);
-        int color = colorAtIndex(index);
-        assert(color != 2);
-        
-        if((getPassedPawnMask(index, color) & allPawns) == 0) {
-            total++;
-        }
-    }
-    return total;
 }
 
 bool Board::isRepeatedPosition() {
