@@ -6,6 +6,7 @@
 
 namespace {
     INCBIN(networkData, "F:/ChessEngine/src/clarity_spnet_01.nnue");
+    //INCBIN(networkData, "F:/Clarity Backups/Clarity_NNUE(Stormphrax)/Clarity-sp_nnue/src/sp_net010.nnue");
     const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 }
 
@@ -76,8 +77,8 @@ void NetworkState::activateFeature(int square, int type){
 
     // change values for all of them
     for (int i = 0; i < layer1Size; ++i) {
-        currentAccumulator->white[i] += network->featureWeights[blackIdx * layer1Size + i];
-        currentAccumulator->white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
+        currentAccumulator->black[i] += network->featureWeights[blackIdx * layer1Size + i];
+        currentAccumulator->white[i] += network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
@@ -86,7 +87,7 @@ void NetworkState::disableFeature(int square, int type) {
 
     // change values for all of them
     for (int i = 0; i < layer1Size; ++i) {
-        currentAccumulator->white[i] -= network->featureWeights[blackIdx * layer1Size + i];
+        currentAccumulator->black[i] -= network->featureWeights[blackIdx * layer1Size + i];
         currentAccumulator->white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
