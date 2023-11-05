@@ -62,9 +62,73 @@ void resetEngine() {
     clearHistory(); 
 }
 
+bool see(const Board& board, Move move) {
+    // establishing stuff
+    const int start = move.getStartSquare();
+    const int end = move.getEndSquare();
+    const int flag = move.getFlag();
+    uint64_t occupied = board.getOccupiedBitboard();
+    int nextVictim = getType(board.pieceAtIndex(start));
+    // handle promotions
+    for(int i = 0; i < 4; i++) {
+        if(flag == promotions[i]) {
+            nextVictim = i + 1;
+            break;
+        }
+    }
+    // doing first move
+    int balance = getType(board.pieceAtIndex(end));
+    balance -= nextVictim + 1;
+    occupied ^= (1ULL << start);
+    occupied ^= (1ULL << end);
+    if (flag == EnPassant) occupied ^= (1ULL << board.getEnPassantIndex());
+    int color = 1 - board.getColorToMove();
+    // get the attackers, for detecting revealed attackers
+    const uint64_t bishops = board.getPieceBitboard(Bishop) | board.getPieceBitboard(Queen);
+    const uint64_t rooks = board.getPieceBitboard(Rook) | board.getPieceBitboard(Queen);
+    // generate the attackers (not including the first move)
+    uint64_t attackers = board.getAttackers(end) & occupied;
+    while(true) {
+        // get the attackers
+        uint64_t myAttackers = attackers & board.getColoredBitboard(color);
+        // if no attackers, you're done
+        if (myAttackers == 0ULL) break;
+        // find lowest value attacker
+        for (nextVictim = Pawn; nextVictim <= Queen; nextVictim++) {
+            if ((myAttackers & board.getColoredPieceBitboard(color, nextVictim)) != 0) {
+                break;
+            }
+        }
+        // diagonal moves may reveal more attackers
+        if(nextVictim == Pawn || nextVictim == Bishop || nextVictim == Queen) {
+            attackers |= (getBishopAttacks(end, occupied) & bishops);
+        }
+        // orthogonal moves may reveal more attackers
+        if(nextVictim == Rook || nextVictim == Queen) {
+            attackers |= (getRookAttacks(end, occupied) & rooks);
+        }
+        // make the move
+        occupied ^= (1ULL << std::countr_zero(myAttackers & board.getColoredPieceBitboard(color, nextVictim)));
+        attackers &= occupied;
+        color = 1 - color;
+        // update balance
+        balance = -balance - nextVictim;
+        // if you are ahead
+        if(balance >= 0) {
+            // speedrunning legality check
+            if(nextVictim == King && ((attackers & board.getColoredBitboard(color)) != 0)) {
+                color = 1 - color;
+            }
+            break;
+        }
+    }
+    // if color is different, than you either ran out of attackers and lost the exchange or the opponent won
+    return board.getColorToMove() != color;
+}
+
 /* orders the moves based on the following order:
     1: TT Best move: the result of a previous search, if any
-    2: MVV-LVA (soon to be SEE) for captures, sorting them by the ratio of the piece capturing to the piece being captured
+    2: MVV-LVA (soon to be aided by SEE) for captures, sorting them by the ratio of the piece capturing to the piece being captured
     3: Killer moves: moves that are proven to be good from earlier, being indexed by ply
     4: History: scores of how many times a move has caused a beta cutoff
 */
@@ -76,14 +140,35 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
         if(moveValue == ttMoveValue) {
             values[i] = 1000000000;
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
+            // Captures!
             // mvv lva (ciekce was here)
             const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
             const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
+            // technically I could use 175 here and still have some wiggle room
+            // with 200 that gives me a range of:
+            // min: (200*112)-1187=21213
+            // max: (200*1187)-112=237288
             values[i] = 200 * eg_value[victim] - eg_value[attacker];
+            /*
+            // see not workey yet
+            if(see(board, moves[i])) {
+                // good captures
+                // mvv lva (ciekce was here)
+                const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
+                const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
+                // technically I could use 175 here and still have some wiggle room
+                // with 200 that gives me a range of:
+                // min: (200*112)-1187=21213
+                // max: (200*1187)-112=237288
+                values[i] = 200 * eg_value[victim] - eg_value[attacker];
+            } else {
+                // bad captures
+                values[i] = 19000;
+            }*/
         } else {
             // read from history
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
-            // if not in qsearch, killer
+            // if not in qsearch, killers
             if(ply != -1) {
                 if(moveValue == killerTable[ply][0]) {
                     values[i] = 18000;
@@ -226,7 +311,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     orderMoves(board, moves, totalMoves, entry.bestMove.getValue(), ply);
 
     // values useful for writing to TT later
-    int bestScore = -10000000;
+    int bestScore = mateScore;
     Move bestMove;
     int flag = FailLow;
 
@@ -246,7 +331,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             legalMoves++;
             nodes++;
             // Late Move Pruning (not working, needs more testing)
-            //if(depth < 4 && !isPV && bestScore > -10000000 + 256 && legalMoves > (3+depth*10)) break;
+            //if(depth < 4 && !isPV && bestScore > mateScore + 256 && legalMoves > (3+depth*10)) break;
             bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
             int score = 0;
             // Principal Variation Search
@@ -302,7 +387,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // checkmate / stalemate detection, if I did legal move generation instead of pseudolegal I could probably do this first and it would be faster
     if(legalMoves == 0) {
         if(inCheck) {
-            return -10000000 + ply;
+            return mateScore + ply;
         }
         return 0;
     }
@@ -311,6 +396,21 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     TT.setEntry(board.zobristHash, Transposition(board.zobristHash, bestMove, flag, bestScore, depth));
 
     return bestScore;
+}
+
+void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
+    std::string scoreString = " score ";
+    if(abs(score) < abs(mateScore + 256)) {
+        scoreString += "cp ";
+        scoreString += std::to_string(score);
+    } else {
+        // score is checkmate in score - mateScore ply
+        // position fen rn1q2rk/pp3p1p/2p4Q/3p4/7P/2NP2R1/PPP3P1/4RK2 w - - 0 1
+        // ^^ mate in 3 test position
+        scoreString += "mate ";
+        scoreString += std::to_string(abs(score + mateScore) / 2 + board.getColorToMove());
+    }
+    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
 }
 
 // yes cloning the board is intentional here.
@@ -328,7 +428,7 @@ std::string getPV(Board board) {
 }
 
 // the usual think function, where you give it the amount of time it has left, and it will think in increasing depth steps until it runs out of time
-Move think(Board board, int softBound, int hardBound) {
+Move think(Board board, int softBound, int hardBound, bool info) {
     //ageHistory();
     clearHistory();
     nodes = 0;
@@ -347,8 +447,8 @@ Move think(Board board, int softBound, int hardBound) {
         seldepth = depth;
         timesUp = false;
         int delta = 25;
-        int alpha = std::max(-10000000, score - delta);
-        int beta = std::min(10000000, score + delta);
+        int alpha = std::max(mateScore, score - delta);
+        int beta = std::min(-mateScore, score + delta);
         const Move previousBest = rootBestMove;
         if(depth > 3) {
             while (true) {
@@ -357,26 +457,24 @@ Move think(Board board, int softBound, int hardBound) {
                     return previousBest;
                 }
                 if (score >= beta) {
-                    beta = std::min(beta + delta, 10000000);
+                    beta = std::min(beta + delta, -mateScore);
                 } else if (score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(alpha - delta, -10000000);
+                    alpha = std::max(alpha - delta, mateScore);
                 } else break;
 
                 delta *= 1.5;
             }
         } else {
-            score = negamax(board, depth, -10000000, 10000000, 0, true);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        // soft time bounds check
         if(timesUp) {
             return previousBest;
         }
         // outputs info which is picked up by the user
-        //std::string pv = getPV(board);
-        //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        if(info) outputInfo(board, score, depth, elapsedTime);
+        // soft time bounds check
         if(elapsedTime > softBound) break;
     }
 
@@ -395,30 +493,30 @@ int benchSearch(Board board, int depthToSearch) {
     for(int depth = 1; depth <= depthToSearch; depth++) {
         timesUp = false;
         int delta = 25;
-        int alpha = std::max(-10000000, score - delta);
-        int beta = std::min(10000000, score + delta);
+        int alpha = std::max(mateScore, score - delta);
+        int beta = std::min(-mateScore, score + delta);
         if(depth > 3) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
-                    beta = std::min(beta + delta, 10000000);
+                    beta = std::min(beta + delta, -mateScore);
                 } else if (score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(alpha - delta, -10000000);
+                    alpha = std::max(alpha - delta, mateScore);
                 } else break;
 
                 delta *= 1.5;
             }
         } else {
-            score = negamax(board, depth, -10000000, 10000000, 0, true);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
     }
     return nodes;
 }
 
 // searches to a fixed depth when the user says go depth x
-Move fixedDepthSearch(Board board, int depthToSearch) {
+Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
     //ageHistory();
     clearHistory();
     nodes = 0;
@@ -432,28 +530,62 @@ Move fixedDepthSearch(Board board, int depthToSearch) {
         seldepth = 0;
         timesUp = false;
         int delta = 25;
-        int alpha = std::max(-10000000, score - delta);
-        int beta = std::min(10000000, score + delta);
+        int alpha = std::max(mateScore, score - delta);
+        int beta = std::min(-mateScore, score + delta);
         if(depth > 3) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
-                    beta = std::min(beta + delta, 10000000);
+                    beta = std::min(beta + delta, -mateScore);
                 } else if (score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(alpha - delta, -10000000);
+                    alpha = std::max(alpha - delta, mateScore);
                 } else break;
 
                 delta *= 1.5;
             }
         } else {
-            score = negamax(board, depth, -10000000, 10000000, 0, true);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        //std::string pv = getPV(board);
-        //std::cout << "info depth " << std::to_string(depth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << pv << std::endl;
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " score cp " << std::to_string(score) << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        if(info) outputInfo(board, score, depth, elapsedTime);
     }
     return rootBestMove;
+}
+
+std::pair<Move, int> dataGenSearch(Board board, int depthToSearch) {
+    //ageHistory();
+    clearHistory();
+    nodes = 0;
+    seldepth = 0;
+    hardLimit = 1215752192;
+    begin = std::chrono::steady_clock::now();
+    
+    int score = 10;
+
+    for(int depth = 1; depth <= depthToSearch; depth++) {
+        seldepth = 0;
+        timesUp = false;
+        int delta = 25;
+        int alpha = std::max(mateScore, score - delta);
+        int beta = std::min(-mateScore, score + delta);
+        if(depth > 3) {
+            while (true) {
+                score = negamax(board, depth, alpha, beta, 0, true);
+                
+                if (score >= beta) {
+                    beta = std::min(beta + delta, -mateScore);
+                } else if (score <= alpha) {
+                    beta = (alpha + beta) / 2;
+                    alpha = std::max(alpha - delta, mateScore);
+                } else break;
+
+                delta *= 1.5;
+            }
+        } else {
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
+        }
+    }
+    return std::pair<Move, int>(rootBestMove, score);
 }

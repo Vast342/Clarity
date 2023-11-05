@@ -75,6 +75,7 @@ void go(std::vector<std::string> bits) {
     int time = 0;
     int depth = 0;
     int inc = 0;
+    int movestogo = 20;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
             time = std::stoi(bits[i+1]);
@@ -84,6 +85,9 @@ void go(std::vector<std::string> bits) {
         }
         if(bits[i] == "depth") {
             depth = std::stoi(bits[i+1]);
+        }
+        if(bits[i] == "movestogo") {
+            movestogo = std::stoi(bits[i+1]);
         }
         if(bits[i] == "winc" && board.getColorToMove() == 1) {
             inc = std::stoi(bits[i+1]);
@@ -95,13 +99,13 @@ void go(std::vector<std::string> bits) {
     Move bestMove;
     // go depth x
     if(depth != 0) {
-        bestMove = fixedDepthSearch(board, depth);
+        bestMove = fixedDepthSearch(board, depth, true);
     } else {
         // go wtime x btime x
         // the formulas here are former formulas from Stormphrax
-        const int softBound = 0.6 * (time / 20 + inc * 3 / 4);
+        const int softBound = 0.6 * (time / movestogo + inc * 3 / 4);
         const int hardBound = time / 2;
-        bestMove = think(board, softBound, hardBound);
+        bestMove = think(board, softBound, hardBound, true);
     }
     std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
     board.makeMove(bestMove);
@@ -116,6 +120,7 @@ void newGame() {
 // interprets the command
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
+
 
     if(bits.empty()) {
         return;
@@ -151,6 +156,8 @@ void interpretCommand(std::string command) {
         setOption(bits);
     } else if(bits[0] == "bench") {
         runBench(std::stoi(bits[1]));
+    } else if(bits[0] == "testcapture") {
+        std::cout << (see(board, Move(bits[1], board)) ? "true\n" : "false\n");    
     } else {
         std::cout << "invalid command\n";
     }
