@@ -87,7 +87,7 @@ void go(std::vector<std::string> bits) {
             depth = std::stoi(bits[i+1]);
         }
         if(bits[i] == "movestogo") {
-            depth = std::stoi(bits[i+1]);
+            movestogo = std::stoi(bits[i+1]);
         }
         if(bits[i] == "winc" && board.getColorToMove() == 1) {
             inc = std::stoi(bits[i+1]);
@@ -99,7 +99,6 @@ void go(std::vector<std::string> bits) {
     Move bestMove;
     // go depth x
     if(depth != 0) {
-        int score = 0;
         bestMove = fixedDepthSearch(board, depth, true);
     } else {
         // go wtime x btime x

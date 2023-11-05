@@ -573,7 +573,6 @@ std::pair<Move, int> dataGenSearch(Board board, int depthToSearch) {
         if(depth > 3) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true);
-                std::cout << "score right after search: " << score << std::endl;
                 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
@@ -586,9 +585,7 @@ std::pair<Move, int> dataGenSearch(Board board, int depthToSearch) {
             }
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
-            std::cout << "score right after search: " << score << std::endl;
         }
     }
-    std::cout << "score: " << score << std::endl;
     return std::pair<Move, int>(rootBestMove, score);
 }

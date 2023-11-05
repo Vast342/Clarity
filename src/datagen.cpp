@@ -64,9 +64,12 @@ double runGame(std::vector<std::string>& fenVector) {
                 }
             }
             // move has been made now, cool
+            std::cout << board.getFenString() << std::endl;
         } else {
             // get move from engine normally
+            std::cout << "sending board with position " << board.getFenString() << std::endl;
             std::pair<Move, int> move = dataGenSearch(board, 8);
+            score = move.second;
             std::cout << "score is now " << score << std::endl;
             if(board.makeMove(move.first)) {
                 if(abs(move.second) < abs(mateScore + 256)) {
@@ -79,6 +82,7 @@ double runGame(std::vector<std::string>& fenVector) {
             } else {
                 std::cout << "Engine made an illegal move\n";
             }
+            std::cout << board.getFenString() << std::endl;
         }
     }
 
