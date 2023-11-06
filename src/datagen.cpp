@@ -2,22 +2,30 @@
 #include "datagen.h"
 #include "search.h"
 
+std::ofstream output;
 
 int main() {
+    std::cout << "Where to save the result?\n";
+    std::string directory = "";
+    std::cin >> directory;
+    output.open(directory);
+    std::cout << "How many games?\n";
+    int numGames = 0;
+    std::cin >> numGames;
     std::cout << "Generate data? Y/N\n";
     std::string response = "";
     std::cin >> response;
     if(response == "y" || response == "Y") {
-        generateData();
+        generateData(numGames);
     }
+    output.close();
     return 0;
 }
 
 // manages the threads
-void generateData() {
-    for(int i = 0; i < 10; i++) {
+void generateData(int numGames) {
+    for(int i = 0; i < numGames; i++) {
         threadFunction();
-        std::cout << "finished game " << i << '\n';
     }
 }
 
@@ -43,13 +51,27 @@ double runGame(std::vector<std::string>& fenVector) {
             std::mt19937_64 gen(rd());
 
             // get moves
+            std::array<Move, 256> PLmoves;
+            board.getMoves(PLmoves);
+
             std::array<Move, 256> moves;
-            const int totalMoves = board.getMoves(moves);
-
-            // distribution
-            std::uniform_int_distribution distribution{0, totalMoves - 1};
-
+            int legalMoves = 0;
             // legality check
+            for(Move move : PLmoves) {
+                if(board.makeMove(move)) {
+                    moves[legalMoves] = move;
+                    legalMoves++;
+                    board.undoMove();
+                }
+            }
+            if(legalMoves == 0) {
+                board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+                i = 0;
+                break;
+            }
+            // distribution
+            std::uniform_int_distribution distribution{0, legalMoves};
+
             int numTestedMoves = 0;
             while(true) {
                 const int index = distribution(gen);
@@ -57,32 +79,29 @@ double runGame(std::vector<std::string>& fenVector) {
                     break;
                 }
                 numTestedMoves++;
-                // position has no legal moves, checkmate? stalemate? restart.
-                if(numTestedMoves > 100) {
-                    board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-                    i = 0;
-                }
             }
             // move has been made now, cool
-            std::cout << board.getFenString() << std::endl;
+            //std::cout << board.getFenString() << std::endl;
         } else {
             // get move from engine normally
-            std::cout << "sending board with position " << board.getFenString() << std::endl;
-            std::pair<Move, int> move = dataGenSearch(board, 8);
+            //std::cout << "sending board with position " << board.getFenString() << std::endl;
+            const auto move = dataGenSearch(board,5000);
+            const uint64_t capturable = board.getOccupiedBitboard();
             score = move.second;
-            std::cout << "score is now " << score << std::endl;
-            if(board.makeMove(move.first)) {
+            if(((1ULL << move.first.getEndSquare()) & capturable) != 0 || move.first.getFlag() == EnPassant) {
                 if(abs(move.second) < abs(mateScore + 256)) {
                     // non-mate, add fen string to vector
-                    fenVector.push_back(board.getFenString() + " " + std::to_string(move.second));
+                    fenVector.push_back(board.getFenString() + " | " + std::to_string(board.getColorToMove() == 1 ? move.second : -move.second));
                 } else {
                     // checkmate found, no more use for this
                     break;
                 }
-            } else {
+            }
+            //std::cout << "score is now " << score << std::endl;
+            if(!board.makeMove(move.first)) {
                 std::cout << "Engine made an illegal move\n";
             }
-            std::cout << board.getFenString() << std::endl;
+            //std::cout << board.getFenString() << std::endl;
         }
     }
 
@@ -98,12 +117,14 @@ double runGame(std::vector<std::string>& fenVector) {
     return 2;
 }
 
+int games = 0;
+int outputFrequency = 100;
 void dumpToArray(double result, std::vector<std::string>& fenVector) {
-    for(std::string fen : fenVector) {
-        std::cout << "adding " << fen << " " << result << " to file\n";
-        // add to file
-
-        // add [result]\n
-
+    games++;
+    std::cout << "Dumping result of game " << games << std::endl;
+    for(const std::string &fen : fenVector) {
+        // add to file and append result \n
+        output << fen << " | " << result << '\n';
+        // i'll figure it out lol
     }
 }

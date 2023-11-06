@@ -4,6 +4,8 @@
 
 // The main search functions
 
+bool dataGeneration = false;
+
 constexpr int startDepth = 3;
 
 constexpr int nmpMin = 2;
@@ -184,19 +186,26 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
 
 // Quiecense search, searching all the captures until there aren't any more as a slightly faster but less accurate search
 int qSearch(Board &board, int alpha, int beta, int ply) {
-    if(board.isRepeated) return 0;
+    if(!dataGeneration && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-            timesUp = true;
-            return 0;
+        if(dataGeneration) {
+            if(nodes > 12000) {
+                timesUp = true;
+                return 0;
+            }
+        } else {
+            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
+                timesUp = true;
+                return 0;
+            }
         }
     }
     if(ply > seldepth) seldepth = ply;
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
 
-    if(entry.zobristKey == board.zobristHash && (
+    if(!dataGeneration && entry.zobristKey == board.zobristHash && (
         entry.flag == Exact // exact score
             || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
             || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
@@ -226,8 +235,16 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
             const int score = -qSearch(board, -beta, -alpha, ply + 1);
             board.undoMove();
             // time check
-            if(timesUp) {
-                return 0;
+            if(dataGeneration) {
+                if(nodes > 12000) {
+                    timesUp = true;
+                    return 0;
+                }
+            } else {
+                if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
+                    timesUp = true;
+                    return 0;
+                }
             }
 
             if(score > bestScore) {
@@ -265,14 +282,22 @@ void addHistory(const int start, const int end, const int depth, const int color
 // The main search function, oh boy commenting all of this is gonna be fun
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
-    if(ply > 0 && board.isRepeated) return 0;
+    if(!dataGeneration && ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-            timesUp = true;
-            return 0 ;
+        if(dataGeneration) {
+            if(nodes > 12000) {
+                timesUp = true;
+                return 0;
+            }
+        } else {
+            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
+                timesUp = true;
+                return 0;
+            }
         }
     }
+
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
     const bool isPV = beta == alpha + 1;
@@ -282,7 +307,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Transposition entry = TT.getEntry(board.zobristHash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
-    if(ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
+    if(!dataGeneration && ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
             entry.flag == Exact // exact score
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
                 || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
@@ -322,8 +347,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // capturable squares to determine if a move is a capture.
-    const int epIndex = board.getEnPassantIndex();
-    const uint64_t capturable = board.getOccupiedBitboard() | (epIndex == 64 ? 0 : (1ULL << epIndex));
+    const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
     int legalMoves = 0;
     for(int i = 0; i < totalMoves; i++) {
@@ -332,7 +356,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             nodes++;
             // Late Move Pruning (not working, needs more testing)
             //if(depth < 4 && !isPV && bestScore > mateScore + 256 && legalMoves > (3+depth*10)) break;
-            bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
+            bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
             int score = 0;
             // Principal Variation Search
             if(legalMoves == 1) {
@@ -483,15 +507,20 @@ Move think(Board board, int softBound, int hardBound, bool info) {
 
 // searches done for bench, returns the number of nodes searched.
 int benchSearch(Board board, int depthToSearch) {
-    //ageHistory();
     clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
-    
-    int score = 0;
+    seldepth = 0;
+    timesUp = false;
 
+    begin = std::chrono::steady_clock::now();
+
+    rootBestMove = Move();
+    int score = 0;
+    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
     for(int depth = 1; depth <= depthToSearch; depth++) {
-        timesUp = false;
+        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
+        seldepth = depth;
         int delta = 25;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
@@ -511,6 +540,9 @@ int benchSearch(Board board, int depthToSearch) {
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        // outputs info which is picked up by the user
+        outputInfo(board, score, depth, elapsedTime);
     }
     return nodes;
 }
@@ -554,19 +586,23 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
     return rootBestMove;
 }
 
-std::pair<Move, int> dataGenSearch(Board board, int depthToSearch) {
-    //ageHistory();
+std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
+    //std::cout << "recieved board with position " << board.getFenString() << std::endl;
     clearHistory();
+    dataGeneration = true;
     nodes = 0;
-    seldepth = 0;
     hardLimit = 1215752192;
-    begin = std::chrono::steady_clock::now();
-    
-    int score = 10;
+    seldepth = 0;
+    timesUp = false;
 
-    for(int depth = 1; depth <= depthToSearch; depth++) {
-        seldepth = 0;
-        timesUp = false;
+    begin = std::chrono::steady_clock::now();
+
+    rootBestMove = Move();
+    int score = 0;
+    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
+    for(int depth = 1; depth <= 100; depth++) {
+        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
+        seldepth = depth;
         int delta = 25;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
@@ -586,6 +622,10 @@ std::pair<Move, int> dataGenSearch(Board board, int depthToSearch) {
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
+        //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        // outputs info which is picked up by the user
+        //outputInfo(board, score, depth, elapsedTime);
+        if(nodes > nodeCap) break;
     }
     return std::pair<Move, int>(rootBestMove, score);
 }

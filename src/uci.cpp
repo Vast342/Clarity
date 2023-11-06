@@ -65,7 +65,7 @@ void loadPosition(const std::vector<std::string>& bits) {
 
 // has the engine identify itself when the GUI says uci
 void identify() {
-    std::cout << "id name Clarity V1.0.2\n";
+    std::cout << "id name Clarity V3.0.0\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 256 min 1 max 2048\n";
 }
