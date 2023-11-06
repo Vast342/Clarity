@@ -51,10 +51,10 @@ double runGame(std::vector<std::string>& fenVector) {
             std::mt19937_64 gen(rd());
 
             // get moves
-            std::array<Move, 256> PLmoves;
-            board.getMoves(PLmoves);
-
             std::array<Move, 256> moves;
+            const int legalMoves = board.getMoves(moves);
+
+            /*std::array<Move, 256> moves;
             int legalMoves = 0;
             // legality check
             for(Move move : PLmoves) {
@@ -64,13 +64,14 @@ double runGame(std::vector<std::string>& fenVector) {
                     board.undoMove();
                 }
             }
+            // checkmate or stalemate? doesn't matter, restart
             if(legalMoves == 0) {
                 board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
                 i = 0;
-                break;
-            }
+                continue;
+            }*/
             // distribution
-            std::uniform_int_distribution distribution{0, legalMoves};
+            std::uniform_int_distribution distribution{0, legalMoves - 1};
 
             int numTestedMoves = 0;
             while(true) {
