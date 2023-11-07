@@ -186,7 +186,7 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
 
 // Quiecense search, searching all the captures until there aren't any more as a slightly faster but less accurate search
 int qSearch(Board &board, int alpha, int beta, int ply) {
-    if(!dataGeneration && board.isRepeated) return 0;
+    if(board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
@@ -205,7 +205,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
 
-    if(!dataGeneration && entry.zobristKey == board.zobristHash && (
+    if(entry.zobristKey == board.zobristHash && (
         entry.flag == Exact // exact score
             || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
             || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
@@ -282,7 +282,7 @@ void addHistory(const int start, const int end, const int depth, const int color
 // The main search function, oh boy commenting all of this is gonna be fun
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
-    if(!dataGeneration && ply > 0 && board.isRepeated) return 0;
+    if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
@@ -307,7 +307,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Transposition entry = TT.getEntry(board.zobristHash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
-    if(!dataGeneration && ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
+    if(ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
             entry.flag == Exact // exact score
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
                 || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
@@ -616,7 +616,7 @@ std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, mateScore);
                 } else break;
-
+                if(nodes > nodeCap) break;
                 delta *= 1.5;
             }
         } else {

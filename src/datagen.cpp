@@ -5,6 +5,7 @@
 std::ofstream output;
 
 int main() {
+    initialize();
     std::cout << "Where to save the result?\n";
     std::string directory = "";
     std::cin >> directory;
@@ -44,22 +45,22 @@ constexpr uint8_t threadCount = 5;
 double runGame(std::vector<std::string>& fenVector) {
     int score = 0;
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    for(int i = 0; i <= 100; i++) {
+    for(int i = 0; i <= 1000; i++) {
         if(i < 8) {
             // make a random move
             std::random_device rd;
             std::mt19937_64 gen(rd());
 
             // get moves
-            std::array<Move, 256> moves;
-            const int legalMoves = board.getMoves(moves);
+            std::array<Move, 256> PLmoves;
+            const int totalMoves = board.getMoves(PLmoves);
 
-            /*std::array<Move, 256> moves;
+            std::array<Move, 256> moves;
             int legalMoves = 0;
             // legality check
-            for(Move move : PLmoves) {
-                if(board.makeMove(move)) {
-                    moves[legalMoves] = move;
+            for(int j = 0; j < totalMoves; j++) {
+                if(board.makeMove(PLmoves[j])) {
+                    moves[legalMoves] = PLmoves[j];
                     legalMoves++;
                     board.undoMove();
                 }
@@ -67,28 +68,50 @@ double runGame(std::vector<std::string>& fenVector) {
             // checkmate or stalemate? doesn't matter, restart
             if(legalMoves == 0) {
                 board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-                i = 0;
+                i = -1;
                 continue;
-            }*/
+            }
             // distribution
             std::uniform_int_distribution distribution{0, legalMoves - 1};
 
-            int numTestedMoves = 0;
-            while(true) {
-                const int index = distribution(gen);
-                if(board.makeMove(moves[index])) {
-                    break;
-                }
-                numTestedMoves++;
-            }
+            const int index = distribution(gen);
+            board.makeMove(moves[index]);
             // move has been made now, cool
             //std::cout << board.getFenString() << std::endl;
         } else {
+            if(board.isRepeated) return 0;
+            // checkmate check
+            // get moves
+            std::array<Move, 256> PLmoves;
+            const int totalMoves = board.getMoves(PLmoves);
+
+            std::array<Move, 256> moves;
+            int legalMoves = 0;
+            // legality check
+            for(int j = 0; j < totalMoves; j++) {
+                if(board.makeMove(PLmoves[j])) {
+                    moves[legalMoves] = PLmoves[j];
+                    legalMoves++;
+                    board.undoMove();
+                }
+            }
+            // checkmate or stalemate? doesn't matter, restart
+            if(legalMoves == 0) {
+                int colorMultiplier = 2 * board.getColorToMove() - 1;
+                if(board.isInCheck()) {
+                    score = mateScore * -colorMultiplier;
+                } else {
+                    score = 0;
+                }
+                break;
+            }
             // get move from engine normally
             //std::cout << "sending board with position " << board.getFenString() << std::endl;
             const auto move = dataGenSearch(board,5000);
             const uint64_t capturable = board.getOccupiedBitboard();
             score = move.second;
+            // i think that this score might be a problem
+            if(abs(score) > 1000) break;
             if(((1ULL << move.first.getEndSquare()) & capturable) != 0 || move.first.getFlag() == EnPassant) {
                 if(abs(move.second) < abs(mateScore + 256)) {
                     // non-mate, add fen string to vector
