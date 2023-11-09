@@ -540,9 +540,9 @@ int benchSearch(Board board, int depthToSearch) {
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
-        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
-        outputInfo(board, score, depth, elapsedTime);
+        //outputInfo(board, score, depth, elapsedTime);
     }
     return nodes;
 }

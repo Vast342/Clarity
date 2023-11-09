@@ -3,6 +3,8 @@
 #include "search.h"
 
 std::ofstream output;
+uint64_t totalPositions = 0;
+std::chrono::steady_clock::time_point beginTime;
 
 int main() {
     initialize();
@@ -17,9 +19,12 @@ int main() {
     std::string response = "";
     std::cin >> response;
     if(response == "y" || response == "Y") {
+        beginTime = std::chrono::steady_clock::now();
         generateData(numGames);
     }
     output.close();
+    std::cout << "Close thread? Y/N\n";
+    std::cin >> response;
     return 0;
 }
 
@@ -40,12 +45,13 @@ void threadFunction() {
 
 // idk what to use here lol
 constexpr uint8_t threadCount = 5;
-
+constexpr int moveLimit = 1000;
 // manages the games
 double runGame(std::vector<std::string>& fenVector) {
     int score = 0;
+    bool outOfBounds = false;
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    for(int i = 0; i <= 1000; i++) {
+    for(int i = 0; i <= moveLimit; i++) {
         if(i < 8) {
             // make a random move
             std::random_device rd;
@@ -79,7 +85,8 @@ double runGame(std::vector<std::string>& fenVector) {
             // move has been made now, cool
             //std::cout << board.getFenString() << std::endl;
         } else {
-            if(board.isRepeated) return 0;
+            if(board.isRepeated) return 0.5;
+            if(board.getFiftyMoveCount() >= 50) return 0.5;
             // checkmate check
             // get moves
             std::array<Move, 256> PLmoves;
@@ -99,6 +106,7 @@ double runGame(std::vector<std::string>& fenVector) {
             if(legalMoves == 0) {
                 int colorMultiplier = 2 * board.getColorToMove() - 1;
                 if(board.isInCheck()) {
+                    // checkmate! opponent wins, so if black wins it's -1000000 * -(-1)
                     score = mateScore * -colorMultiplier;
                 } else {
                     score = 0;
@@ -111,8 +119,11 @@ double runGame(std::vector<std::string>& fenVector) {
             const uint64_t capturable = board.getOccupiedBitboard();
             score = move.second;
             // i think that this score might be a problem
-            if(abs(score) > 1000) break;
-            if(((1ULL << move.first.getEndSquare()) & capturable) != 0 || move.first.getFlag() == EnPassant) {
+            if(abs(score) > 2500) {
+                if(outOfBounds) break;
+                outOfBounds = true;
+            }
+            if(((1ULL << move.first.getEndSquare()) & capturable) == 0 || move.first.getFlag() == EnPassant) {
                 if(abs(move.second) < abs(mateScore + 256)) {
                     // non-mate, add fen string to vector
                     fenVector.push_back(board.getFenString() + " | " + std::to_string(board.getColorToMove() == 1 ? move.second : -move.second));
@@ -127,6 +138,7 @@ double runGame(std::vector<std::string>& fenVector) {
             }
             //std::cout << board.getFenString() << std::endl;
         }
+        if(i == moveLimit) return 0.5;
     }
 
     // return 1 if white won, 0 if black won, and 0.5 if draw, this will be useful later
@@ -143,12 +155,19 @@ double runGame(std::vector<std::string>& fenVector) {
 
 int games = 0;
 int outputFrequency = 100;
+int infoOutputFrequency = 1000;
 void dumpToArray(double result, std::vector<std::string>& fenVector) {
     games++;
-    std::cout << "Dumping result of game " << games << std::endl;
+    if((games % outputFrequency) == 0) std::cout << "Finished game " << games << std::endl;
     for(const std::string &fen : fenVector) {
         // add to file and append result \n
         output << fen << " | " << result << '\n';
-        // i'll figure it out lol
+        totalPositions++;
+    }
+    if((games % infoOutputFrequency) == 0) {
+        std::cout << "Total Positions: " << totalPositions << std::endl;
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime).count();
+        std::cout << "Time: " << (elapsedTime / 1000) << " seconds " << std::endl;
+        std::cout << "Positions per second: " << (totalPositions / (elapsedTime / 1000)) << std::endl;
     }
 }

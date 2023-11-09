@@ -14,6 +14,7 @@ src/movegen.cpp
 src/eval.cpp
 src/search.cpp
 src/tests.cpp
+src/psqt.cpp
 src/tt.cpp)
 
 # 3 seperate builds, one using BMI2's pext, one using typical magic bitboards, and one that's native. The native doesn't detect what your cpu uses though.
@@ -21,7 +22,7 @@ add_executable(Clarity_Pext ${Common_SRC_Files} src/bmi2.cpp src/uci.cpp)
 add_executable(Clarity_Magic ${Common_SRC_Files} src/magic.cpp src/uci.cpp)
 add_executable(Clarity_Native ${Common_SRC_Files} src/bmi2.cpp src/uci.cpp)
 
-# data generator build (NOT CURRENTLY WORKING)
+# data generator build
 add_executable(Clarity_Datagen ${Common_SRC_Files} src/bmi2.cpp src/datagen.cpp)
 
 # building with all warnings for all of these so that I can try to pick up on issues
