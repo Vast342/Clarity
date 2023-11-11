@@ -6,23 +6,17 @@ std::ofstream output;
 uint64_t totalPositions = 0;
 std::chrono::steady_clock::time_point beginTime;
 
-int main() {
+// run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games*
+int main(int argc, char** argv) {
     initialize();
-    std::cout << "Where to save the result?\n";
-    std::string directory = "";
-    std::cin >> directory;
+    std::string directory = std::string(argv[1]);
+    int numGames = std::atoi(argv[2]);
     output.open(directory);
-    std::cout << "How many games?\n";
-    int numGames = 0;
-    std::cin >> numGames;
-    std::cout << "Generate data? Y/N\n";
-    std::string response = "";
-    std::cin >> response;
-    if(response == "y" || response == "Y") {
-        beginTime = std::chrono::steady_clock::now();
-        generateData(numGames);
-    }
+    beginTime = std::chrono::steady_clock::now();
+    std::cout << "Beginning data generation\n";
+    generateData(numGames);
     output.close();
+    std::string response = "";
     std::cout << "Close thread? Y/N\n";
     std::cin >> response;
     return 0;
@@ -30,17 +24,17 @@ int main() {
 
 // manages the threads
 void generateData(int numGames) {
-    for(int i = 0; i < numGames; i++) {
-        threadFunction();
-    }
+    threadFunction(numGames, 1);
 }
 
 // run on each thread
-void threadFunction() {
-    std::vector<std::string> fenVector;
-    double result = runGame(fenVector);
-    if(result == 2) std::cout << "Error! invalid game result\n";
-    dumpToArray(result, fenVector);
+void threadFunction(int numGames, int threadID) {
+    for(int i = 0; i < numGames; i++) {
+        std::vector<std::string> fenVector;
+        double result = runGame(fenVector);
+        if(result == 2) std::cout << "Error! invalid game result\n";
+        dumpToArray(result, fenVector);
+    }
 }
 
 // idk what to use here lol
@@ -102,7 +96,7 @@ double runGame(std::vector<std::string>& fenVector) {
                     board.undoMove();
                 }
             }
-            // checkmate or stalemate? doesn't matter, restart
+            // checkmate or stalemate?
             if(legalMoves == 0) {
                 int colorMultiplier = 2 * board.getColorToMove() - 1;
                 if(board.isInCheck()) {
@@ -115,25 +109,25 @@ double runGame(std::vector<std::string>& fenVector) {
             }
             // get move from engine normally
             //std::cout << "sending board with position " << board.getFenString() << std::endl;
-            const auto move = dataGenSearch(board,5000);
+            const auto result = dataGenSearch(board, 5000);
             const uint64_t capturable = board.getOccupiedBitboard();
-            score = move.second;
+            score = (board.getColorToMove() == 1 ? result.second : -result.second);
             // i think that this score might be a problem
             if(abs(score) > 2500) {
                 if(outOfBounds) break;
                 outOfBounds = true;
             }
-            if(((1ULL << move.first.getEndSquare()) & capturable) == 0 || move.first.getFlag() == EnPassant) {
-                if(abs(move.second) < abs(mateScore + 256)) {
+            if(((1ULL << result.first.getEndSquare()) & capturable) == 0 || result.first.getFlag() == EnPassant) {
+                if(abs(score) < abs(mateScore + 256)) {
                     // non-mate, add fen string to vector
-                    fenVector.push_back(board.getFenString() + " | " + std::to_string(board.getColorToMove() == 1 ? move.second : -move.second));
+                    fenVector.push_back(board.getFenString() + " | " + std::to_string(score));
                 } else {
                     // checkmate found, no more use for this
                     break;
                 }
             }
             //std::cout << "score is now " << score << std::endl;
-            if(!board.makeMove(move.first)) {
+            if(!board.makeMove(result.first)) {
                 std::cout << "Engine made an illegal move\n";
             }
             //std::cout << board.getFenString() << std::endl;
@@ -154,8 +148,8 @@ double runGame(std::vector<std::string>& fenVector) {
 }
 
 int games = 0;
-int outputFrequency = 100;
-int infoOutputFrequency = 1000;
+int outputFrequency = 10;
+int infoOutputFrequency = 100;
 void dumpToArray(double result, std::vector<std::string>& fenVector) {
     games++;
     if((games % outputFrequency) == 0) std::cout << "Finished game " << games << std::endl;

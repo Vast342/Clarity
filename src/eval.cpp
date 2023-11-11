@@ -5,8 +5,7 @@
 // this is my first time doing anything with neural networks, or anything with pointers, so code here might be a bit questionable to look at
 
 namespace {
-    INCBIN(networkData, "F:/ChessEngine/src/clarity_net001.nnue");
-    //INCBIN(networkData, "F:/ChessEngine/src/clarity_spnet_01.nnue");
+    INCBIN(networkData, "F:/ChessEngine/src/nets/clarity_net001.nnue");
     const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 }
 

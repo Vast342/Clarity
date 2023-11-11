@@ -2,13 +2,17 @@
 #include "psqt.h"
 #include "tt.h"
 
-// The main search functions
-
-bool dataGeneration = false;
+constexpr int hardNodeCap = 400000;
 
 constexpr int startDepth = 3;
 
+constexpr int historyCap = 16384;
+
 constexpr int nmpMin = 2;
+
+// The main search functions
+
+bool dataGeneration = false;
 
 Move rootBestMove = Move();
 
@@ -25,8 +29,6 @@ std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 std::array<std::array<int, 2>, 100> killerTable;
 
 std::chrono::steady_clock::time_point begin;
-
-constexpr int historyCap = 16384;
 
 bool timesUp = false;
 
@@ -165,7 +167,7 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
                 values[i] = 200 * eg_value[victim] - eg_value[attacker];
             } else {
                 // bad captures
-                values[i] = 19000;
+                values[i] = 17000;
             }*/
         } else {
             // read from history
@@ -173,9 +175,9 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             // if not in qsearch, killers
             if(ply != -1) {
                 if(moveValue == killerTable[ply][0]) {
-                    values[i] = 18000;
+                    values[i] = 19000;
                 } else if(moveValue == killerTable[ply][1]) {
-                    values[i] = 17000;
+                    values[i] = 18000;
                 } 
             }
         }
@@ -190,7 +192,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
-            if(nodes > 12000) {
+            if(nodes > hardNodeCap) {
                 timesUp = true;
                 return 0;
             }
@@ -217,7 +219,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     int bestScore = board.getEvaluation();
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
-  
+
     // get the legal moves and sort them
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
@@ -226,7 +228,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     // values useful for writing to TT later
     Move bestMove;
     int flag = FailLow;
-  
+
     // loop though all the moves
     for(int i = 0; i < totalMoves; i++) {
         if(board.makeMove(moves[i])) {
@@ -236,7 +238,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
             board.undoMove();
             // time check
             if(dataGeneration) {
-                if(nodes > 12000) {
+                if(nodes > hardNodeCap) {
                     timesUp = true;
                     return 0;
                 }
@@ -286,7 +288,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
-            if(nodes > 12000) {
+            if(nodes > hardNodeCap) {
                 timesUp = true;
                 return 0;
             }
@@ -354,8 +356,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
-            // Late Move Pruning (not working, needs more testing)
-            //if(depth < 4 && !isPV && bestScore > mateScore + 256 && legalMoves > (3+depth*10)) break;
             bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
             int score = 0;
             // Principal Variation Search
@@ -405,6 +405,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     break;
                 }
             }
+            // Late Move Pruning (not working, needs more testing)
+            //if(depth < 7 && !isPV && bestScore > mateScore + 256 && legalMoves > (3 + 2 * depth * depth)) break;
         }
     }
 
