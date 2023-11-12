@@ -156,8 +156,6 @@ uint64_t getPassedPawnMask(int square, int colorToMove);
 // flags for moves
 constexpr uint8_t Normal = 0b0000;
 constexpr std::array<uint8_t, 4> castling = {0b0001, 0b0010, 0b0011, 0b0100};
-constexpr std::array<uint8_t, 4> promotions = {0b0101, 0b0110, 0b0111, 0b1000};
-constexpr uint8_t EnPassant = 0b1001;
-constexpr uint8_t DoublePawnPush = 0b1010;
-
-
+constexpr uint8_t EnPassant = 0b0101;
+constexpr uint8_t DoublePawnPush = 0b0110;
+constexpr std::array<uint8_t, 4> promotions = {0b0111, 0b1000, 0b1001, 0b1010};
