@@ -14,7 +14,6 @@ src/movegen.cpp
 src/eval.cpp
 src/search.cpp
 src/tests.cpp
-src/psqt.cpp
 src/tt.cpp)
 
 # 3 seperate builds, one using BMI2's pext, one using typical magic bitboards, and one that's native. The native doesn't detect what your cpu uses though.
