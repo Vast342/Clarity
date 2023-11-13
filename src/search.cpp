@@ -27,6 +27,7 @@ int seldepth = 0;
 TranspositionTable TT;
 
 std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
+std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
 
 std::array<std::array<int, 2>, 100> killerTable;
 
@@ -161,9 +162,10 @@ bool see(const Board& board, Move move, int threshold) {
 
 /* orders the moves based on the following order:
     1: TT Best move: the result of a previous search, if any
-    2: MVV-LVA (soon to be aided by SEE) for captures, sorting them by the ratio of the piece capturing to the piece being captured
+    2: Good Captures: Sorted by the victim piece value + value from capture history
     3: Killer moves: moves that are proven to be good from earlier, being indexed by ply
     4: History: scores of how many times a move has caused a beta cutoff
+    5: Bad captures: captures that result in bad exchanges.
 */
 void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, int ttMoveValue, int ply) {
     const uint64_t occupied = board.getOccupiedBitboard();
@@ -176,14 +178,10 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             // see not workey yet
             if(ply == -1 || see(board, moves[i], 0)) {
                 // good captures
-                // mvv lva (ciekce was here)
-                const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
-                const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-                // technically I could use 175 here and still have some wiggle room
-                // with 200 that gives me a range of:
-                // min: (200*112)-1187=21213
-                // max: (200*1187)-112=237288
-                values[i] = 200 * eg_value[victim] - eg_value[attacker];
+                const auto piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
+                const auto end = moves[i].getEndSquare();
+                const auto victim = getType(board.pieceAtIndex(end));
+                values[i] = 200 * eg_value[victim] + captureHistoryTable[board.getColorToMove()][piece][end][victim];
             } else {
                 // bad captures
                 values[i] = 0;
@@ -298,6 +296,12 @@ void addHistory(const int start, const int end, const int depth, const int color
     const int bonus = depth * depth;
     const int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
+}
+
+void addCaptureHistory(const int piece, const int end, const int captured, const int depth, const int colorToMove) {
+    const int bonus = depth * depth;
+    const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][captured] * std::abs(bonus) / historyCap;
+    captureHistoryTable[colorToMove][piece][end][captured] += thingToAdd;
 }
 
 // The main search function
@@ -428,6 +432,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         addHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
                         killerTable[ply][1] = killerTable[ply][0];
                         killerTable[ply][0] = moves[i].getValue();
+                    } else {
+                        const int end = moves[i].getEndSquare();
+                        addCaptureHistory(getType(board.pieceAtIndex(moves[i].getStartSquare())), end, getType(board.pieceAtIndex(end)), depth, board.getColorToMove());
                     }
                     break;
                 }
