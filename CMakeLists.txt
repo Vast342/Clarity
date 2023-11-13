@@ -11,7 +11,7 @@ src/board.cpp
 src/globals.cpp 
 src/move.cpp 
 src/movegen.cpp 
-src/psqt.cpp
+src/eval.cpp
 src/search.cpp
 src/tests.cpp
 src/tt.cpp)

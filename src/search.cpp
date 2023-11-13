@@ -2,11 +2,19 @@
 #include "psqt.h"
 #include "tt.h"
 
-// The main search functions
+constexpr int hardNodeCap = 400000;
 
 constexpr int startDepth = 3;
 
+constexpr int historyCap = 16384;
+
 constexpr int nmpMin = 2;
+
+constexpr int depthLimit = 100;
+
+// The main search functions
+
+bool dataGeneration = false;
 
 Move rootBestMove = Move();
 
@@ -23,8 +31,6 @@ std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 std::array<std::array<int, 2>, 100> killerTable;
 
 std::chrono::steady_clock::time_point begin;
-
-constexpr int historyCap = 16384;
 
 bool timesUp = false;
 
@@ -62,28 +68,55 @@ void resetEngine() {
     clearHistory(); 
 }
 
-bool see(const Board& board, Move move) {
+int estimateMoveValue(const Board& board, const int end, const int flag) {
+    // starting with the end square piece
+    int value = eg_value[getType(board.pieceAtIndex(end))];
+    // promotions! pawn--, newpiece++
+    for(int i = 0; i < 4; i++) {
+        if(flag == promotions[i]) {
+            value = eg_value[i + 1] - eg_value[Pawn];
+            return value;
+        }
+    }
+
+    // Target square is empty for en passant, but you still capture a pawn
+    if(flag == EnPassant) {
+        value = eg_value[Pawn];
+    }
+    // castling can't capture and is never encoded as such so we don't care.
+    return value;
+}
+
+bool see(const Board& board, Move move, int threshold) {
     // establishing stuff
     const int start = move.getStartSquare();
     const int end = move.getEndSquare();
     const int flag = move.getFlag();
-    uint64_t occupied = board.getOccupiedBitboard();
+
     int nextVictim = getType(board.pieceAtIndex(start));
     // handle promotions
-    for(int i = 0; i < 4; i++) {
-        if(flag == promotions[i]) {
-            nextVictim = i + 1;
-            break;
+    // promotion flags are the 4 highest numbers, so this saves a loop if it's not necessary
+    if(flag > DoublePawnPush) {
+        for(int i = 0; i < 4; i++) {
+            if(flag == promotions[i]) {
+                nextVictim = i + 1;
+                break;
+            }
         }
     }
-    // doing first move
-    int balance = getType(board.pieceAtIndex(end));
-    balance -= nextVictim + 1;
-    occupied ^= (1ULL << start);
-    occupied ^= (1ULL << end);
+    int balance = estimateMoveValue(board, end, flag) - threshold;
+    // best case still doesn't beat threshold, not good
+    if(balance < 0) return false;
+    // worst case, we lose the piece here
+    balance -= eg_value[nextVictim];
+    // if it's still winning in the best case scenario, we can just cut it off
+    if(balance >= 0) return true;
+    // make sure occupied bitboard knows we did the first move
+    uint64_t occupied = board.getOccupiedBitboard();
+    occupied = (occupied ^ (1ULL << start)) | (1ULL << end);
     if (flag == EnPassant) occupied ^= (1ULL << board.getEnPassantIndex());
     int color = 1 - board.getColorToMove();
-    // get the attackers, for detecting revealed attackers
+    // get the pieces, for detecting revealed attackers
     const uint64_t bishops = board.getPieceBitboard(Bishop) | board.getPieceBitboard(Queen);
     const uint64_t rooks = board.getPieceBitboard(Rook) | board.getPieceBitboard(Queen);
     // generate the attackers (not including the first move)
@@ -99,6 +132,8 @@ bool see(const Board& board, Move move) {
                 break;
             }
         }
+        // make the move
+        occupied ^= (1ULL << std::countr_zero(myAttackers & board.getColoredPieceBitboard(color, nextVictim)));
         // diagonal moves may reveal more attackers
         if(nextVictim == Pawn || nextVictim == Bishop || nextVictim == Queen) {
             attackers |= (getBishopAttacks(end, occupied) & bishops);
@@ -107,12 +142,10 @@ bool see(const Board& board, Move move) {
         if(nextVictim == Rook || nextVictim == Queen) {
             attackers |= (getRookAttacks(end, occupied) & rooks);
         }
-        // make the move
-        occupied ^= (1ULL << std::countr_zero(myAttackers & board.getColoredPieceBitboard(color, nextVictim)));
         attackers &= occupied;
         color = 1 - color;
         // update balance
-        balance = -balance - nextVictim;
+        balance = -balance - 1 - eg_value[nextVictim];
         // if you are ahead
         if(balance >= 0) {
             // speedrunning legality check
@@ -132,8 +165,7 @@ bool see(const Board& board, Move move) {
     3: Killer moves: moves that are proven to be good from earlier, being indexed by ply
     4: History: scores of how many times a move has caused a beta cutoff
 */
-void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, int ttMoveValue, int ply) {
-    std::array<int, 256> values;
+void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, int ttMoveValue, int ply) {
     const uint64_t occupied = board.getOccupiedBitboard();
     for(int i = 0; i < numMoves; i++) {
         const int moveValue = moves[i].getValue();
@@ -141,17 +173,8 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
             values[i] = 1000000000;
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
             // Captures!
-            // mvv lva (ciekce was here)
-            const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
-            const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-            // technically I could use 175 here and still have some wiggle room
-            // with 200 that gives me a range of:
-            // min: (200*112)-1187=21213
-            // max: (200*1187)-112=237288
-            values[i] = 200 * eg_value[victim] - eg_value[attacker];
-            /*
             // see not workey yet
-            if(see(board, moves[i])) {
+            if(ply == -1 || see(board, moves[i], 0)) {
                 // good captures
                 // mvv lva (ciekce was here)
                 const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
@@ -163,23 +186,23 @@ void orderMoves(const Board& board, std::array<Move, 256> &moves, int numMoves, 
                 values[i] = 200 * eg_value[victim] - eg_value[attacker];
             } else {
                 // bad captures
-                values[i] = 19000;
-            }*/
+                values[i] = 0;
+            }
         } else {
             // read from history
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
             // if not in qsearch, killers
             if(ply != -1) {
                 if(moveValue == killerTable[ply][0]) {
-                    values[i] = 18000;
+                    values[i] = 19000;
                 } else if(moveValue == killerTable[ply][1]) {
-                    values[i] = 17000;
+                    values[i] = 18000;
                 } 
             }
         }
-        values[i] = -values[i];
+        //values[i] = -values[i];
     }
-    sortMoves(values, moves, numMoves);
+    //sortMoves(values, moves, numMoves);
 }
 
 // Quiecense search, searching all the captures until there aren't any more as a slightly faster but less accurate search
@@ -187,9 +210,16 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     if(board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-            timesUp = true;
-            return 0;
+        if(dataGeneration) {
+            if(nodes > hardNodeCap) {
+                timesUp = true;
+                return 0;
+            }
+        } else {
+            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
+                timesUp = true;
+                return 0;
+            }
         }
     }
     if(ply > seldepth) seldepth = ply;
@@ -208,27 +238,35 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     int bestScore = board.getEvaluation();
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
-  
+
     // get the legal moves and sort them
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
-    orderMoves(board, moves, totalMoves, entry.bestMove.getValue(), -1);
+    std::array<int, 256> moveValues;
+    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), -1);
 
     // values useful for writing to TT later
     Move bestMove;
     int flag = FailLow;
-  
+
     // loop though all the moves
     for(int i = 0; i < totalMoves; i++) {
+        for (int j = i + 1; j < totalMoves; j++) {
+            if (moveValues[j] > moveValues[i]) {
+                std::swap(moveValues[j], moveValues[i]);
+                std::swap(moves[j], moves[i]);
+            }
+        }
+        if(!see(board, moves[i], 0)) {
+            continue;
+        }
         if(board.makeMove(moves[i])) {
             nodes++;
             // searches from this node
             const int score = -qSearch(board, -beta, -alpha, ply + 1);
             board.undoMove();
             // time check
-            if(timesUp) {
-                return 0;
-            }
+            if(timesUp) return 0;
 
             if(score > bestScore) {
                 bestScore = score;
@@ -262,17 +300,25 @@ void addHistory(const int start, const int end, const int depth, const int color
     historyTable[colorToMove][start][end] += thingToAdd;
 }
 
-// The main search function, oh boy commenting all of this is gonna be fun
+// The main search function
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-            timesUp = true;
-            return 0 ;
+        if(dataGeneration) {
+            if(nodes > hardNodeCap) {
+                timesUp = true;
+                return 0;
+            }
+        } else {
+            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
+                timesUp = true;
+                return 0;
+            }
         }
     }
+
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
     const bool isPV = beta == alpha + 1;
@@ -296,7 +342,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // potential conditions to add: staticEval >= beta and !isPV, however they seem to be roughly equal after I tested them in the past. I could test it again soon but ehhh I'm a bit busy
-    if(nmpAllowed && depth >= nmpMin && !inCheck) {
+    if(nmpAllowed && depth >= nmpMin && !inCheck && board.getEvaluation() >= beta) {
         board.changeColor();
         const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
@@ -308,7 +354,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // get the moves
     std::array<Move, 256> moves;
     const int totalMoves = board.getMoves(moves);
-    orderMoves(board, moves, totalMoves, entry.bestMove.getValue(), ply);
+    std::array<int, 256> moveValues;
+    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), ply);
 
     // values useful for writing to TT later
     int bestScore = mateScore;
@@ -322,17 +369,23 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // capturable squares to determine if a move is a capture.
-    const int epIndex = board.getEnPassantIndex();
-    const uint64_t capturable = board.getOccupiedBitboard() | (epIndex == 64 ? 0 : (1ULL << epIndex));
+    const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
     int legalMoves = 0;
     for(int i = 0; i < totalMoves; i++) {
+        for (int j = i + 1; j < totalMoves; j++) {
+            if (moveValues[j] > moveValues[i]) {
+                std::swap(moveValues[j], moveValues[i]);
+                std::swap(moves[j], moves[i]);
+            }
+        }
+        bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
+        // see pruning
+        //                     This detects either quiet moves or bad captures
+        if (!isPV && depth <= 8 && (moveValues[i] <= historyCap) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
-            // Late Move Pruning (not working, needs more testing)
-            //if(depth < 4 && !isPV && bestScore > mateScore + 256 && legalMoves > (3+depth*10)) break;
-            bool isCapture = (capturable & (1ULL << moves[i].getEndSquare())) != 0;
             int score = 0;
             // Principal Variation Search
             if(legalMoves == 1) {
@@ -354,9 +407,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             board.undoMove();
 
             // backup time check
-            if(timesUp) {
-                return 0;
-            }
+            if(timesUp) return 0;
 
             if(score > bestScore) {
                 bestScore = score;
@@ -381,6 +432,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     break;
                 }
             }
+            // Late Move Pruning (not working, needs more testing)
+            if(depth < 7 && !isPV && bestScore > mateScore + 256 && legalMoves > (3 + 2 * depth * depth)) break;
         }
     }
 
@@ -483,15 +536,20 @@ Move think(Board board, int softBound, int hardBound, bool info) {
 
 // searches done for bench, returns the number of nodes searched.
 int benchSearch(Board board, int depthToSearch) {
-    //ageHistory();
     clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
-    
-    int score = 0;
+    seldepth = 0;
+    timesUp = false;
 
+    begin = std::chrono::steady_clock::now();
+
+    rootBestMove = Move();
+    int score = 0;
+    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
     for(int depth = 1; depth <= depthToSearch; depth++) {
-        timesUp = false;
+        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
+        seldepth = depth;
         int delta = 25;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
@@ -511,6 +569,9 @@ int benchSearch(Board board, int depthToSearch) {
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
+        //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        // outputs info which is picked up by the user
+        //outputInfo(board, score, depth, elapsedTime);
     }
     return nodes;
 }
@@ -554,19 +615,23 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
     return rootBestMove;
 }
 
-std::pair<Move, int> dataGenSearch(Board board, int depthToSearch) {
-    //ageHistory();
+std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
+    //std::cout << "recieved board with position " << board.getFenString() << std::endl;
     clearHistory();
+    dataGeneration = true;
     nodes = 0;
-    seldepth = 0;
     hardLimit = 1215752192;
-    begin = std::chrono::steady_clock::now();
-    
-    int score = 10;
+    seldepth = 0;
+    timesUp = false;
 
-    for(int depth = 1; depth <= depthToSearch; depth++) {
-        seldepth = 0;
-        timesUp = false;
+    begin = std::chrono::steady_clock::now();
+
+    rootBestMove = Move();
+    int score = 0;
+    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
+    for(int depth = 1; depth <= 100; depth++) {
+        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
+        seldepth = depth;
         int delta = 25;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
@@ -580,12 +645,16 @@ std::pair<Move, int> dataGenSearch(Board board, int depthToSearch) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, mateScore);
                 } else break;
-
+                if(nodes > nodeCap) break;
                 delta *= 1.5;
             }
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
+        //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        // outputs info which is picked up by the user
+        //outputInfo(board, score, depth, elapsedTime);
+        if(nodes > nodeCap) break;
     }
     return std::pair<Move, int>(rootBestMove, score);
 }

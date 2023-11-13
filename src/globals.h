@@ -15,6 +15,7 @@
 #include <random>
 #include <chrono>
 #include <fstream>
+#include "eval.h"
 
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
@@ -52,10 +53,10 @@ struct BoardState {
     uint8_t fiftyMoveCounter;
     uint8_t hundredPlyCounter;
     uint8_t castlingRights;
+    //int mgEval;
+    //int egEval;
+    //int phase;
     uint64_t zobristHash;
-    int mgEval;
-    int egEval;
-    int phase;
     bool isRepeated;
 };
 
@@ -98,16 +99,18 @@ struct Board {
         int getEvaluation();
         int getCastlingRights() const;
         int getEnPassantIndex() const;
-        int taperValue(int mg, int eg);
-        int fullEvalRegen();
         uint64_t fullZobristRegen();
         bool isRepeatedPosition();
-        int detectPassedPawns();
         bool isLegalMove(const Move& move);
         uint64_t getAttackers(int square) const;
         uint64_t getColoredBitboard(int color) const;
         uint64_t getPieceBitboard(int piece) const;
+        int getFiftyMoveCount() const;
     private:
+        NetworkState nnueState;
+        //int mgEval;
+        //int egEval;
+        //int phase;
         std::array<uint64_t, 2> coloredBitboards;
         std::array<uint64_t, 6> pieceBitboards;
         uint8_t enPassantIndex;
@@ -117,9 +120,6 @@ struct Board {
         uint8_t fiftyMoveCounter;
         uint8_t castlingRights;
         uint8_t colorToMove;
-        int mgEval;
-        int egEval;
-        int phase;
         std::vector<BoardState> stateHistory;
         std::vector<uint64_t> zobristHistory;
         void addPiece(int square, int type);
@@ -127,7 +127,6 @@ struct Board {
         void movePiece(int square1, int type1, int square2, int type2);
         void loadBoardState(BoardState state);
         BoardState generateBoardState();
-        int getPassedPawnBonuses();
 };
 
 // the eternal functions, can be used everywhere
@@ -157,8 +156,6 @@ uint64_t getPassedPawnMask(int square, int colorToMove);
 // flags for moves
 constexpr uint8_t Normal = 0b0000;
 constexpr std::array<uint8_t, 4> castling = {0b0001, 0b0010, 0b0011, 0b0100};
-constexpr std::array<uint8_t, 4> promotions = {0b0101, 0b0110, 0b0111, 0b1000};
-constexpr uint8_t EnPassant = 0b1001;
-constexpr uint8_t DoublePawnPush = 0b1010;
-
-
+constexpr uint8_t EnPassant = 0b0101;
+constexpr uint8_t DoublePawnPush = 0b0110;
+constexpr std::array<uint8_t, 4> promotions = {0b0111, 0b1000, 0b1001, 0b1010};

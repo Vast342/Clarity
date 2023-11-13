@@ -73,7 +73,7 @@ void calculateReductions() {
  */
 void initialize() {
     generateLookups();
-    computePSQTs();
+    //computePSQTs();
     initializeZobrist();
     calculateReductions();
 }

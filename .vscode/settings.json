@@ -55,6 +55,12 @@
         "ratio": "cpp",
         "format": "cpp",
         "fstream": "cpp",
-        "iomanip": "cpp"
-    }
+        "iomanip": "cpp",
+        "condition_variable": "cpp",
+        "cstring": "cpp",
+        "forward_list": "cpp",
+        "mutex": "cpp",
+        "semaphore": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp"
 }

@@ -1,5 +1,5 @@
 #include "slidey.h"
-#include "immintrin.h"
+#include <immintrin.h>
 
 // the nested arrays used to lookup the attacks
 std::array<std::array<uint64_t, 512>, 64> bishopAttackLookup;

@@ -1,7 +1,6 @@
 #pragma once
 
-void generateData();
-void threadFunction();
+void generateData(int numGames);
+void threadFunction(int numGames, int threadID);
 void dumpToArray(double result, std::vector<std::string>& fenVector);
-int checkForMates(Board& board);
 double runGame(std::vector<std::string>& fenVector);
