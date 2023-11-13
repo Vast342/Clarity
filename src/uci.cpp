@@ -5,7 +5,8 @@
 #include "bench.h"
 
 /*
-    The entirety of the implementation of UCI, read the standard for that if you want more information
+    The entirety of my implementation of UCI, read the standard for that if you want more information
+    There are things not supported here though, such as go nodes, and quite a few options
 */
 
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
@@ -14,6 +15,7 @@ int rootColorToMove;
 
 // runs a fixed depth search on a fixed set of positions, to see if a test changes how the engine behaves
 void runBench(int depth) {
+    resetEngine();
     uint64_t total = 0;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for(std::string fen : fens) {
@@ -22,8 +24,7 @@ void runBench(int depth) {
         total += j;
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-    std::cout << "searched 50 positions to a depth of " << depth << ", total nodes " << total << '\n';
-    std::cout << "bench took " << elapsedTime << "ms\n";
+    std::cout << "nodes " << total << " time " << elapsedTime << '\n';
 }
 
 // sets options, though currently just the hash size
@@ -33,6 +34,7 @@ void setOption(const std::vector<std::string>& bits) {
         int newSizeB = newSizeMB * 1024 * 1024;
         // this should be 16 bytes
         int entrySizeB = sizeof(Transposition);
+        assert(entrySizeB == 16); 
         int newSizeEntries = newSizeB / entrySizeB;
         //std::cout << log2(newSizeEntries);
         resizeTT(newSizeEntries);

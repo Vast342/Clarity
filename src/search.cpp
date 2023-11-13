@@ -300,7 +300,7 @@ void addHistory(const int start, const int end, const int depth, const int color
     historyTable[colorToMove][start][end] += thingToAdd;
 }
 
-// The main search function, oh boy commenting all of this is gonna be fun
+// The main search function
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && board.isRepeated) return 0;
@@ -369,7 +369,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // capturable squares to determine if a move is a capture.
-    //const uint64_t capturable = board.getOccupiedBitboard();
+    const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
     int legalMoves = 0;
     for(int i = 0; i < totalMoves; i++) {
@@ -379,11 +379,10 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 std::swap(moves[j], moves[i]);
             }
         }
-        //bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
-        bool isCapture = (moveValues[i] > 21000 && moveValues[i] < 240000) || moveValues[i] == 0;
-        bool isBadCapture = (isCapture ? moveValues[i] == 0 : false);
+        bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
         // see pruning
-        if (!isPV && depth <= 8 && (!isCapture || isBadCapture) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
+        //                     This detects either quiet moves or bad captures
+        if (!isPV && depth <= 8 && (moveValues[i] <= historyCap) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
             legalMoves++;
             nodes++;
