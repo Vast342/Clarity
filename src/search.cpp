@@ -44,6 +44,15 @@ void clearHistory() {
             }
         }
     }
+    for(int i = 0; i < 2; i++) {
+        for(int j = 0; j < 6; j++) {
+            for(int k = 0; k < 64; k++) {
+                for(int l = 0; l < 6; l++) {
+                    captureHistoryTable[i][j][k][l] = 0;
+                }
+            }
+        }   
+    }
 }
 
 // ages the history values, which could be done at the start of turns, however I am not currently doing so until I test it more
@@ -175,16 +184,13 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             values[i] = 1000000000;
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
             // Captures!
-            // see not workey yet
-            if(ply == -1 || see(board, moves[i], 0)) {
+            const auto piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
+            const auto end = moves[i].getEndSquare();
+            const auto victim = getType(board.pieceAtIndex(end));
+            values[i] = mvv_value[victim] + captureHistoryTable[board.getColorToMove()][piece][end][victim];
+            if(see(board, moves[i], 0)) {
                 // good captures
-                const auto piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
-                const auto end = moves[i].getEndSquare();
-                const auto victim = getType(board.pieceAtIndex(end));
-                values[i] = 200 * eg_value[victim] + captureHistoryTable[board.getColorToMove()][piece][end][victim];
-            } else {
-                // bad captures
-                values[i] = 0;
+                values[i] += 21000;
             }
         } else {
             // read from history
@@ -298,10 +304,10 @@ void addHistory(const int start, const int end, const int depth, const int color
     historyTable[colorToMove][start][end] += thingToAdd;
 }
 
-void addCaptureHistory(const int piece, const int end, const int captured, const int depth, const int colorToMove) {
+void addCaptureHistory(const int piece, const int end, const int victim, const int depth, const int colorToMove) {
     const int bonus = depth * depth;
-    const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][captured] * std::abs(bonus) / historyCap;
-    captureHistoryTable[colorToMove][piece][end][captured] += thingToAdd;
+    const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
+    captureHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
 }
 
 // The main search function

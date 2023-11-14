@@ -9,6 +9,14 @@
 
 constexpr int mg_value[6] = {64, 271, 299, 375, 769, 0};
 constexpr int eg_value[6] = {112, 351, 361, 627, 1187, 0};
+// values from ciekce, developer of stormphrax
+static constexpr auto mvv_value = std::array {
+    10, // pawn
+    38, // knight
+    40, // bishop
+    50, // rook
+    110 // queen
+};
 
 constexpr int phaseIncrements[6] = {0, 1, 1, 2, 4, 0};
 
