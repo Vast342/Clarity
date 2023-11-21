@@ -24,12 +24,21 @@ int hardLimit = 0;
 
 int seldepth = 0;
 
+struct stackEntry {
+    // whatever I need for conthist
+    //Move bestMove; maybe
+    // pv stuff
+    // I still don't understand these tables at all lol
+    // killer moves, 3 per ply
+    std::array<uint16_t, 3> killers;
+};
+
+std::array<stackEntry, 120> stack;
+
 TranspositionTable TT;
 
 std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
-
-std::array<std::array<int, 2>, 100> killerTable;
 
 std::chrono::steady_clock::time_point begin;
 
@@ -44,7 +53,7 @@ void clearHistory() {
             }
         }
     }
-    for(int i = 0; i < 2; i++) {
+    /*for(int i = 0; i < 2; i++) {
         for(int j = 0; j < 6; j++) {
             for(int k = 0; k < 64; k++) {
                 for(int l = 0; l < 6; l++) {
@@ -52,7 +61,7 @@ void clearHistory() {
                 }
             }
         }   
-    }
+    }*/
 }
 
 // ages the history values, which could be done at the start of turns, however I am not currently doing so until I test it more
@@ -65,6 +74,15 @@ void ageHistory() {
             }
         }
     }
+    /*for(int i = 0; i < 2; i++) {
+        for(int j = 0; j < 6; j++) {
+            for(int k = 0; k < 64; k++) {
+                for(int l = 0; l < 6; l++) {
+                    captureHistoryTable[i][j][k][l] /= 2;
+                }
+            }
+        }   
+    }*/
 }
 
 // resizes the transposition table
@@ -176,7 +194,7 @@ bool see(const Board& board, Move move, int threshold) {
     4: History: scores of how many times a move has caused a beta cutoff
     5: Bad captures: captures that result in bad exchanges.
 */
-void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, int ttMoveValue, int ply) {
+void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, int ttMoveValue, int ply, bool inQSearch) {
     const uint64_t occupied = board.getOccupiedBitboard();
     for(int i = 0; i < numMoves; i++) {
         const int moveValue = moves[i].getValue();
@@ -184,24 +202,42 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             values[i] = 1000000000;
         } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
             // Captures!
-            const auto piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
+            // see!
+            if(inQSearch || see(board, moves[i], 0)) {
+                // good captures
+                // mvv lva (ciekce was here)
+                const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
+                const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
+                // technically I could use 175 here and still have some wiggle room
+                // with 200 that gives me a range of:
+                // min: (200*112)-1187=21213
+                // max: (200*1187)-112=237288
+                values[i] = 200 * eg_value[victim] - eg_value[attacker];
+            } else {
+                // bad captures
+                values[i] = 0;
+            }
+            // capthist, I'll be back soon
+            /*const auto piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
             const auto end = moves[i].getEndSquare();
             const auto victim = getType(board.pieceAtIndex(end));
             values[i] = mvv_value[victim] + captureHistoryTable[board.getColorToMove()][piece][end][victim];
             if(see(board, moves[i], 0)) {
                 // good captures
                 values[i] += 21000;
-            }
+            }*/
         } else {
             // read from history
             values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
             // if not in qsearch, killers
-            if(ply != -1) {
-                if(moveValue == killerTable[ply][0]) {
+            if(!inQSearch) {
+                if(moveValue == stack[ply].killers[0]) {
                     values[i] = 19000;
-                } else if(moveValue == killerTable[ply][1]) {
+                } else if(moveValue == stack[ply].killers[1]) {
                     values[i] = 18000;
-                } 
+                }  else if(moveValue == stack[ply].killers[2]) {
+                    values[i] = 17000;
+                }
             }
         }
         //values[i] = -values[i];
@@ -209,7 +245,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
     //sortMoves(values, moves, numMoves);
 }
 
-// Quiecense search, searching all the captures until there aren't any more as a slightly faster but less accurate search
+// Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int qSearch(Board &board, int alpha, int beta, int ply) {
     if(board.isRepeated) return 0;
     // time check every 4096 nodes
@@ -247,7 +283,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), -1);
+    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), -1, true);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -365,7 +401,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     std::array<Move, 256> moves;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), ply);
+    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), ply, false);
 
     // values useful for writing to TT later
     int bestScore = mateScore;
@@ -382,6 +418,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
     int legalMoves = 0;
+    //int quietCount = 0;
     for(int i = 0; i < totalMoves; i++) {
         for (int j = i + 1; j < totalMoves; j++) {
             if (moveValues[j] > moveValues[i]) {
@@ -390,6 +427,10 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             }
         }
         bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
+        bool isQuiet = (!isCapture && (moves[i].getFlag() <= DoublePawnPush));
+        //if(isQuiet) quietCount++;
+        // Late Move Pruning (not working, needs more testing)
+        //if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
         // see pruning
         //                     This detects either quiet moves or bad captures
         if (!isPV && depth <= 8 && (moveValues[i] <= historyCap) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
@@ -404,7 +445,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             } else {
                 // Late Move Reductions (LMR)
                 int depthReduction = 0;
-                if(extensions == 0 && depth > 1 && !isCapture) {
+                if(extensions == 0 && depth > 1 && isQuiet) {
                     depthReduction = reductions[depth][legalMoves];
                 }
                 // this is more PVS stuff, searching with a reduced margin
@@ -433,20 +474,19 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 // Fail-high
                 if(score >= beta) {
                     flag = BetaCutoff;
-                    if(!isCapture) {
+                    if(isQuiet) {
                         // adds to the move's history and adjusts the killer table accordingly
                         addHistory(moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove());
-                        killerTable[ply][1] = killerTable[ply][0];
-                        killerTable[ply][0] = moves[i].getValue();
-                    } else {
+                        stack[ply].killers[2] = stack[ply].killers[1];
+                        stack[ply].killers[1] = stack[ply].killers[0];
+                        stack[ply].killers[0] = moves[i].getValue();
+                    }/* else {
                         const int end = moves[i].getEndSquare();
                         addCaptureHistory(getType(board.pieceAtIndex(moves[i].getStartSquare())), end, getType(board.pieceAtIndex(end)), depth, board.getColorToMove());
-                    }
+                    }*/
                     break;
                 }
             }
-            // Late Move Pruning (not working, needs more testing)
-            if(depth < 7 && !isPV && bestScore > mateScore + 256 && legalMoves > (3 + 2 * depth * depth)) break;
         }
     }
 
