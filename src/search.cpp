@@ -27,8 +27,6 @@ int seldepth = 0;
 struct stackEntry {
     // whatever I need for conthist
     //Move bestMove; maybe
-    // pv stuff
-    // I still don't understand these tables at all lol
     // killer moves, 3 per ply
     std::array<uint16_t, 3> killers;
 };
@@ -513,8 +511,9 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
         // score is checkmate in score - mateScore ply
         // position fen rn1q2rk/pp3p1p/2p4Q/3p4/7P/2NP2R1/PPP3P1/4RK2 w - - 0 1
         // ^^ mate in 3 test position
+        int colorMultiplier = score > 0 ? 1 : -1;
         scoreString += "mate ";
-        scoreString += std::to_string(abs(score + mateScore) / 2 + board.getColorToMove());
+        scoreString += std::to_string((abs(abs(score) + mateScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
     std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
 }
