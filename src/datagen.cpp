@@ -110,17 +110,18 @@ double runGame(std::vector<std::string>& fenVector) {
             // get move from engine normally
             //std::cout << "sending board with position " << board.getFenString() << std::endl;
             const auto result = dataGenSearch(board, 5000);
-            const uint64_t capturable = board.getOccupiedBitboard();
             score = (board.getColorToMove() == 1 ? result.second : -result.second);
             // i think that this score might be a problem
             if(abs(score) > 2500) {
                 if(outOfBounds) break;
                 outOfBounds = true;
             }
-            if(((1ULL << result.first.getEndSquare()) & capturable) == 0 || result.first.getFlag() == EnPassant) {
+            if(((1ULL << result.first.getEndSquare()) & board.getOccupiedBitboard()) == 0 && result.first.getFlag() != EnPassant) {
                 if(abs(score) < abs(mateScore + 256)) {
-                    // non-mate, add fen string to vector
-                    fenVector.push_back(board.getFenString() + " | " + std::to_string(score));
+                    if(!board.isInCheck()) {
+                        // non-mate, not in check, add fen string to vector
+                        fenVector.push_back(board.getFenString() + " | " + std::to_string(score));
+                    }
                 } else {
                     // checkmate found, no more use for this
                     break;
@@ -163,5 +164,6 @@ void dumpToArray(double result, std::vector<std::string>& fenVector) {
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime).count();
         std::cout << "Time: " << (elapsedTime / 1000) << " seconds " << std::endl;
         std::cout << "Positions per second: " << (totalPositions / (elapsedTime / 1000)) << std::endl;
+        std::cout << "Positions per game: " << (totalPositions / games) << std::endl;
     }
 }
