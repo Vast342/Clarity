@@ -24,18 +24,18 @@ int hardLimit = 0;
 
 int seldepth = 0;
 
-using chEntry = std::array<std::array<std::array<int, 64>, 7>, 2>;
+using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
 
-using chTable = std::array<std::array<std::array<chEntry, 64>, 7>, 2>;
+using CHTable = std::array<std::array<std::array<CHEntry, 64>, 7>, 2>;
 
-struct stackEntry {
+struct StackEntry {
     // conthist!
-    chEntry *ch_entry;
+    CHEntry *ch_entry;
     // killer moves, 3 per ply
     std::array<uint16_t, 3> killers;
 };
 
-std::array<stackEntry, 120> stack;
+std::array<StackEntry, 120> stack;
 
 TranspositionTable TT;
 
@@ -55,7 +55,7 @@ void clearHistory() {
             }
         }
     }
-    /*for(int i = 0; i < 2; i++) {
+    for(int i = 0; i < 2; i++) {
         for(int j = 0; j < 6; j++) {
             for(int k = 0; k < 64; k++) {
                 for(int l = 0; l < 6; l++) {
@@ -63,7 +63,7 @@ void clearHistory() {
                 }
             }
         }   
-    }*/
+    }
 }
 
 // resizes the transposition table
@@ -202,16 +202,17 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             /*const auto piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
             const auto end = moves[i].getEndSquare();
             const auto victim = getType(board.pieceAtIndex(end));
-            values[i] = mvv_value[victim] + captureHistoryTable[board.getColorToMove()][piece][end][victim];
+            values[i] =  200 * eg_value[victim] + captureHistoryTable[board.getColorToMove()][piece][end][victim];
             if(see(board, moves[i], 0)) {
                 // good captures
-                values[i] += 21000;
+                values[i] += 1000000;
             }*/
         } else {
             // read from history
-            values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()]
-                + (ply > 0 ? (*stack[ply - 1].ch_entry)[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()] : 0);
-                //+ (ply > 1 ? *stack[ply - 2].ch_entry[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()] : 0);
+            // 238000 is used here to make sure that there is the right amount of overlap with good and bad captures
+            values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
+                //+ (ply > 0 ? (*stack[ply - 1].ch_entry)[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()] : 0);
+                //+ (ply > 1 ? (*stack[ply - 2].ch_entry)[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
                 if(moveValue == stack[ply].killers[0]) {
@@ -319,23 +320,27 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
 // adds to the history of a particular move
 void addHistory(const Board& board, const int start, const int end, const int depth, const int colorToMove, const int ply) {
     const int bonus = depth * depth;
-    const int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
+    int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
-    if (ply > 0)
-        (*stack[ply - 1].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] += thingToAdd;
+    //if (ply > 0) {
+        //thingToAdd = bonus - (*stack[ply - 1].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] * std::abs(bonus) / historyCap;
+        //(*stack[ply - 1].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] += thingToAdd;
+    //}
 
-    //if (ply > 1)
-        //*stack[ply - 2].ch_entry[colorToMove][getType(board.pieceAtIndex(start))][end] += thingToAdd;
+    //if (ply > 1) {
+        //thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] * std::abs(bonus) / historyCap;
+        //(*stack[ply - 2].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] += thingToAdd;
+    //}
 }
 
-void addCaptureHistory(const int piece, const int end, const int victim, const int depth, const int colorToMove) {
+void addCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int depth) {
     const int bonus = depth * depth;
     const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
     captureHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
 }
 
 // The main search function
-int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, chTable &ch_table) {
+int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, CHTable &ch_table) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
@@ -377,7 +382,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // potential conditions to add: staticEval >= beta and !isPV, however they seem to be roughly equal after I tested them in the past. I could test it again soon but ehhh I'm a bit busy
     if(nmpAllowed && depth >= nmpMin && !inCheck && board.getEvaluation() >= beta) {
-        stack[ply].ch_entry = &ch_table[0][0][0];
+        stack[ply].ch_entry = &ch_table[1][0][0];
         board.changeColor();
         const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false, ch_table);
         board.undoChangeColor();
@@ -437,6 +442,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 int depthReduction = 0;
                 if(extensions == 0 && depth > 1 && isQuiet) {
                     depthReduction = reductions[depth][legalMoves];
+                    //if(isPV) depthReduction -= 1;
                 }
                 // this is more PVS stuff, searching with a reduced margin
                 score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true, ch_table);
@@ -472,7 +478,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         stack[ply].killers[0] = moves[i].getValue();
                     }/* else {
                         const int end = moves[i].getEndSquare();
-                        addCaptureHistory(getType(board.pieceAtIndex(moves[i].getStartSquare())), end, getType(board.pieceAtIndex(end)), depth, board.getColorToMove());
+                        const int piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
+                        const int victim = getType(board.pieceAtIndex(end));
+                        addCaptureHistory(board.getColorToMove(), piece, end, victim, depth);
                     }*/
                     break;
                 }
@@ -532,7 +540,7 @@ Move think(Board board, int softBound, int hardBound, bool info) {
     hardLimit = hardBound;
     seldepth = 0;
     timesUp = false;
-    chTable ch_table = {};
+    CHTable ch_table = {};
 
     begin = std::chrono::steady_clock::now();
 
@@ -553,7 +561,7 @@ Move think(Board board, int softBound, int hardBound, bool info) {
                 score = negamax(board, depth, alpha, beta, 0, true, ch_table);
                 if(timesUp) {
                     return previousBest;
-                }
+                } 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
                 } else if (score <= alpha) {
@@ -586,7 +594,7 @@ int benchSearch(Board board, int depthToSearch) {
     hardLimit = 1215752192;
     seldepth = 0;
     timesUp = false;
-    chTable ch_table = {};
+    CHTable ch_table = {};
     
     begin = std::chrono::steady_clock::now();
 
@@ -630,8 +638,8 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
     seldepth = 0;
     hardLimit = 1215752192;
     begin = std::chrono::steady_clock::now();
-    chTable ch_table = {};
-    
+    CHTable ch_table = {};
+
     int score = 0;
 
     for(int depth = 1; depth <= depthToSearch; depth++) {
@@ -670,7 +678,7 @@ std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
     hardLimit = 1215752192;
     seldepth = 0;
     timesUp = false;
-    chTable ch_table;
+    CHTable ch_table = {};
 
     begin = std::chrono::steady_clock::now();
 
