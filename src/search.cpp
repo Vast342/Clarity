@@ -311,8 +311,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
 }
 
 // adds to the history of a particular move
-void addHistory(const int colorToMove, const int start, const int end, const int piece, const int depth, const int ply) {
-    const int bonus = depth * depth;
+void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply) {
     int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
     /*if (ply > 0) {
@@ -323,22 +322,6 @@ void addHistory(const int colorToMove, const int start, const int end, const int
     /*if (ply > 1) {
         thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
-    }*/
-}
-
-// takes from the history of a particular move
-void subtractHistory(const int colorToMove, const int start, const int end, const int piece, const int depth, const int ply) {
-    const int bonus = depth * depth;
-    int thingToSubtract = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
-    historyTable[colorToMove][start][end] -= thingToSubtract;
-    /*if (ply > 0) {
-        thingToSubtract = bonus - (*stack[ply - 1].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
-        (*stack[ply - 1].ch_entry)[colorToMove][piece][end] -= thingToSubtract;
-    }*/
-
-    /*if (ply > 1) {
-        thingToSubtract = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
-        (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToSubtract;
     }*/
 }
 
@@ -490,13 +473,15 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         int start = moves[i].getStartSquare();
                         int end = moves[i].getEndSquare();
                         int piece = getType(board.pieceAtIndex(start));
+                        int bonus = depth * depth;
                         const int colorToMove = board.getColorToMove();
-                        addHistory(colorToMove, start, end, piece, depth, ply);
+                        updateHistory(colorToMove, start, end, piece, bonus, ply);
+                        bonus = -bonus;
                         for(int quiet = 0; quiet < quietCount - 1; quiet++) {
                             start = testedQuiets[quiet].getStartSquare();
                             end = testedQuiets[quiet].getEndSquare();
                             piece = getType(board.pieceAtIndex(start));
-                            subtractHistory(colorToMove, start, end, piece, depth, ply);
+                            updateHistory(colorToMove, start, end, piece, bonus, ply);
                         }
                         stack[ply].killers[2] = stack[ply].killers[1];
                         stack[ply].killers[1] = stack[ply].killers[0];
