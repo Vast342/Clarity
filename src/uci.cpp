@@ -157,8 +157,6 @@ void interpretCommand(std::string command) {
         setOption(bits);
     } else if(bits[0] == "bench") {
         runBench(std::stoi(bits[1]));
-    } else if(bits[0] == "testcapture") {
-        std::cout << (see(board, Move(bits[1], board), 0) ? "true\n" : "false\n");    
     } else {
         std::cout << "invalid command\n";
     }

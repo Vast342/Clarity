@@ -5,7 +5,7 @@
 // this is my first time doing anything with neural networks, or anything with pointers, so code here might be a bit questionable to look at
 
 namespace {
-    INCBIN(networkData, "../src/nets/clarity_net004.nnue");
+    INCBIN(networkData, "../src/nets/clarity_net003.nnue");
     const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 }
 

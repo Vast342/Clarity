@@ -177,56 +177,49 @@ bool see(const Board& board, Move move, int threshold) {
 */
 void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, int ttMoveValue, int ply, bool inQSearch) {
     const uint64_t occupied = board.getOccupiedBitboard();
+    const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
         const int moveValue = moves[i].getValue();
+        const int end = moves[i].getEndSquare();
+        const int start = moves[i].getStartSquare();
+        const int piece = getType(board.pieceAtIndex(start));
         if(moveValue == ttMoveValue) {
             values[i] = 1000000000;
-        } else if((occupied & (1ULL << moves[i].getEndSquare())) != 0) {
+        } else if((occupied & (1ULL << end)) != 0) {
             // Captures!
+            const int victim = getType(board.pieceAtIndex(end));
             // see!
-            if(inQSearch || see(board, moves[i], 0)) {
+            if(see(board, moves[i], 0)) {
                 // good captures
-                // mvv lva (ciekce was here)
-                const auto attacker = getType(board.pieceAtIndex(moves[i].getStartSquare()));
-                const auto victim = getType(board.pieceAtIndex(moves[i].getEndSquare()));
-                // technically I could use 175 here and still have some wiggle room
-                // with 200 that gives me a range of:
-                // min: (200*112)-1187=21213
-                // max: (200*1187)-112=237288
-                values[i] = 200 * eg_value[victim] - eg_value[attacker];
+                // mvv lva
+                values[i] = 400 * eg_value[victim] - eg_value[piece];
             } else {
                 // bad captures
                 values[i] = 0;
             }
             // capthist, I'll be back soon
-            /*const auto piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
-            const auto end = moves[i].getEndSquare();
-            const auto victim = getType(board.pieceAtIndex(end));
-            values[i] =  200 * eg_value[victim] + captureHistoryTable[board.getColorToMove()][piece][end][victim];
+            /*values[i] =  200 * eg_value[victim] + captureHistoryTable[colorToMove][piece][end][victim];
             if(see(board, moves[i], 0)) {
                 // good captures
                 values[i] += 1000000;
             }*/
         } else {
             // read from history
-            // 238000 is used here to make sure that there is the right amount of overlap with good and bad captures
-            values[i] = historyTable[board.getColorToMove()][moves[i].getStartSquare()][moves[i].getEndSquare()];
-                //+ (ply > 0 ? (*stack[ply - 1].ch_entry)[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()] : 0);
-                //+ (ply > 1 ? (*stack[ply - 2].ch_entry)[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()] : 0);
+            values[i] = historyTable[colorToMove][start][end];
+                + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0);
+                //+ (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
                 if(moveValue == stack[ply].killers[0]) {
-                    values[i] = 19000;
+                    values[i] = 36000;
                 } else if(moveValue == stack[ply].killers[1]) {
-                    values[i] = 18000;
+                    values[i] = 35000;
                 }  else if(moveValue == stack[ply].killers[2]) {
-                    values[i] = 17000;
+                    values[i] = 34000;
                 }
             }
         }
-        //values[i] = -values[i];
     }
-    //sortMoves(values, moves, numMoves);
 }
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
@@ -318,19 +311,19 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
 }
 
 // adds to the history of a particular move
-void addHistory(const Board& board, const int start, const int end, const int depth, const int colorToMove, const int ply) {
+void addHistory(const int colorToMove, const int start, const int end, const int piece, const int depth, const int ply) {
     const int bonus = depth * depth;
     int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
-    //if (ply > 0) {
-        //thingToAdd = bonus - (*stack[ply - 1].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] * std::abs(bonus) / historyCap;
-        //(*stack[ply - 1].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] += thingToAdd;
-    //}
+    if (ply > 0) {
+        thingToAdd = bonus - (*stack[ply - 1].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        (*stack[ply - 1].ch_entry)[colorToMove][piece][end] += thingToAdd;
+    }
 
-    //if (ply > 1) {
-        //thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] * std::abs(bonus) / historyCap;
-        //(*stack[ply - 2].ch_entry)[colorToMove][getType(board.pieceAtIndex(start))][end] += thingToAdd;
-    //}
+    /*if (ply > 1) {
+        thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
+    }*/
 }
 
 void addCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int depth) {
@@ -472,7 +465,10 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     flag = BetaCutoff;
                     if(isQuiet) {
                         // adds to the move's history and adjusts the killer table accordingly
-                        addHistory(board, moves[i].getStartSquare(), moves[i].getEndSquare(), depth, board.getColorToMove(), ply);
+                        const int start = moves[i].getStartSquare();
+                        const int end = moves[i].getEndSquare();
+                        const int piece = getType(board.pieceAtIndex(start));
+                        addHistory(board.getColorToMove(), start, end, piece, depth, ply);
                         stack[ply].killers[2] = stack[ply].killers[1];
                         stack[ply].killers[1] = stack[ply].killers[0];
                         stack[ply].killers[0] = moves[i].getValue();
