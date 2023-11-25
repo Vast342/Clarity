@@ -195,7 +195,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
                 values[i] = 400 * eg_value[victim] - eg_value[piece];
             } else {
                 // bad captures
-                values[i] = 0;
+                values[i] = -500000;
             }
             // capthist, I'll be back soon
             /*values[i] =  200 * eg_value[victim] + captureHistoryTable[colorToMove][piece][end][victim];
@@ -206,7 +206,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
         } else {
             // read from history
             values[i] = historyTable[colorToMove][start][end];
-                + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0);
+                //+ (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0);
                 //+ (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
@@ -315,14 +315,30 @@ void addHistory(const int colorToMove, const int start, const int end, const int
     const int bonus = depth * depth;
     int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
-    if (ply > 0) {
+    /*if (ply > 0) {
         thingToAdd = bonus - (*stack[ply - 1].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 1].ch_entry)[colorToMove][piece][end] += thingToAdd;
-    }
+    }*/
 
     /*if (ply > 1) {
         thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
+    }*/
+}
+
+// takes from the history of a particular move
+void subtractHistory(const int colorToMove, const int start, const int end, const int piece, const int depth, const int ply) {
+    const int bonus = depth * depth;
+    int thingToSubtract = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
+    historyTable[colorToMove][start][end] -= thingToSubtract;
+    /*if (ply > 0) {
+        thingToSubtract = bonus - (*stack[ply - 1].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        (*stack[ply - 1].ch_entry)[colorToMove][piece][end] -= thingToSubtract;
+    }*/
+
+    /*if (ply > 1) {
+        thingToSubtract = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToSubtract;
     }*/
 }
 
@@ -386,6 +402,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // get the moves
     std::array<Move, 256> moves;
+    std::array<Move, 256> testedQuiets;
+    int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
     scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), ply, false);
@@ -423,6 +441,10 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if (!isPV && depth <= 8 && (moveValues[i] <= historyCap) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
             stack[ply].ch_entry = &ch_table[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
+            if(isQuiet) {
+                testedQuiets[quietCount] = moves[i];
+                quietCount++;
+            }
             legalMoves++;
             nodes++;
             int score = 0;
@@ -465,10 +487,17 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     flag = BetaCutoff;
                     if(isQuiet) {
                         // adds to the move's history and adjusts the killer table accordingly
-                        const int start = moves[i].getStartSquare();
-                        const int end = moves[i].getEndSquare();
-                        const int piece = getType(board.pieceAtIndex(start));
-                        addHistory(board.getColorToMove(), start, end, piece, depth, ply);
+                        int start = moves[i].getStartSquare();
+                        int end = moves[i].getEndSquare();
+                        int piece = getType(board.pieceAtIndex(start));
+                        const int colorToMove = board.getColorToMove();
+                        addHistory(colorToMove, start, end, piece, depth, ply);
+                        for(int quiet = 0; quiet < quietCount - 1; quiet++) {
+                            start = testedQuiets[quiet].getStartSquare();
+                            end = testedQuiets[quiet].getEndSquare();
+                            piece = getType(board.pieceAtIndex(start));
+                            subtractHistory(colorToMove, start, end, piece, depth, ply);
+                        }
                         stack[ply].killers[2] = stack[ply].killers[1];
                         stack[ply].killers[1] = stack[ply].killers[0];
                         stack[ply].killers[0] = moves[i].getValue();
