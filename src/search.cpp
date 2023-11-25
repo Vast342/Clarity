@@ -41,6 +41,7 @@ TranspositionTable TT;
 
 std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
+CHTable conthistTable;
 
 std::chrono::steady_clock::time_point begin;
 
@@ -60,6 +61,19 @@ void clearHistory() {
             for(int k = 0; k < 64; k++) {
                 for(int l = 0; l < 6; l++) {
                     captureHistoryTable[i][j][k][l] = 0;
+                }
+            }
+        }   
+    }
+    for(int i = 0; i < 2; i++) {
+        for(int j = 0; j < 7; j++) {
+            for(int k = 0; k < 64; k++) {
+                for(int l = 0; l < 2; l++) {
+                    for(int m = 0; m < 7; m++) {
+                        for(int n = 0; n < 64; n++) {
+                            conthistTable[i][j][k][l][m][n] = 0;
+                        }
+                    }
                 }
             }
         }   
@@ -332,7 +346,7 @@ void addCaptureHistory(const int colorToMove, const int piece, const int end, co
 }
 
 // The main search function
-int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, CHTable &ch_table) {
+int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && board.isRepeated) return 0;
     // time check every 4096 nodes
@@ -374,9 +388,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // potential conditions to add: staticEval >= beta and !isPV, however they seem to be roughly equal after I tested them in the past. I could test it again soon but ehhh I'm a bit busy
     if(nmpAllowed && depth >= nmpMin && !inCheck && board.getEvaluation() >= beta) {
-        stack[ply].ch_entry = &ch_table[1][0][0];
+        stack[ply].ch_entry = &conthistTable[1][0][0];
         board.changeColor();
-        const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false, ch_table);
+        const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -416,14 +430,13 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         }
         bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
         bool isQuiet = (!isCapture && (moves[i].getFlag() <= DoublePawnPush));
-        //if(isQuiet) quietCount++;
         // Late Move Pruning (not working, needs more testing)
         //if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
         // see pruning
         //                     This detects either quiet moves or bad captures
         if (!isPV && depth <= 8 && (moveValues[i] <= historyCap) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
-            stack[ply].ch_entry = &ch_table[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
+            stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
             if(isQuiet) {
                 testedQuiets[quietCount] = moves[i];
                 quietCount++;
@@ -434,7 +447,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             // Principal Variation Search
             if(legalMoves == 1) {
                 // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
-                score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true, ch_table);
+                score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
             } else {
                 // Late Move Reductions (LMR)
                 int depthReduction = 0;
@@ -443,10 +456,10 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                     //if(isPV) depthReduction -= 1;
                 }
                 // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true, ch_table);
+                score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
                 // and then if it fails high or low we search again with the original bounds
                 if(score > alpha && (score < beta || depthReduction > 0)) {
-                    score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true, ch_table);
+                    score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
                 }
             }
             board.undoMove();
@@ -477,6 +490,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         const int colorToMove = board.getColorToMove();
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
                         bonus = -bonus;
+                        // malus!
                         for(int quiet = 0; quiet < quietCount - 1; quiet++) {
                             start = testedQuiets[quiet].getStartSquare();
                             end = testedQuiets[quiet].getEndSquare();
@@ -545,12 +559,11 @@ std::string getPV(Board board) {
 // the usual think function, where you give it the amount of time it has left, and it will think in increasing depth steps until it runs out of time
 Move think(Board board, int softBound, int hardBound, bool info) {
     //ageHistory();
-    clearHistory();
+    //clearHistory();
     nodes = 0;
     hardLimit = hardBound;
     seldepth = 0;
     timesUp = false;
-    CHTable ch_table = {};
 
     begin = std::chrono::steady_clock::now();
 
@@ -568,7 +581,7 @@ Move think(Board board, int softBound, int hardBound, bool info) {
         const Move previousBest = rootBestMove;
         if(depth > 3) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, ch_table);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 if(timesUp) {
                     return previousBest;
                 } 
@@ -582,7 +595,7 @@ Move think(Board board, int softBound, int hardBound, bool info) {
                 delta *= 1.5;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, ch_table);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(timesUp) {
@@ -599,12 +612,11 @@ Move think(Board board, int softBound, int hardBound, bool info) {
 
 // searches done for bench, returns the number of nodes searched.
 int benchSearch(Board board, int depthToSearch) {
-    clearHistory();
+    //clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
     seldepth = 0;
     timesUp = false;
-    CHTable ch_table = {};
     
     begin = std::chrono::steady_clock::now();
 
@@ -619,7 +631,7 @@ int benchSearch(Board board, int depthToSearch) {
         int beta = std::min(-mateScore, score + delta);
         if(depth > 3) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, ch_table);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
@@ -631,7 +643,7 @@ int benchSearch(Board board, int depthToSearch) {
                 delta *= 1.5;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, ch_table);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
@@ -643,12 +655,11 @@ int benchSearch(Board board, int depthToSearch) {
 // searches to a fixed depth when the user says go depth x
 Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
     //ageHistory();
-    clearHistory();
+    //clearHistory();
     nodes = 0;
     seldepth = 0;
     hardLimit = 1215752192;
     begin = std::chrono::steady_clock::now();
-    CHTable ch_table = {};
 
     int score = 0;
 
@@ -660,7 +671,7 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
         int beta = std::min(-mateScore, score + delta);
         if(depth > 3) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, ch_table);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
@@ -672,7 +683,7 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
                 delta *= 1.5;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, ch_table);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(info) outputInfo(board, score, depth, elapsedTime);
@@ -682,13 +693,12 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
 
 std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
     //std::cout << "recieved board with position " << board.getFenString() << std::endl;
-    clearHistory();
+    //clearHistory();
     dataGeneration = true;
     nodes = 0;
     hardLimit = 1215752192;
     seldepth = 0;
     timesUp = false;
-    CHTable ch_table = {};
 
     begin = std::chrono::steady_clock::now();
 
@@ -703,7 +713,7 @@ std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
         int beta = std::min(-mateScore, score + delta);
         if(depth > 3) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, ch_table);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
@@ -715,7 +725,7 @@ std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
                 delta *= 1.5;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, ch_table);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
