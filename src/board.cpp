@@ -272,11 +272,6 @@ void Board::addPiece(int square, int type) {
     coloredBitboards[getColor(type)] ^= (1ULL << square);
     pieceBitboards[getType(type)] ^= (1ULL << square);
     assert(pieceAtIndex(square) == type);
-    /*phase += phaseIncrements[getType(type)];
-    int index = getColor(type) == 1 ? flipIndex(square) : square;
-    int colorMultiplier = 2 * getColor(type) - 1;
-    mgEval += mgTables[getType(type)][index] * colorMultiplier;
-    egEval += egTables[getType(type)][index] * colorMultiplier;*/
     nnueState.activateFeature(square, type);
     zobristHash ^= zobTable[square][type];
 }
@@ -286,14 +281,8 @@ void Board::removePiece(int square, int type) {
     assert(square < 64);
     assert(pieceAtIndex(square) == type);
     assert(square >= 0);
-    //std::cout << "Removing piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
     coloredBitboards[getColor(type)] ^= (1ULL << square);
     pieceBitboards[getType(type)] ^= (1ULL << square);
-    /*phase -= phaseIncrements[getType(type)];
-    int index = getColor(type) == 1 ? flipIndex(square) : square;
-    int colorMultiplier = 2 * getColor(type) - 1;
-    mgEval -= mgTables[getType(type)][index] * colorMultiplier;
-    egEval -= egTables[getType(type)][index] * colorMultiplier;*/
     nnueState.disableFeature(square, type);
     zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);

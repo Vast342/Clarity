@@ -50,12 +50,8 @@ struct BoardState {
     std::array<uint64_t, 6> pieceBitboards;
     uint8_t enPassantIndex;
     std::array<uint8_t, 2> kingSquares;
-    uint8_t fiftyMoveCounter;
     uint8_t hundredPlyCounter;
     uint8_t castlingRights;
-    //int mgEval;
-    //int egEval;
-    //int phase;
     uint64_t zobristHash;
 };
 

@@ -220,8 +220,8 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
         } else {
             // read from history
             values[i] = historyTable[colorToMove][start][end]
-                + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0);
-                //+ (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
+                + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
                 if(moveValue == stack[ply].killers[0]) {
@@ -333,10 +333,10 @@ void updateHistory(const int colorToMove, const int start, const int end, const 
         (*stack[ply - 1].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
-    /*if (ply > 1) {
+    if (ply > 1) {
         thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
-    }*/
+    }
 }
 
 void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
