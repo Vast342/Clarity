@@ -45,7 +45,6 @@ void Board::toString() {
         std::cout << '\n';
     }
     std::cout << "Ply count: " << std::to_string(plyCount) << '\n';
-    std::cout << "Fifty-move count: " << std::to_string(fiftyMoveCounter) << '\n';
     std::cout << "Hash: " << std::to_string(zobristHash) << '\n';
     std::cout << "Castling rights: " << std::to_string(castlingRights & 1) << std::to_string((castlingRights >> 1) & 1) << std::to_string((castlingRights >> 2) & 1) << std::to_string((castlingRights >> 3) & 1) << '\n';
     if(enPassantIndex == 64) {
@@ -62,11 +61,8 @@ void Board::toString() {
 }
 
 Board::Board(std::string fen) {
-    zobristHistory.clear();
     stateHistory.clear();
-    /*mgEval = 0;
-    egEval = 0;
-    phase = 0;*/
+    stateHistory.reserve(256);
     nnueState.reset();
     zobristHash = 0;
     for(int i = 0; i < 6; i++) {
@@ -172,7 +168,6 @@ Board::Board(std::string fen) {
         enPassantIndex = 64;
     }
     // 50 move counter, segment 5
-    fiftyMoveCounter = std::stoi(segments[4]);
     hundredPlyCounter = 0;
     // ply count, segment 6
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
@@ -261,7 +256,7 @@ std::string Board::getFenString() {
     }
     // 50 move counter
     fen += ' ';
-    fen += std::to_string(fiftyMoveCounter);
+    fen += std::to_string(hundredPlyCounter / 2);
     // ply count
     fen += ' ';
     fen += std::to_string(plyCount / 2 + colorToMove);
@@ -590,19 +585,21 @@ bool Board::squareIsUnderAttack(int square) {
 bool Board::makeMove(Move move) {
     stateHistory.push_back(generateBoardState());
     nnueState.push();
-    if(colorToMove != 1) fiftyMoveCounter++;
     hundredPlyCounter++;
+    int start = move.getStartSquare();
+    int end = move.getEndSquare();
     int movedPiece = pieceAtIndex(move.getStartSquare());
+    int victim = pieceAtIndex(move.getEndSquare());
+    int flag = move.getFlag();
     assert(movedPiece != None);
-    if(pieceAtIndex(move.getEndSquare()) != None || getType(movedPiece) == Pawn) {
+    if(victim != None || getType(movedPiece) == Pawn) {
         hundredPlyCounter = 0;
-        fiftyMoveCounter = 0;
     }
-    movePiece(move.getStartSquare(), movedPiece, move.getEndSquare(), pieceAtIndex(move.getEndSquare()));
+    movePiece(start, movedPiece, end, victim);
     enPassantIndex = 64;
-    if(move.getFlag() == DoublePawnPush) enPassantIndex = move.getEndSquare() + directionalOffsets[colorToMove];
+    if(move.getFlag() == DoublePawnPush) enPassantIndex = end + directionalOffsets[colorToMove];
     if(getType(movedPiece) == King) {
-        kingSquares[colorToMove] = move.getEndSquare();
+        kingSquares[colorToMove] = end;
     }
     if(castlingRights != 0) {
         if(getType(movedPiece) == King) {
@@ -610,61 +607,59 @@ bool Board::makeMove(Move move) {
             castlingRights ^= ((colorToMove == 1 ? 2 : 8) & castlingRights);
         }
         if(getType(movedPiece) == Rook) {
-            switch (move.getStartSquare()) {
+            switch (start) {
                 case 7:
-                    if((castlingRights & 1) != 0) castlingRights ^= 1;
+                    castlingRights ^= (1 & castlingRights);
                     break;
                 case 0:
-                    if((castlingRights & 2) != 0) castlingRights ^= 2;
+                    castlingRights ^= (2 & castlingRights);
                     break;
                 case 63:
-                    if((castlingRights & 4) != 0) castlingRights ^= 4;
+                    castlingRights ^= (4 & castlingRights);
                     break;
                 case 56:
-                    if((castlingRights & 8) != 0) castlingRights ^= 8;
+                    castlingRights ^= (8 & castlingRights);
                     break;
             }
         }
     }
-    if(move.getFlag() == castling[0]) {
+    if(flag == castling[0]) {
         assert(pieceAtIndex(7) != None);
-        movePiece(7, pieceAtIndex(7), 5, None);
+        movePiece(7, Rook | White, 5, None);
         castlingRights ^= (1 & castlingRights);
         castlingRights ^= (2 & castlingRights);
-    } else if(move.getFlag() == castling[1]) {
+    } else if(flag == castling[1]) {
         assert(pieceAtIndex(0) != None);
-        movePiece(0, pieceAtIndex(0), 3, None);
+        movePiece(0, Rook | White, 3, None);
         castlingRights ^= (1 & castlingRights);
         castlingRights ^= (2 & castlingRights);
-    } else if(move.getFlag() == castling[2]) {
+    } else if(flag == castling[2]) {
         assert(pieceAtIndex(63) != None);
-        movePiece(63, pieceAtIndex(63), 61, None);
+        movePiece(63, Rook | Black, 61, None);
         castlingRights ^= (4 & castlingRights);
         castlingRights ^= (8 & castlingRights);
-    } else if(move.getFlag() == castling[3]) {
+    } else if(flag == castling[3]) {
         assert(pieceAtIndex(56) != None);
-        movePiece(56, pieceAtIndex(56), 59, None);
+        movePiece(56, Rook | Black, 59, None);
         castlingRights ^= (4 & castlingRights);
         castlingRights ^= (8 & castlingRights);
-    } else if(move.getFlag() == promotions[0]) {
-        removePiece(move.getEndSquare(), movedPiece);
-        addPiece(move.getEndSquare(), Knight | (colorToMove == 1 ? White : Black));
-    } else if(move.getFlag() == promotions[1]) {
-        removePiece(move.getEndSquare(), movedPiece);
-        addPiece(move.getEndSquare(), Bishop | (colorToMove == 1 ? White : Black));
-    } else if(move.getFlag() == promotions[2]) {
-        removePiece(move.getEndSquare(), movedPiece);
-        addPiece(move.getEndSquare(), Rook | (colorToMove == 1 ? White : Black));
-    } else if(move.getFlag() == promotions[3]) {
-        removePiece(move.getEndSquare(), movedPiece);
-        addPiece(move.getEndSquare(), Queen | (colorToMove == 1 ? White : Black));
-    } else if(move.getFlag() == EnPassant) {
+    } else if(flag == promotions[0]) {
+        removePiece(end, movedPiece);
+        addPiece(end, Knight | (colorToMove == 1 ? White : Black));
+    } else if(flag == promotions[1]) {
+        removePiece(end, movedPiece);
+        addPiece(end, Bishop | (colorToMove == 1 ? White : Black));
+    } else if(flag == promotions[2]) {
+        removePiece(end, movedPiece);
+        addPiece(end, Rook | (colorToMove == 1 ? White : Black));
+    } else if(flag == promotions[3]) {
+        removePiece(end, movedPiece);
+        addPiece(end, Queen | (colorToMove == 1 ? White : Black));
+    } else if(flag == EnPassant) {
         assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
-        removePiece(move.getEndSquare() + directionalOffsets[colorToMove], pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]));
+        removePiece(end + directionalOffsets[colorToMove], pieceAtIndex(end + directionalOffsets[colorToMove]));
     }
     plyCount++;
-    isRepeated = isRepeatedPosition();
-    zobristHistory.push_back(zobristHash);
     if(isInCheck()) {
         undoMove();
         colorToMove = 1 - colorToMove;
@@ -682,7 +677,6 @@ void Board::undoMove() {
     loadBoardState(stateHistory.back());
     plyCount--;
     stateHistory.pop_back();  
-    zobristHistory.pop_back();
     nnueState.pop();
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
@@ -694,13 +688,8 @@ void Board::loadBoardState(BoardState state) {
     std::copy(state.pieceBitboards.begin(), state.pieceBitboards.end(), pieceBitboards.begin());
     std::copy(state.kingSquares.begin(), state.kingSquares.end(), kingSquares.begin());
     enPassantIndex = state.enPassantIndex;
-    fiftyMoveCounter = state.fiftyMoveCounter;
     castlingRights = state.castlingRights;
     zobristHash = state.zobristHash;
-    isRepeated = state.isRepeated;
-    //mgEval = state.mgEval;
-    //egEval = state.egEval;
-    //phase = state.phase;
     hundredPlyCounter = state.hundredPlyCounter;
 }
 
@@ -710,13 +699,8 @@ BoardState Board::generateBoardState() {
     std::copy(pieceBitboards.begin(), pieceBitboards.end(), state.pieceBitboards.begin());
     std::copy(kingSquares.begin(), kingSquares.end(), state.kingSquares.begin());
     state.enPassantIndex = enPassantIndex;
-    state.fiftyMoveCounter = fiftyMoveCounter;
     state.castlingRights = castlingRights;
     state.zobristHash = zobristHash;
-    state.isRepeated = isRepeated;
-    //state.mgEval = mgEval;
-    //state.egEval = egEval;
-    //state.phase = phase;
     state.hundredPlyCounter = hundredPlyCounter;
     return state;
 }
@@ -730,15 +714,11 @@ void Board::changeColor() {
     enPassantIndex = 0;
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
-    isRepeated = isRepeatedPosition();
-    zobristHistory.push_back(zobristHash);
 }
 
 void Board::undoChangeColor() {
     enPassantIndex = stateHistory.back().enPassantIndex;
-    isRepeated = stateHistory.back().isRepeated;
     stateHistory.pop_back();
-    zobristHistory.pop_back();
     colorToMove = 1 - colorToMove;
     zobristHash ^= zobColorToMove;
 }
@@ -791,8 +771,8 @@ uint64_t Board::fullZobristRegen() {
 }
 
 bool Board::isRepeatedPosition() {
-    for(int i = std::ssize(zobristHistory) - 2; i >= std::ssize(zobristHistory) - hundredPlyCounter; i--) {
-        if(zobristHistory[i] == zobristHash) {
+    for(int i = std::ssize(stateHistory) - 2; i >= std::ssize(stateHistory) - hundredPlyCounter; i--) {
+        if(stateHistory[i].zobristHash == zobristHash) {
             return true;
         }
     }
@@ -852,5 +832,5 @@ uint64_t Board::getPieceBitboard(int piece) const {
 }
 
 int Board::getFiftyMoveCount() const {
-    return fiftyMoveCounter;
+    return hundredPlyCounter / 2;
 }

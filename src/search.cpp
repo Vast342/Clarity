@@ -206,7 +206,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             if(see(board, moves[i], 0)) {
                 // good captures
                 // mvv lva
-                values[i] = 400 * eg_value[victim] - eg_value[piece];
+                values[i] = 500 * eg_value[victim] - eg_value[piece];
             } else {
                 // bad captures
                 values[i] = -500000;
@@ -219,17 +219,17 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             }*/
         } else {
             // read from history
-            values[i] = historyTable[colorToMove][start][end];
-                //+ (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0);
+            values[i] = historyTable[colorToMove][start][end]
+                + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0);
                 //+ (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
                 if(moveValue == stack[ply].killers[0]) {
-                    values[i] = 36000;
+                    values[i] = 54000;
                 } else if(moveValue == stack[ply].killers[1]) {
-                    values[i] = 35000;
+                    values[i] = 53000;
                 }  else if(moveValue == stack[ply].killers[2]) {
-                    values[i] = 34000;
+                    values[i] = 52000;
                 }
             }
         }
@@ -238,7 +238,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int qSearch(Board &board, int alpha, int beta, int ply) {
-    if(board.isRepeated) return 0;
+    if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
@@ -328,10 +328,10 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
 void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply) {
     int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
-    /*if (ply > 0) {
+    if (ply > 0) {
         thingToAdd = bonus - (*stack[ply - 1].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 1].ch_entry)[colorToMove][piece][end] += thingToAdd;
-    }*/
+    }
 
     /*if (ply > 1) {
         thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
@@ -339,8 +339,7 @@ void updateHistory(const int colorToMove, const int start, const int end, const 
     }*/
 }
 
-void addCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int depth) {
-    const int bonus = depth * depth;
+void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
     const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
     captureHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
 }
@@ -348,7 +347,7 @@ void addCaptureHistory(const int colorToMove, const int piece, const int end, co
 // The main search function
 int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
-    if(ply > 0 && board.isRepeated) return 0;
+    if(ply > 0 && board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
@@ -366,14 +365,16 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
-    const bool isPV = beta == alpha + 1;
+    const bool isPV = beta > alpha + 1;
     const bool inCheck = board.isInCheck();
 
     // TT check
     Transposition entry = TT.getEntry(board.zobristHash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
-    if(ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
+    // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
+    // turns out that score above was complete bs lol, my isPV was broken
+    if(!isPV && ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
             entry.flag == Exact // exact score
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
                 || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
@@ -386,7 +387,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    // potential conditions to add: staticEval >= beta and !isPV, however they seem to be roughly equal after I tested them in the past. I could test it again soon but ehhh I'm a bit busy
+    // !isPV looked equal, but I have more important things to test here than fractional elo
     if(nmpAllowed && depth >= nmpMin && !inCheck && board.getEvaluation() >= beta) {
         stack[ply].ch_entry = &conthistTable[1][0][0];
         board.changeColor();
@@ -431,10 +432,10 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
         bool isQuiet = (!isCapture && (moves[i].getFlag() <= DoublePawnPush));
         // Late Move Pruning (not working, needs more testing)
-        //if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
+            if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
         // see pruning
         //                     This detects either quiet moves or bad captures
-        if (!isPV && depth <= 8 && (moveValues[i] <= historyCap) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
+        if (!isPV && depth <= 8 && (moveValues[i] <= historyCap * 3) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
             stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
             if(isQuiet) {
@@ -453,7 +454,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 int depthReduction = 0;
                 if(extensions == 0 && depth > 1 && isQuiet) {
                     depthReduction = reductions[depth][legalMoves];
-                    //if(isPV) depthReduction -= 1;
                 }
                 // this is more PVS stuff, searching with a reduced margin
                 score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
@@ -504,7 +504,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         const int end = moves[i].getEndSquare();
                         const int piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
                         const int victim = getType(board.pieceAtIndex(end));
-                        addCaptureHistory(board.getColorToMove(), piece, end, victim, depth);
+                        const int bonus = depth * depth;
+                        updateCaptureHistory(board.getColorToMove(), piece, end, victim, bonus);
                     }*/
                     break;
                 }

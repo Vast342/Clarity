@@ -8,6 +8,7 @@ std::chrono::steady_clock::time_point beginTime;
 
 // run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games*
 int main(int argc, char** argv) {
+    assert(argc == 2);
     initialize();
     std::string directory = std::string(argv[1]);
     int numGames = std::atoi(argv[2]);
@@ -24,11 +25,11 @@ int main(int argc, char** argv) {
 
 // manages the threads
 void generateData(int numGames) {
-    threadFunction(numGames, 1);
+    threadFunction(numGames);
 }
 
 // run on each thread
-void threadFunction(int numGames, int threadID) {
+void threadFunction(int numGames) {
     for(int i = 0; i < numGames; i++) {
         std::vector<std::string> fenVector;
         double result = runGame(fenVector);
@@ -79,7 +80,7 @@ double runGame(std::vector<std::string>& fenVector) {
             // move has been made now, cool
             //std::cout << board.getFenString() << std::endl;
         } else {
-            if(board.isRepeated) return 0.5;
+            if(board.isRepeatedPosition()) return 0.5;
             if(board.getFiftyMoveCount() >= 50) return 0.5;
             // checkmate check
             // get moves

@@ -57,7 +57,6 @@ struct BoardState {
     //int egEval;
     //int phase;
     uint64_t zobristHash;
-    bool isRepeated;
 };
 
 // a single move, stored in 16 bits
@@ -78,7 +77,6 @@ struct Move {
 struct Board {
     public:
         uint64_t zobristHash;
-        bool isRepeated;
         Board(std::string fen);
         bool makeMove(Move move);
         void undoMove();
@@ -108,20 +106,15 @@ struct Board {
         int getFiftyMoveCount() const;
     private:
         NetworkState nnueState;
-        //int mgEval;
-        //int egEval;
-        //int phase;
         std::array<uint64_t, 2> coloredBitboards;
         std::array<uint64_t, 6> pieceBitboards;
         uint8_t enPassantIndex;
         std::array<uint8_t, 2> kingSquares;
         int plyCount;
         uint8_t hundredPlyCounter;
-        uint8_t fiftyMoveCounter;
         uint8_t castlingRights;
         uint8_t colorToMove;
         std::vector<BoardState> stateHistory;
-        std::vector<uint64_t> zobristHistory;
         void addPiece(int square, int type);
         void removePiece(int square, int type);
         void movePiece(int square1, int type1, int square2, int type2);
