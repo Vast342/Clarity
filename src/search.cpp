@@ -421,7 +421,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
     int legalMoves = 0;
-    //int quietCount = 0;
     for(int i = 0; i < totalMoves; i++) {
         for (int j = i + 1; j < totalMoves; j++) {
             if (moveValues[j] > moveValues[i]) {
@@ -442,6 +441,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 testedQuiets[quietCount] = moves[i];
                 quietCount++;
             }
+            
             legalMoves++;
             nodes++;
             int score = 0;
