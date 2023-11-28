@@ -254,10 +254,11 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
         }
     }
     if(ply > seldepth) seldepth = ply;
+    const uint64_t hash = board.getZobristHash();
     // TT check
-    Transposition entry = TT.getEntry(board.zobristHash);
+    Transposition entry = TT.getEntry(hash);
 
-    if(entry.zobristKey == board.zobristHash && (
+    if(entry.zobristKey == hash && (
         entry.flag == Exact // exact score
             || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
             || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
@@ -319,7 +320,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     }
 
     // push to TT
-    TT.setEntry(board.zobristHash, Transposition(board.zobristHash, bestMove, flag, bestScore, 0));
+    TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, 0));
 
     return bestScore;  
 }
@@ -362,19 +363,20 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             }
         }
     }
-
+    
     // activate q search if at the end of a branch
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
     const bool isPV = beta > alpha + 1;
     const bool inCheck = board.isInCheck();
+    const uint64_t hash = board.getZobristHash();
 
     // TT check
-    Transposition entry = TT.getEntry(board.zobristHash);
+    Transposition entry = TT.getEntry(hash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
     // turns out that score above was complete bs lol, my isPV was broken
-    if(!isPV && ply > 0 && entry.zobristKey == board.zobristHash && entry.depth >= depth && (
+    if(!isPV && ply > 0 && entry.zobristKey == hash && entry.depth >= depth && (
             entry.flag == Exact // exact score
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
                 || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
@@ -533,7 +535,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // push to TT
-    TT.setEntry(board.zobristHash, Transposition(board.zobristHash, bestMove, flag, bestScore, depth));
+    TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
 
     return bestScore;
 }
@@ -558,8 +560,9 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
 // this crashes, which is why you only see me outputting the currently believed best move for the position
 std::string getPV(Board board) {
     std::string pv = "";
-    if(TT.matchZobrist(board.zobristHash)) {
-        Move bestMove = TT.getBestMove(board.zobristHash);
+    const uint64_t hash = board.getZobristHash();
+    if(TT.matchZobrist(hash)) {
+        Move bestMove = TT.getBestMove(hash);
         if(board.isLegalMove(bestMove) && board.makeMove(bestMove)) {
             std::string restOfPV = getPV(board);
             pv = toLongAlgebraic(bestMove) + " " + restOfPV;

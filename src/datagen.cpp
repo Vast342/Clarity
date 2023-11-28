@@ -7,7 +7,7 @@ uint64_t totalPositions = 0;
 std::chrono::steady_clock::time_point beginTime;
 
 // run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games*
-int main(int argc, char** argv) {
+int main([[maybe_unused]]int argc, char** argv) {
     assert(argc == 2);
     initialize();
     std::string directory = std::string(argv[1]);
@@ -30,10 +30,15 @@ void generateData(int numGames) {
 
 // run on each thread
 void threadFunction(int numGames) {
+    Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     for(int i = 0; i < numGames; i++) {
         std::vector<std::string> fenVector;
-        double result = runGame(fenVector);
-        if(result == 2) std::cout << "Error! invalid game result\n";
+        double result = runGame(fenVector, board);
+        if(result == 2) {
+            fenVector.clear();
+            i--;
+            continue;
+        }
         dumpToArray(result, fenVector);
     }
 }
@@ -42,10 +47,9 @@ void threadFunction(int numGames) {
 constexpr uint8_t threadCount = 5;
 constexpr int moveLimit = 1000;
 // manages the games
-double runGame(std::vector<std::string>& fenVector) {
+double runGame(std::vector<std::string>& fenVector, Board board) {
     int score = 0;
     bool outOfBounds = false;
-    Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     for(int i = 0; i <= moveLimit; i++) {
         if(i < 8) {
             // make a random move
@@ -68,9 +72,7 @@ double runGame(std::vector<std::string>& fenVector) {
             }
             // checkmate or stalemate? doesn't matter, restart
             if(legalMoves == 0) {
-                board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-                i = -1;
-                continue;
+                return 2;
             }
             // distribution
             std::uniform_int_distribution distribution{0, legalMoves - 1};
