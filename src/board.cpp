@@ -59,7 +59,7 @@ void Board::toString() {
 Board::Board(std::string fen) {
     stateHistory.clear();
     stateHistory.reserve(256);
-    //nnueState.reset();
+    nnueState.reset();
     state.zobristHash = 0;
     for(int i = 0; i < 6; i++) {
         state.pieceBitboards[i] = 0ULL;
@@ -268,7 +268,7 @@ void Board::addPiece(int square, int type) {
     state.coloredBitboards[getColor(type)] ^= (1ULL << square);
     state.pieceBitboards[getType(type)] ^= (1ULL << square);
     assert(pieceAtIndex(square) == type);
-    //nnueState.activateFeature(square, type);
+    nnueState.activateFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
 }
 
@@ -279,7 +279,7 @@ void Board::removePiece(int square, int type) {
     assert(square >= 0);
     state.coloredBitboards[getColor(type)] ^= (1ULL << square);
     state.pieceBitboards[getType(type)] ^= (1ULL << square);
-    //nnueState.disableFeature(square, type);
+    nnueState.disableFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
@@ -586,7 +586,7 @@ constexpr std::array<uint8_t, 2> kingRightMasks = {
 bool Board::makeMove(Move move) {
     // push to vectors
     stateHistory.push_back(state);
-    //nnueState.push();
+    nnueState.push();
 
     // get information
     int start = move.getStartSquare();
@@ -698,7 +698,7 @@ void Board::undoMove() {
     state = stateHistory.back();
     plyCount--;
     stateHistory.pop_back();  
-    //nnueState.pop();
+    nnueState.pop();
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
