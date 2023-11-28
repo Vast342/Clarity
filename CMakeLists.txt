@@ -25,11 +25,11 @@ add_executable(Clarity_Native ${Common_SRC_Files} src/bmi2.cpp src/uci.cpp)
 add_executable(Clarity_Datagen ${Common_SRC_Files} src/bmi2.cpp src/datagen.cpp)
 
 # building with all warnings for all of these so that I can try to pick up on issues
-target_compile_options(Clarity_Pext PRIVATE -Wall -Wextra -Wpedantic -march=haswell)
-target_compile_options(Clarity_Magic PRIVATE -Wall -Wextra -Wpedantic -march=x86-64)
-target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Wpedantic -march=native)
+target_compile_options(Clarity_Pext PRIVATE -Wall -Wextra -Wpedantic -march=haswell -flto)
+target_compile_options(Clarity_Magic PRIVATE -Wall -Wextra -Wpedantic -march=x86-64 -flto)
+target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Wpedantic -march=native -flto)
 
-target_compile_options(Clarity_Datagen PRIVATE -Wall -Wextra -Wpedantic -march=native)
+target_compile_options(Clarity_Datagen PRIVATE -Wall -Wextra -Wpedantic -march=native -flto)
 
 # making the entire binary need only itself to run, for ease of use
 target_link_libraries(Clarity_Pext -static)

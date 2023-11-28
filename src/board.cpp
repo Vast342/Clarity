@@ -597,7 +597,6 @@ bool Board::makeMove(Move move) {
 
     // En Passant
     enPassantIndex = 64;
-    if(flag == DoublePawnPush) enPassantIndex = end + directionalOffsets[colorToMove];
 
     // king square updates
     if(movedPieceType == King) {
@@ -606,7 +605,7 @@ bool Board::makeMove(Move move) {
     
     // castling rights updates!
     if(castlingRights != 0) {
-        if(getType(movedPiece) == King) {
+        if(movedPieceType == King) {
             castlingRights ^= ((colorToMove == 1 ? 1 : 4) & castlingRights);
             castlingRights ^= ((colorToMove == 1 ? 2 : 8) & castlingRights);
         }
