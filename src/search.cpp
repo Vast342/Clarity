@@ -383,12 +383,12 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // Reverse Futility Pruning
-    const int eval = board.getEvaluation();
-    if(eval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return eval - 80 * depth;
+    const int staticEval = board.getEvaluation();
+    if(staticEval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return staticEval - 80 * depth;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // !isPV looked equal, but I have more important things to test here than fractional elo
-    if(nmpAllowed && depth >= nmpMin && !inCheck && board.getEvaluation() >= beta) {
+    if(nmpAllowed && depth >= nmpMin && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &conthistTable[1][0][0];
         board.changeColor();
         const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
@@ -417,6 +417,15 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         extensions++;
     }
 
+    // Mate Distance Pruning (needs more testing)
+    /*if (!isPV) {
+        const auto mdAlpha = std::max(alpha, mateScore + ply);
+        const auto mdBeta = std::min(beta, -mateScore - ply - 1);
+        if (mdAlpha >= mdBeta) {
+            return mdAlpha;
+        }
+    }*/
+
     // capturable squares to determine if a move is a capture.
     const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
@@ -430,11 +439,13 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         }
         bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
         bool isQuiet = (!isCapture && (moves[i].getFlag() <= DoublePawnPush));
-        // Late Move Pruning (not working, needs more testing)
-            if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
+        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
+        // futility pruning
+        if(bestScore > mateScore && !inCheck && depth <= 8 && staticEval + 250 + depth * 60 <= alpha) break;
+        // Late Move Pruning
+        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
         // see pruning
-        //                     This detects either quiet moves or bad captures
-        if (!isPV && depth <= 8 && (moveValues[i] <= historyCap * 3) && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
+        if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
             stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
             if(isQuiet) {
