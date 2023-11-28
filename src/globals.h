@@ -134,6 +134,7 @@ void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int n
 void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves, int i);
 int flipIndex(int index);
 uint64_t getPassedPawnMask(int square, int colorToMove);
+extern std::array<uint64_t, 64> squareToBitboard;
 
 // flags for moves
 constexpr uint8_t Normal = 0b0000;

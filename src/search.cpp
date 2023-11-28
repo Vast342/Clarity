@@ -402,7 +402,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // get the moves
     std::array<Move, 256> moves;
-    std::array<Move, 256> testedQuiets;
+    std::array<Move, 256> testedLegalMoves;
     int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
@@ -450,13 +450,12 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
             stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
-            if(isQuiet) {
-                testedQuiets[quietCount] = moves[i];
-                quietCount++;
-            }
-            
+            testedLegalMoves[legalMoves] = moves[i];
             legalMoves++;
             nodes++;
+            if(isQuiet) {
+                quietCount++;
+            }
             int score = 0;
             // Principal Variation Search
             if(legalMoves == 1) {
@@ -494,22 +493,14 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 // Fail-high
                 if(score >= beta) {
                     flag = BetaCutoff;
+                    int bonus = depth * depth;
+                    const int colorToMove = board.getColorToMove();
                     if(isQuiet) {
                         // adds to the move's history and adjusts the killer table accordingly
                         int start = moves[i].getStartSquare();
                         int end = moves[i].getEndSquare();
                         int piece = getType(board.pieceAtIndex(start));
-                        int bonus = depth * depth;
-                        const int colorToMove = board.getColorToMove();
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
-                        bonus = -bonus;
-                        // malus!
-                        for(int quiet = 0; quiet < quietCount - 1; quiet++) {
-                            start = testedQuiets[quiet].getStartSquare();
-                            end = testedQuiets[quiet].getEndSquare();
-                            piece = getType(board.pieceAtIndex(start));
-                            updateHistory(colorToMove, start, end, piece, bonus, ply);
-                        }
                         stack[ply].killers[2] = stack[ply].killers[1];
                         stack[ply].killers[1] = stack[ply].killers[0];
                         stack[ply].killers[0] = moves[i].getValue();
@@ -517,9 +508,21 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         const int end = moves[i].getEndSquare();
                         const int piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
                         const int victim = getType(board.pieceAtIndex(end));
-                        const int bonus = depth * depth;
                         updateCaptureHistory(board.getColorToMove(), piece, end, victim, bonus);
                     }*/
+                    // malus!
+                    bonus = -bonus;
+                    for(int quiet = 0; quiet < legalMoves; quiet++) {
+                        const int start = testedLegalMoves[quiet].getStartSquare();
+                        const int end = testedLegalMoves[quiet].getEndSquare();
+                        const int flag = testedLegalMoves[quiet].getFlag();
+                        const int piece = getType(board.pieceAtIndex(start));
+                        bool capture = ((capturable & (1ULL << end)) != 0) || flag == EnPassant;
+                        bool quietIs = (!capture && (flag <= DoublePawnPush));
+                        if(quietIs) {
+                            updateHistory(colorToMove, start, end, piece, bonus, ply);
+                        }
+                    }
                     break;
                 }
             }

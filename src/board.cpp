@@ -264,9 +264,10 @@ void Board::addPiece(int square, int type) {
     assert(square < 64);
     assert(pieceAtIndex(square) == None);
     assert(square >= 0);
+    const uint64_t bitboardSquare = squareToBitboard[square];
     //std::cout << "Adding piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
-    state.coloredBitboards[getColor(type)] ^= (1ULL << square);
-    state.pieceBitboards[getType(type)] ^= (1ULL << square);
+    state.coloredBitboards[getColor(type)] ^= bitboardSquare;
+    state.pieceBitboards[getType(type)] ^= bitboardSquare;
     assert(pieceAtIndex(square) == type);
     nnueState.activateFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
@@ -277,8 +278,9 @@ void Board::removePiece(int square, int type) {
     assert(square < 64);
     assert(pieceAtIndex(square) == type);
     assert(square >= 0);
-    state.coloredBitboards[getColor(type)] ^= (1ULL << square);
-    state.pieceBitboards[getType(type)] ^= (1ULL << square);
+    const uint64_t bitboardSquare = squareToBitboard[square];
+    state.coloredBitboards[getColor(type)] ^= bitboardSquare;
+    state.pieceBitboards[getType(type)] ^= bitboardSquare;
     nnueState.disableFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
@@ -294,12 +296,13 @@ void Board::movePiece(int square1, int type1, int square2, int type2) {
 }
 
 int Board::pieceAtIndex(int index) const {
-    if((getOccupiedBitboard() & (1ULL << index)) != 0) {
+    uint64_t indexBitboard = squareToBitboard[index];
+    if((getOccupiedBitboard() & indexBitboard) != 0) {
         for(int i = Pawn; i < None; i++) {
-            if((getColoredPieceBitboard(0, i) & 1ULL << index) != 0) {
+            if((getColoredPieceBitboard(0, i) & indexBitboard) != 0) {
                 return i | Black;
             }
-            if((getColoredPieceBitboard(1, i) & 1ULL << index) != 0) {
+            if((getColoredPieceBitboard(1, i) & indexBitboard) != 0) {
                 return i | White;
             }
         }
@@ -307,9 +310,10 @@ int Board::pieceAtIndex(int index) const {
     return None;
 }
 int Board::colorAtIndex(int index) const {
-    if((state.coloredBitboards[0] & (1ULL << index)) != 0) {
+    uint64_t indexBitboard = squareToBitboard[index];
+    if((state.coloredBitboards[0] & indexBitboard) != 0) {
         return 0;
-    } else if((state.coloredBitboards[1] & (1ULL << index)) != 0) {
+    } else if((state.coloredBitboards[1] & indexBitboard) != 0) {
         return 1;
     }
     // invalid result, bad
@@ -407,7 +411,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     // pawn captures
     uint64_t capturable = state.coloredBitboards[1 - colorToMove];
     if(state.enPassantIndex != 64) {
-        capturable |= (1ULL << state.enPassantIndex);
+        capturable |= squareToBitboard[state.enPassantIndex];
     }
 
     uint64_t leftCaptures = (colorToMove == 0 ? pawnBitboard >> 9 : pawnBitboard << 7);
@@ -484,7 +488,7 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     const uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
     uint64_t capturable = state.coloredBitboards[1 - colorToMove];
     if(state.enPassantIndex != 64) {
-        capturable |= (1ULL << state.enPassantIndex);
+        capturable |= squareToBitboard[state.enPassantIndex];
     }
 
     uint64_t leftCaptures = (colorToMove == 0 ? pawnBitboard >> 9 : pawnBitboard << 7);
@@ -789,10 +793,10 @@ bool Board::isLegalMove(const Move& move) {
                 total = getPawnAttacks(startSquare, colorToMove);
                 uint64_t capturable = state.coloredBitboards[1 - colorToMove];
                 if(state.enPassantIndex != 64) {
-                    capturable |= (1ULL << state.enPassantIndex);
+                    capturable |= squareToBitboard[state.enPassantIndex];
                 }
                 total &= capturable;
-                total |= (1ULL << (startSquare + directionalOffsets[colorToMove])) & ~occupiedBitboard;
+                total |= (squareToBitboard[startSquare + directionalOffsets[colorToMove]]) & ~occupiedBitboard;
             } else {
                 if(movePiece == Knight) {
                     total = getKnightAttacks(startSquare);
@@ -807,7 +811,7 @@ bool Board::isLegalMove(const Move& move) {
                 }
                 total ^= (total & state.coloredBitboards[colorToMove]);
             }
-            if((total & (1ULL << move.getEndSquare())) != 0) return true;
+            if((total & squareToBitboard[move.getEndSquare()]) != 0) return true;
         }
     }
     return false;
