@@ -572,30 +572,45 @@ bool Board::squareIsUnderAttack(int square) {
 }
 
 bool Board::makeMove(Move move) {
+    // push to vectors
     stateHistory.push_back(generateBoardState());
     nnueState.push();
-    hundredPlyCounter++;
+
+    // get information
     int start = move.getStartSquare();
     int end = move.getEndSquare();
     int movedPiece = pieceAtIndex(move.getStartSquare());
     int victim = pieceAtIndex(move.getEndSquare());
     int flag = move.getFlag();
     assert(movedPiece != None);
-    if(victim != None || getType(movedPiece) == Pawn) {
+    bool isCapture = victim != None;
+    int movedPieceType = getType(movedPiece);
+    
+    // hundred Ply (fifty move) counter
+    hundredPlyCounter++;
+    if(isCapture || movedPieceType == Pawn) {
         hundredPlyCounter = 0;
     }
+
+    // actually make the move
     movePiece(start, movedPiece, end, victim);
+
+    // En Passant
     enPassantIndex = 64;
-    if(move.getFlag() == DoublePawnPush) enPassantIndex = end + directionalOffsets[colorToMove];
-    if(getType(movedPiece) == King) {
+    if(flag == DoublePawnPush) enPassantIndex = end + directionalOffsets[colorToMove];
+
+    // king square updates
+    if(movedPieceType == King) {
         kingSquares[colorToMove] = end;
     }
+    
+    // castling rights updates!
     if(castlingRights != 0) {
         if(getType(movedPiece) == King) {
             castlingRights ^= ((colorToMove == 1 ? 1 : 4) & castlingRights);
             castlingRights ^= ((colorToMove == 1 ? 2 : 8) & castlingRights);
         }
-        if(getType(movedPiece) == Rook) {
+        if(movedPieceType == Rook) {
             switch (start) {
                 case 7:
                     castlingRights ^= (1 & castlingRights);
@@ -609,52 +624,77 @@ bool Board::makeMove(Move move) {
                 case 56:
                     castlingRights ^= (8 & castlingRights);
                     break;
+                default:
+                    break;
             }
         }
     }
-    if(flag == castling[0]) {
-        assert(pieceAtIndex(7) != None);
-        movePiece(7, Rook | White, 5, None);
-        castlingRights ^= (1 & castlingRights);
-        castlingRights ^= (2 & castlingRights);
-    } else if(flag == castling[1]) {
-        assert(pieceAtIndex(0) != None);
-        movePiece(0, Rook | White, 3, None);
-        castlingRights ^= (1 & castlingRights);
-        castlingRights ^= (2 & castlingRights);
-    } else if(flag == castling[2]) {
-        assert(pieceAtIndex(63) != None);
-        movePiece(63, Rook | Black, 61, None);
-        castlingRights ^= (4 & castlingRights);
-        castlingRights ^= (8 & castlingRights);
-    } else if(flag == castling[3]) {
-        assert(pieceAtIndex(56) != None);
-        movePiece(56, Rook | Black, 59, None);
-        castlingRights ^= (4 & castlingRights);
-        castlingRights ^= (8 & castlingRights);
-    } else if(flag == promotions[0]) {
-        removePiece(end, movedPiece);
-        addPiece(end, Knight | (colorToMove == 1 ? White : Black));
-    } else if(flag == promotions[1]) {
-        removePiece(end, movedPiece);
-        addPiece(end, Bishop | (colorToMove == 1 ? White : Black));
-    } else if(flag == promotions[2]) {
-        removePiece(end, movedPiece);
-        addPiece(end, Rook | (colorToMove == 1 ? White : Black));
-    } else if(flag == promotions[3]) {
-        removePiece(end, movedPiece);
-        addPiece(end, Queen | (colorToMove == 1 ? White : Black));
-    } else if(flag == EnPassant) {
-        assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
-        removePiece(end + directionalOffsets[colorToMove], pieceAtIndex(end + directionalOffsets[colorToMove]));
+    // edge cases!
+    switch(flag) {
+        // castling cases
+        case castling[0]:
+            assert(pieceAtIndex(7) != None);
+            movePiece(7, Rook | White, 5, None);
+            castlingRights ^= (1 & castlingRights);
+            castlingRights ^= (2 & castlingRights);
+            break;
+        case castling[1]:
+            assert(pieceAtIndex(0) != None);
+            movePiece(0, Rook | White, 3, None);
+            castlingRights ^= (1 & castlingRights);
+            castlingRights ^= (2 & castlingRights);
+            break;
+        case castling[2]:
+            assert(pieceAtIndex(63) != None);
+            movePiece(63, Rook | Black, 61, None);
+            castlingRights ^= (4 & castlingRights);
+            castlingRights ^= (8 & castlingRights);
+            break;
+        case castling[3]:
+            assert(pieceAtIndex(56) != None);
+            movePiece(56, Rook | Black, 59, None);
+            castlingRights ^= (4 & castlingRights);
+            castlingRights ^= (8 & castlingRights);
+            break;
+        // double pawn push
+        case DoublePawnPush:
+            enPassantIndex = end + directionalOffsets[colorToMove];
+            break;
+        // en passant
+        case EnPassant:
+            assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
+            removePiece(end + directionalOffsets[colorToMove], pieceAtIndex(end + directionalOffsets[colorToMove]));
+            break;
+        // promotion cases
+        case promotions[0]:
+            removePiece(end, movedPiece);
+            addPiece(end, Knight | (colorToMove == 1 ? White : Black));
+            break;
+        case promotions[1]:
+            removePiece(end, movedPiece);
+            addPiece(end, Bishop | (colorToMove == 1 ? White : Black));
+            break;
+        case promotions[2]:
+            removePiece(end, movedPiece);
+            addPiece(end, Rook | (colorToMove == 1 ? White : Black));
+            break;
+        case promotions[3]:
+            removePiece(end, movedPiece);
+            addPiece(end, Queen | (colorToMove == 1 ? White : Black));
+            break;
+        default:
+            break;
     }
     plyCount++;
+    // if in check, move was illegal
     if(isInCheck()) {
+        // so you must undo it and return false
         undoMove();
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was illegal\n";
         return false;
     } else {
+        // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was legal\n";
         zobristHash ^= zobColorToMove;
