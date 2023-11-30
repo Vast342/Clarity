@@ -302,17 +302,18 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
 
             if(score > bestScore) {
                 bestScore = score;
-                bestMove = moves[i];
 
                 // Improve alpha
                 if(score > alpha) {
                     flag = Exact;
                     alpha = score;
+                    bestMove = moves[i];
                 }
 
                 // Fail-high
                 if(score >= beta) {
                     flag = BetaCutoff;
+                    bestMove = moves[i];
                     break;
                 }
             }
@@ -403,6 +404,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // get the moves
     std::array<Move, 256> moves;
     std::array<Move, 256> testedLegalMoves;
+    std::array<Move, 256> testedQuiets;
     int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
@@ -454,6 +456,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             legalMoves++;
             nodes++;
             if(isQuiet) {
+                testedQuiets[quietCount] = moves[i];
                 quietCount++;
             }
             int score = 0;
@@ -481,48 +484,45 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
             if(score > bestScore) {
                 bestScore = score;
-                bestMove = moves[i];
-                if(ply == 0) rootBestMove = moves[i];
 
                 // Improve alpha
                 if(score > alpha) {
                     flag = Exact; 
                     alpha = score;
+                    bestMove = moves[i];
+                    if(ply == 0) rootBestMove = moves[i];
                 }
 
                 // Fail-high
                 if(score >= beta) {
                     flag = BetaCutoff;
-                    int bonus = depth * depth;
-                    const int colorToMove = board.getColorToMove();
+                    bestMove = moves[i];
+                    if(ply == 0) rootBestMove = moves[i];
                     if(isQuiet) {
                         // adds to the move's history and adjusts the killer table accordingly
                         int start = moves[i].getStartSquare();
                         int end = moves[i].getEndSquare();
                         int piece = getType(board.pieceAtIndex(start));
+                        int bonus = depth * depth;
+                        const int colorToMove = board.getColorToMove();
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
+                        bonus = -bonus;
+                        // malus!
+                        for(int quiet = 0; quiet < quietCount - 1; quiet++) {
+                            start = testedQuiets[quiet].getStartSquare();
+                            end = testedQuiets[quiet].getEndSquare();
+                            piece = getType(board.pieceAtIndex(start));
+                            updateHistory(colorToMove, start, end, piece, bonus, ply);
+                        }
                         stack[ply].killers[2] = stack[ply].killers[1];
                         stack[ply].killers[1] = stack[ply].killers[0];
                         stack[ply].killers[0] = moves[i].getValue();
-                    }/* else {
+                    } /*else { NEED TO MAKE MALUS BEFORE MAKING THIS
                         const int end = moves[i].getEndSquare();
                         const int piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
                         const int victim = getType(board.pieceAtIndex(end));
                         updateCaptureHistory(board.getColorToMove(), piece, end, victim, bonus);
                     }*/
-                    // malus!
-                    bonus = -bonus;
-                    for(int quiet = 0; quiet < legalMoves; quiet++) {
-                        const int start = testedLegalMoves[quiet].getStartSquare();
-                        const int end = testedLegalMoves[quiet].getEndSquare();
-                        const int flag = testedLegalMoves[quiet].getFlag();
-                        const int piece = getType(board.pieceAtIndex(start));
-                        bool capture = ((capturable & (1ULL << end)) != 0) || flag == EnPassant;
-                        bool quietIs = (!capture && (flag <= DoublePawnPush));
-                        if(quietIs) {
-                            updateHistory(colorToMove, start, end, piece, bonus, ply);
-                        }
-                    }
                     break;
                 }
             }
@@ -538,9 +538,33 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // push to TT
-    TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
+    //bool pushToTT = ((flag == Exact && entry.flag != Exact) || depth + 4 >= entry.depth || entry.zobristKey != hash);
+    if(entry.zobristKey == hash && entry.bestMove.getValue() != 0 && bestMove.getValue() == 0) bestMove = entry.bestMove;
+    /*if(pushToTT)*/ TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
 
     return bestScore;
+}
+
+// gets the PV from the TT, has some inconsistencies or illegal moves, and will be replaced with a triangular PV table eventually
+std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries) {
+    std::string pv;
+    const uint64_t hash = board.getZobristHash();
+    for(int i = numEntries; i > -1; i--) {
+        if(hashVector[i] == hash) {
+            // repitition, GET THAT OUTTA HERE
+            return pv;
+        }
+    }
+    hashVector.push_back(hash);
+    numEntries++;
+    if(TT.matchZobrist(hash)) {
+        Move bestMove = TT.getBestMove(hash);
+        if(bestMove.getValue() != 0 && board.makeMove(bestMove)) {
+            std::string restOfPV = getPV(board, hashVector, numEntries);
+            pv = toLongAlgebraic(bestMove) + " " + restOfPV;
+        }
+    }
+    return pv;
 }
 
 void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
@@ -556,22 +580,13 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
         scoreString += "mate ";
         scoreString += std::to_string((abs(abs(score) + mateScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
-    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
-}
-
-// yes cloning the board is intentional here.
-// this crashes, which is why you only see me outputting the currently believed best move for the position
-std::string getPV(Board board) {
-    std::string pv = "";
-    const uint64_t hash = board.getZobristHash();
-    if(TT.matchZobrist(hash)) {
-        Move bestMove = TT.getBestMove(hash);
-        if(board.isLegalMove(bestMove) && board.makeMove(bestMove)) {
-            std::string restOfPV = getPV(board);
-            pv = toLongAlgebraic(bestMove) + " " + restOfPV;
-        }
+    if(depth > 6) {
+        std::vector<uint64_t> hashVector;
+        hashVector.reserve(128);
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
+    } else {
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
-    return pv;
 }
 
 // the usual think function, where you give it the amount of time it has left, and it will think in increasing depth steps until it runs out of time
