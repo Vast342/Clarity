@@ -33,6 +33,8 @@ struct StackEntry {
     CHEntry *ch_entry;
     // killer moves, 3 per ply
     std::array<uint16_t, 3> killers;
+    // static eval used for improving
+    int staticEval;
 };
 
 std::array<StackEntry, 120> stack;
@@ -382,19 +384,21 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
                 || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
         )) {
-        return entry.score;
+        return entry.score; 
     }
 
     // Reverse Futility Pruning
     const int staticEval = board.getEvaluation();
-    if(staticEval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return staticEval - 80 * depth;
+    stack[ply].staticEval = staticEval;
+    const bool improving = (ply > 1 ? staticEval > stack[ply - 2].staticEval : false);
+    if(staticEval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return staticEval;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // !isPV looked equal, but I have more important things to test here than fractional elo
     if(nmpAllowed && depth >= nmpMin && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &conthistTable[1][0][0];
         board.changeColor();
-        const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
+        const int score = -negamax(board, depth - (depth+1)/3 - (2 + improving), 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -583,9 +587,9 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
     if(depth > 6) {
         std::vector<uint64_t> hashVector;
         hashVector.reserve(128);
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
     } else {
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
 }
 
