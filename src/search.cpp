@@ -35,6 +35,7 @@ struct StackEntry {
     std::array<uint16_t, 3> killers;
     // static eval used for improving
     int staticEval;
+    bool inCheck;
 };
 
 std::array<StackEntry, 120> stack;
@@ -371,6 +372,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
     const bool isPV = beta > alpha + 1;
     const bool inCheck = board.isInCheck();
+    stack[ply].inCheck = inCheck;
     const uint64_t hash = board.getZobristHash();
 
     // TT check
@@ -390,15 +392,15 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // Reverse Futility Pruning
     const int staticEval = board.getEvaluation();
     stack[ply].staticEval = staticEval;
-    const bool improving = (ply > 1 ? staticEval > stack[ply - 2].staticEval : false);
-    if(staticEval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return staticEval;
+    const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
+    if(staticEval - 80 * (depth - improving) >= beta && !inCheck && depth < 9 && !isPV) return staticEval;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // !isPV looked equal, but I have more important things to test here than fractional elo
     if(nmpAllowed && depth >= nmpMin && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &conthistTable[1][0][0];
         board.changeColor();
-        const int score = -negamax(board, depth - (depth+1)/3 - (2 + improving), 0-beta, 1-beta, ply + 1, false);
+        const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -451,7 +453,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         // futility pruning
         if(bestScore > mateScore && !inCheck && depth <= 8 && staticEval + 250 + depth * 60 <= alpha) break;
         // Late Move Pruning
-        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
+        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > 3 + depth * depth / (2 - improving)) continue;
         // see pruning
         if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {

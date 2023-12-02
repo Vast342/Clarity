@@ -632,6 +632,24 @@ bool Board::makeMove(Move move) {
                 break;
         }
     }
+    if(getType(victim) == Rook) {
+        switch(end) {
+            case 7:
+                state.castlingRights &= rookRightMasks[end];
+                break;
+            case 0:
+                state.castlingRights &= rookRightMasks[end];
+                break;
+            case 63:
+                state.castlingRights &= rookRightMasks[end];
+                break;
+            case 56:
+                state.castlingRights &= rookRightMasks[end];
+                break;
+            default:
+                break;
+        }
+    }
 
     // edge cases!
     switch(flag) {
