@@ -65,6 +65,7 @@ struct Move {
         Move(int startSquare, int endSquare, int flag);
         Move();
         Move(std::string longAlgebraic, const Board& board);
+        [[nodiscard]] constexpr auto operator==(const Move &other) const -> bool = default;
     private: 
         uint16_t value;
 };

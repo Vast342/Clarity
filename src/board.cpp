@@ -799,36 +799,10 @@ bool Board::isRepeatedPosition() {
 }
 
 bool Board::isLegalMove(const Move& move) {
-    if(move.getValue() != 0) {
-        int startSquare = move.getStartSquare();
-        uint64_t occupiedBitboard = getOccupiedBitboard();
-        int movePiece = getType(pieceAtIndex(startSquare));
-        if(movePiece != None) {
-            uint64_t total = 0;
-            if(movePiece == Pawn) {
-                total = getPawnAttacks(startSquare, colorToMove);
-                uint64_t capturable = state.coloredBitboards[1 - colorToMove];
-                if(state.enPassantIndex != 64) {
-                    capturable |= squareToBitboard[state.enPassantIndex];
-                }
-                total &= capturable;
-                total |= (squareToBitboard[startSquare + directionalOffsets[colorToMove]]) & ~occupiedBitboard;
-            } else {
-                if(movePiece == Knight) {
-                    total = getKnightAttacks(startSquare);
-                } else if(movePiece == Bishop) {
-                    total = getBishopAttacks(startSquare, occupiedBitboard);
-                } else if(movePiece == Rook) {
-                    total = getRookAttacks(startSquare, occupiedBitboard);
-                } else if(movePiece == Queen) {
-                    total = getRookAttacks(startSquare, occupiedBitboard) | getBishopAttacks(startSquare, occupiedBitboard);
-                } else if(movePiece == King) {
-                    total = getKingAttacks(startSquare);
-                }
-                total ^= (total & state.coloredBitboards[colorToMove]);
-            }
-            if((total & squareToBitboard[move.getEndSquare()]) != 0) return true;
-        }
+    std::array<Move, 256> moves;
+    const int totalMoves = getMoves(moves);
+    for(int i = 0; i < totalMoves; i++) {
+        if(moves[i] == move) return true;
     }
     return false;
 }
