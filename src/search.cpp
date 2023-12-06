@@ -12,6 +12,8 @@ constexpr int nmpMin = 2;
 
 constexpr int depthLimit = 100;
 
+constexpr int badCaptureScore = -500000;
+
 // The main search functions
 
 bool dataGeneration = false;
@@ -211,7 +213,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
                 values[i] = 500 * eg_value[victim] - eg_value[piece];
             } else {
                 // bad captures
-                values[i] = -500000;
+                values[i] = badCaptureScore;
             }
             // capthist, I'll be back soon
             /*values[i] =  200 * eg_value[victim] + captureHistoryTable[colorToMove][piece][end][victim];
@@ -291,7 +293,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
                 std::swap(moves[j], moves[i]);
             }
         }
-        if(!see(board, moves[i], 0)) {
+        if(moveValues[i] == badCaptureScore) {
             continue;
         }
         if(board.makeMove(moves[i])) {
