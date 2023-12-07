@@ -7,6 +7,22 @@ std::array<std::array<uint64_t, 14>, 64> zobTable;
 // if black is to move this value is xor'ed
 uint64_t zobColorToMove;
 
+// masks for caslting rights, used to update the castling rights faster after a rook or king move
+constexpr std::array<uint8_t, 64> rookRightMasks = {
+0b1101,255,255,255,255,255,255,0b1110,
+255,   255,255,255,255,255,255,   255,
+255,   255,255,255,255,255,255,   255,
+255,   255,255,255,255,255,255,   255,
+255,   255,255,255,255,255,255,   255,
+255,   255,255,255,255,255,255,   255,
+255,   255,255,255,255,255,255,   255,
+0b0111,255,255,255,255,255,255,0b1011
+};
+
+constexpr std::array<uint8_t, 2> kingRightMasks = {
+	0b0011, 0b1100
+};
+
 int directionalOffsets[] = {8, -8, 1, -1, 7, -7, 9, -9};
 
 void Board::toString() {
@@ -333,23 +349,23 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     // castling
-    if(state.castlingRights != 0) {
+    if((state.castlingRights & kingRightMasks[1 - colorToMove]) != 0) {
         if(!isInCheck()) {
             if(colorToMove == 1) {
-                if((state.castlingRights & 1) != 0 && (occupiedBitboard & 0x60) == 0 && !squareIsUnderAttack(5) && pieceAtIndex(7) == (Rook | White)) {
+                if((state.castlingRights & 1) != 0 && (occupiedBitboard & 0x60) == 0 && !squareIsUnderAttack(5)) {
                     moves[totalMoves] = Move(4, 6, castling[0]);
                     totalMoves++;
                 }
-                if((state.castlingRights & 2) != 0 && (occupiedBitboard & 0xE) == 0 && !squareIsUnderAttack(3) && pieceAtIndex(0) == (Rook | White)) {
+                if((state.castlingRights & 2) != 0 && (occupiedBitboard & 0xE) == 0 && !squareIsUnderAttack(3)) {
                     moves[totalMoves] = Move(4, 2, castling[1]);
                     totalMoves++;
                 }
             } else {
-                if((state.castlingRights & 4) != 0 && (occupiedBitboard & 0x6000000000000000) == 0 && !squareIsUnderAttack(61) && pieceAtIndex(63) == Rook) {
+                if((state.castlingRights & 4) != 0 && (occupiedBitboard & 0x6000000000000000) == 0 && !squareIsUnderAttack(61)) {
                     moves[totalMoves] = Move(60, 62, castling[2]);
                     totalMoves++;
                 }
-                if((state.castlingRights & 8) != 0 && (occupiedBitboard & 0xE00000000000000) == 0 && !squareIsUnderAttack(59) && pieceAtIndex(56) == Rook) {
+                if((state.castlingRights & 8) != 0 && (occupiedBitboard & 0xE00000000000000) == 0 && !squareIsUnderAttack(59)) {
                     moves[totalMoves] = Move(60, 58, castling[3]);
                     totalMoves++;   
                 }
@@ -571,22 +587,6 @@ bool Board::squareIsUnderAttack(int square) {
     return false;
 }
 
-// masks for caslting rights, used to update the castling rights faster after a rook or king move
-constexpr std::array<uint8_t, 64> rookRightMasks = {
-0b1101,255,255,255,255,255,255,0b1110,
-255,     255,255,255,255,255,255,   255,
-255,     255,255,255,255,255,255,   255,
-255,     255,255,255,255,255,255,   255,
-255,     255,255,255,255,255,255,   255,
-255,     255,255,255,255,255,255,   255,
-255,     255,255,255,255,255,255,   255,
-0b0111,255,255,255,255,255,255,0b1011
-};
-
-constexpr std::array<uint8_t, 2> kingRightMasks = {
-	0b0011, 0b1100
-};
-
 bool Board::makeMove(Move move) {
     // push to vectors
     stateHistory.push_back(state);
@@ -627,6 +627,24 @@ bool Board::makeMove(Move move) {
                 break;
             case King:
                 state.castlingRights &= kingRightMasks[colorToMove];
+                break;
+            default:
+                break;
+        }
+    }
+    if(getType(victim) == Rook) {
+        switch(end) {
+            case 7:
+                state.castlingRights &= rookRightMasks[end];
+                break;
+            case 0:
+                state.castlingRights &= rookRightMasks[end];
+                break;
+            case 63:
+                state.castlingRights &= rookRightMasks[end];
+                break;
+            case 56:
+                state.castlingRights &= rookRightMasks[end];
                 break;
             default:
                 break;
@@ -714,22 +732,21 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     stateHistory.push_back(state);
-    state.enPassantIndex = 0;
+    plyCount++;
+    state.enPassantIndex = 64;
+    state.hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
     state.zobristHash ^= zobColorToMove;
 }
 
 void Board::undoChangeColor() {
-    state.enPassantIndex = stateHistory.back().enPassantIndex;
+    state = stateHistory.back();
     stateHistory.pop_back();
     colorToMove = 1 - colorToMove;
-    state.zobristHash ^= zobColorToMove;
 }
 
 int Board::getEvaluation() {   
     return nnueState.evaluate(colorToMove);
-    //int egPhase = 24 - phase;
-    //return ((mgEval * phase + egEval * egPhase) / 24) * ((2 * colorToMove) - 1);
 }
 
 int Board::getCastlingRights() const {
@@ -774,7 +791,8 @@ uint64_t Board::fullZobristRegen() {
 }
 
 bool Board::isRepeatedPosition() {
-    for(int i = std::ssize(stateHistory) - 2; i >= std::ssize(stateHistory) - state.hundredPlyCounter; i--) {
+    int size = std::ssize(stateHistory);
+    for(int i = size - 4; i >= size - state.hundredPlyCounter; i -= 2) {
         if(stateHistory[i].zobristHash == state.zobristHash) {
             return true;
         }
@@ -783,36 +801,10 @@ bool Board::isRepeatedPosition() {
 }
 
 bool Board::isLegalMove(const Move& move) {
-    if(move.getValue() != 0) {
-        int startSquare = move.getStartSquare();
-        uint64_t occupiedBitboard = getOccupiedBitboard();
-        int movePiece = getType(pieceAtIndex(startSquare));
-        if(movePiece != None) {
-            uint64_t total = 0;
-            if(movePiece == Pawn) {
-                total = getPawnAttacks(startSquare, colorToMove);
-                uint64_t capturable = state.coloredBitboards[1 - colorToMove];
-                if(state.enPassantIndex != 64) {
-                    capturable |= squareToBitboard[state.enPassantIndex];
-                }
-                total &= capturable;
-                total |= (squareToBitboard[startSquare + directionalOffsets[colorToMove]]) & ~occupiedBitboard;
-            } else {
-                if(movePiece == Knight) {
-                    total = getKnightAttacks(startSquare);
-                } else if(movePiece == Bishop) {
-                    total = getBishopAttacks(startSquare, occupiedBitboard);
-                } else if(movePiece == Rook) {
-                    total = getRookAttacks(startSquare, occupiedBitboard);
-                } else if(movePiece == Queen) {
-                    total = getRookAttacks(startSquare, occupiedBitboard) | getBishopAttacks(startSquare, occupiedBitboard);
-                } else if(movePiece == King) {
-                    total = getKingAttacks(startSquare);
-                }
-                total ^= (total & state.coloredBitboards[colorToMove]);
-            }
-            if((total & squareToBitboard[move.getEndSquare()]) != 0) return true;
-        }
+    std::array<Move, 256> moves;
+    const int totalMoves = getMoves(moves);
+    for(int i = 0; i < totalMoves; i++) {
+        if(moves[i] == move) return true;
     }
     return false;
 }

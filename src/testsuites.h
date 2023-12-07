@@ -3,7 +3,7 @@
 #include "testessentials.h"
 
 // this is the perft suite from the engine Ethereal
-PerftTest etherealSuite[] = {
+std::array<PerftTest, 755> etherealSuite = {
     PerftTest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 1, 20),
     PerftTest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 2, 400),
     PerftTest("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 3, 8902),

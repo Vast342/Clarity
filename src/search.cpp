@@ -12,6 +12,8 @@ constexpr int nmpMin = 2;
 
 constexpr int depthLimit = 100;
 
+constexpr int badCaptureScore = -500000;
+
 // The main search functions
 
 bool dataGeneration = false;
@@ -32,7 +34,10 @@ struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
     // killer moves, 3 per ply
-    std::array<uint16_t, 3> killers;
+    std::array<Move, 3> killers;
+    // static eval used for improving
+    int staticEval;
+    bool inCheck;
 };
 
 std::array<StackEntry, 120> stack;
@@ -189,15 +194,14 @@ bool see(const Board& board, Move move, int threshold) {
     4: History: scores of how many times a move has caused a beta cutoff
     5: Bad captures: captures that result in bad exchanges.
 */
-void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, int ttMoveValue, int ply, bool inQSearch) {
+void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch) {
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
-        const int moveValue = moves[i].getValue();
         const int end = moves[i].getEndSquare();
         const int start = moves[i].getStartSquare();
         const int piece = getType(board.pieceAtIndex(start));
-        if(moveValue == ttMoveValue) {
+        if(moves[i] == ttMove) {
             values[i] = 1000000000;
         } else if((occupied & (1ULL << end)) != 0) {
             // Captures!
@@ -209,7 +213,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
                 values[i] = 500 * eg_value[victim] - eg_value[piece];
             } else {
                 // bad captures
-                values[i] = -500000;
+                values[i] = badCaptureScore;
             }
             // capthist, I'll be back soon
             /*values[i] =  200 * eg_value[victim] + captureHistoryTable[colorToMove][piece][end][victim];
@@ -224,11 +228,11 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
                 + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
-                if(moveValue == stack[ply].killers[0]) {
+                if(moves[i] == stack[ply].killers[0]) {
                     values[i] = 54000;
-                } else if(moveValue == stack[ply].killers[1]) {
+                } else if(moves[i] == stack[ply].killers[1]) {
                     values[i] = 53000;
-                }  else if(moveValue == stack[ply].killers[2]) {
+                }  else if(moves[i] == stack[ply].killers[2]) {
                     values[i] = 52000;
                 }
             }
@@ -238,7 +242,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int qSearch(Board &board, int alpha, int beta, int ply) {
-    if(board.isRepeatedPosition()) return 0;
+    //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
@@ -275,7 +279,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), -1, true);
+    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove, -1, true);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -289,7 +293,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
                 std::swap(moves[j], moves[i]);
             }
         }
-        if(!see(board, moves[i], 0)) {
+        if(moveValues[i] == badCaptureScore) {
             continue;
         }
         if(board.makeMove(moves[i])) {
@@ -369,6 +373,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     if(depth <= 0) return qSearch(board, alpha, beta, ply);
     const bool isPV = beta > alpha + 1;
     const bool inCheck = board.isInCheck();
+    stack[ply].inCheck = inCheck;
     const uint64_t hash = board.getZobristHash();
 
     // TT check
@@ -382,12 +387,14 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
                 || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
         )) {
-        return entry.score;
+        return entry.score; 
     }
 
     // Reverse Futility Pruning
     const int staticEval = board.getEvaluation();
-    if(staticEval - 80 * depth >= beta && !inCheck && depth < 9 && !isPV) return staticEval - 80 * depth;
+    stack[ply].staticEval = staticEval;
+    const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
+    if(staticEval - 80 * (depth - improving) >= beta && !inCheck && depth < 9 && !isPV) return staticEval;
 
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // !isPV looked equal, but I have more important things to test here than fractional elo
@@ -408,7 +415,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove.getValue(), ply, false);
+    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove, ply, false);
 
     // values useful for writing to TT later
     int bestScore = mateScore;
@@ -421,8 +428,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         extensions++;
     }
 
-    // Mate Distance Pruning (needs more testing)
+    // Mate Distance Pruning (I need to test this more sometime soon)
     /*if (!isPV) {
+        // my mateScore is a large negative number and that is what I return, people seem to get confused by that when I talk with other devs.
         const auto mdAlpha = std::max(alpha, mateScore + ply);
         const auto mdBeta = std::min(beta, -mateScore - ply - 1);
         if (mdAlpha >= mdBeta) {
@@ -447,7 +455,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         // futility pruning
         if(bestScore > mateScore && !inCheck && depth <= 8 && staticEval + 250 + depth * 60 <= alpha) break;
         // Late Move Pruning
-        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > (3 + depth * depth)) continue;
+        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > 5 + depth * depth / (2 - improving)) continue;
         // see pruning
         if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
@@ -503,7 +511,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         int start = moves[i].getStartSquare();
                         int end = moves[i].getEndSquare();
                         int piece = getType(board.pieceAtIndex(start));
-                        int bonus = depth * depth;
+                        // testing berserk history bonus
+                        int bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
                         const int colorToMove = board.getColorToMove();
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
                         bonus = -bonus;
@@ -514,9 +523,11 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                             piece = getType(board.pieceAtIndex(start));
                             updateHistory(colorToMove, start, end, piece, bonus, ply);
                         }
-                        stack[ply].killers[2] = stack[ply].killers[1];
-                        stack[ply].killers[1] = stack[ply].killers[0];
-                        stack[ply].killers[0] = moves[i].getValue();
+                        if(stack[ply].killers[0] != moves[i] && stack[ply].killers[1] != moves[i]) {
+                            stack[ply].killers[2] = stack[ply].killers[1];
+                            stack[ply].killers[1] = stack[ply].killers[0];
+                            stack[ply].killers[0] = moves[i];
+                        }
                     } /*else { NEED TO MAKE MALUS BEFORE MAKING THIS
                         const int end = moves[i].getEndSquare();
                         const int piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
@@ -529,7 +540,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         }
     }
 
-    // checkmate / stalemate detection, if I did legal move generation instead of pseudolegal I could probably do this first and it would be faster
+    // checkmate / stalemate detection, if I did legal move generation instead of pseudolegal I could probably do this first
     if(legalMoves == 0) {
         if(inCheck) {
             return mateScore + ply;
@@ -539,7 +550,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // push to TT
     //bool pushToTT = ((flag == Exact && entry.flag != Exact) || depth + 4 >= entry.depth || entry.zobristKey != hash);
-    if(entry.zobristKey == hash && entry.bestMove.getValue() != 0 && bestMove.getValue() == 0) bestMove = entry.bestMove;
+    if(entry.zobristKey == hash && entry.bestMove != Move() && bestMove == Move()) bestMove = entry.bestMove;
     /*if(pushToTT)*/ TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
 
     return bestScore;
@@ -559,7 +570,7 @@ std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries
     numEntries++;
     if(TT.matchZobrist(hash)) {
         Move bestMove = TT.getBestMove(hash);
-        if(bestMove.getValue() != 0 && board.makeMove(bestMove)) {
+        if(bestMove != Move() && board.makeMove(bestMove)) {
             std::string restOfPV = getPV(board, hashVector, numEntries);
             pv = toLongAlgebraic(bestMove) + " " + restOfPV;
         }
@@ -583,9 +594,9 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
     if(depth > 6) {
         std::vector<uint64_t> hashVector;
         hashVector.reserve(128);
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
     } else {
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
 }
 

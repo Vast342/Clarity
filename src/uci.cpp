@@ -122,20 +122,10 @@ void newGame() {
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
 
-
     if(bits.empty()) {
         return;
     } else if(bits[0] == "printstate") {
         board.toString();
-    } else if(bits[0] == "perftsuite") {
-        // not technically necessary since ethereal is the only perft suite I have but I think it's best to have it in case I get any more.
-        if(bits[1] == "ethereal") {
-            runPerftSuite(0);
-        }
-    } else if(bits[0] == "incheck") {
-        std::cout << std::to_string(board.isInCheck()) << '\n';
-    } else if(bits[0] == "getfen") {
-        std::cout << board.getFenString() << '\n';
     } else if(bits[0] == "position") {
         loadPosition(bits);
     } else if(bits[0] == "isready") {
@@ -147,30 +137,50 @@ void interpretCommand(std::string command) {
         go(bits);
     } else if(bits[0] == "ucinewgame") {
         newGame();    
+    } else if(bits[0] == "setoption") {
+        setOption(bits);
+    } else if(bits[0] == "perftsuite") {
+        // not technically necessary since ethereal is the only perft suite I have but I think it's best to have it in case I get any more.
+        if(bits[1] == "ethereal") {
+            runPerftSuite(0);
+        }
+    } else if(bits[0] == "incheck") {
+        std::cout << std::to_string(board.isInCheck()) << '\n';
+    } else if(bits[0] == "getfen") {
+        std::cout << board.getFenString() << '\n';
     } else if(bits[0] == "perft") {
         individualPerft(board, std::stoi(bits[1]));
     } else if(bits[0] == "splitperft") {
         splitPerft(board, std::stoi(bits[1]));
     } else if(bits[0] == "evaluate") {
         std::cout << "evaluation " << board.getEvaluation() << '\n';
-    } else if(bits[0] == "setoption") {
-        setOption(bits);
     } else if(bits[0] == "bench") {
         runBench(std::stoi(bits[1]));
+    } else if(bits[0] == "makemove") {
+        board.makeMove(Move(bits[1], board));
+    } else if(bits[0] == "undomove") {
+        board.undoMove();
+    } else if(bits[0] == "nullmove") {
+        board.changeColor();
+    } else if(bits[0] == "undonullmove") {
+        board.undoChangeColor();
+    } else if(bits[0] == "isrepeated") {
+        std::cout << board.isRepeatedPosition() << '\n';
     } else {
-        std::cout << "invalid command\n";
+        std::cout << "invalid or unsupported command\n";
     }
 }
 
 int main() {
     initialize();
+    std::cout << std::boolalpha;
     std::string command;
     while(true) {
         std::getline(std::cin, command, '\n');
         if(command == "quit") {
             return 0;
         }
-        interpretCommand(command);
+            interpretCommand(command);
     }
     return 0;
 };
