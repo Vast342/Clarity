@@ -732,16 +732,17 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     stateHistory.push_back(state);
-    state.enPassantIndex = 0;
+    plyCount++;
+    state.enPassantIndex = 64;
+    state.hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
     state.zobristHash ^= zobColorToMove;
 }
 
 void Board::undoChangeColor() {
-    state.enPassantIndex = stateHistory.back().enPassantIndex;
+    state = stateHistory.back();
     stateHistory.pop_back();
     colorToMove = 1 - colorToMove;
-    state.zobristHash ^= zobColorToMove;
 }
 
 int Board::getEvaluation() {   
@@ -790,7 +791,8 @@ uint64_t Board::fullZobristRegen() {
 }
 
 bool Board::isRepeatedPosition() {
-    for(int i = std::ssize(stateHistory) - 2; i >= std::ssize(stateHistory) - state.hundredPlyCounter; i--) {
+    int size = std::ssize(stateHistory);
+    for(int i = size - 4; i >= size - state.hundredPlyCounter; i -= 2) {
         if(stateHistory[i].zobristHash == state.zobristHash) {
             return true;
         }

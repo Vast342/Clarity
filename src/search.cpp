@@ -242,7 +242,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int qSearch(Board &board, int alpha, int beta, int ply) {
-    if(board.isRepeatedPosition()) return 0;
+    //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
@@ -511,7 +511,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         int start = moves[i].getStartSquare();
                         int end = moves[i].getEndSquare();
                         int piece = getType(board.pieceAtIndex(start));
-                        int bonus = depth * depth;
+                        // testing berserk history bonus
+                        int bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
                         const int colorToMove = board.getColorToMove();
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
                         bonus = -bonus;
