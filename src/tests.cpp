@@ -51,7 +51,7 @@ void runPerftSuite(int number) {
         clock_t end = clock();
         std::cout << "Passed " << std::to_string(passed) << ", Failed " << std::to_string(failed) << ", Skipped " << std::to_string(skipped) << '\n';
         std::cout << "Tests took: " << std::to_string((end-start)/static_cast<double>(1000)) << '\n';
-        std::cout << "Total nodes: " << std::to_string(total) << '\n';
+        std::cout << "Total nodes: " << std::to_string(static_cast<int>(total)) << '\n';
         std::cout << "NPS: " << std::to_string(total / ((end-start)/static_cast<double>(1000))) << '\n';
     }
 }

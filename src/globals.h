@@ -16,6 +16,7 @@
 #include <chrono>
 #include <fstream>
 #include "eval.h"
+#include <memory>
 
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
@@ -50,14 +51,9 @@ struct BoardState {
     std::array<uint64_t, 6> pieceBitboards;
     uint8_t enPassantIndex;
     std::array<uint8_t, 2> kingSquares;
-    uint8_t fiftyMoveCounter;
     uint8_t hundredPlyCounter;
     uint8_t castlingRights;
-    //int mgEval;
-    //int egEval;
-    //int phase;
     uint64_t zobristHash;
-    bool isRepeated;
 };
 
 // a single move, stored in 16 bits
@@ -66,10 +62,10 @@ struct Move {
         int getStartSquare() const;
         int getEndSquare() const;
         int getFlag() const;
-        int getValue() const;
         Move(int startSquare, int endSquare, int flag);
         Move();
         Move(std::string longAlgebraic, const Board& board);
+        [[nodiscard]] constexpr auto operator==(const Move &other) const -> bool = default;
     private: 
         uint16_t value;
 };
@@ -77,8 +73,6 @@ struct Move {
 // the board itself
 struct Board {
     public:
-        uint64_t zobristHash;
-        bool isRepeated;
         Board(std::string fen);
         bool makeMove(Move move);
         void undoMove();
@@ -106,27 +100,16 @@ struct Board {
         uint64_t getColoredBitboard(int color) const;
         uint64_t getPieceBitboard(int piece) const;
         int getFiftyMoveCount() const;
+        uint64_t getZobristHash() const;
     private:
         NetworkState nnueState;
-        //int mgEval;
-        //int egEval;
-        //int phase;
-        std::array<uint64_t, 2> coloredBitboards;
-        std::array<uint64_t, 6> pieceBitboards;
-        uint8_t enPassantIndex;
-        std::array<uint8_t, 2> kingSquares;
+        BoardState state;
         int plyCount;
-        uint8_t hundredPlyCounter;
-        uint8_t fiftyMoveCounter;
-        uint8_t castlingRights;
         uint8_t colorToMove;
         std::vector<BoardState> stateHistory;
-        std::vector<uint64_t> zobristHistory;
         void addPiece(int square, int type);
         void removePiece(int square, int type);
         void movePiece(int square1, int type1, int square2, int type2);
-        void loadBoardState(BoardState state);
-        BoardState generateBoardState();
 };
 
 // the eternal functions, can be used everywhere
@@ -152,6 +135,7 @@ void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int n
 void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves, int i);
 int flipIndex(int index);
 uint64_t getPassedPawnMask(int square, int colorToMove);
+extern std::array<uint64_t, 64> squareToBitboard;
 
 // flags for moves
 constexpr uint8_t Normal = 0b0000;

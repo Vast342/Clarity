@@ -11,4 +11,3 @@ void resizeTT(int newSize);
 int benchSearch(Board board, int depthToSearch);
 Move fixedDepthSearch(Board board, int depthToSearch, bool info);
 std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
-bool see(const Board& board, Move move, int threshold);

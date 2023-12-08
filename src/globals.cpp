@@ -65,15 +65,23 @@ void calculateReductions() {
     }
 }
 
+std::array<uint64_t, 64> squareToBitboard;
+
+void generateSquareToBitboard() {
+    for(int i = 0; i < 64; i++) {
+        squareToBitboard[i] = (1ULL << i);
+    }
+}
+
 /*ran on startup, does 4 things:
 1: generates the lookups for sliding pieces
-2: adds material values to the psqts to save time later
-3: generates the numbers used for zobrist hashing
-4: calculates the numbers for LMR
+2: generates the numbers used for zobrist hashing
+3: calculates the numbers for LMR
+4: calculates numbers for square to bitboard lookups
  */
 void initialize() {
+    generateSquareToBitboard();
     generateLookups();
-    //computePSQTs();
     initializeZobrist();
     calculateReductions();
 }

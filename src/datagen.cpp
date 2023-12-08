@@ -7,7 +7,8 @@ uint64_t totalPositions = 0;
 std::chrono::steady_clock::time_point beginTime;
 
 // run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games*
-int main(int argc, char** argv) {
+int main([[maybe_unused]]int argc, char** argv) {
+    assert(argc == 2);
     initialize();
     std::string directory = std::string(argv[1]);
     int numGames = std::atoi(argv[2]);
@@ -24,15 +25,20 @@ int main(int argc, char** argv) {
 
 // manages the threads
 void generateData(int numGames) {
-    threadFunction(numGames, 1);
+    threadFunction(numGames);
 }
 
 // run on each thread
-void threadFunction(int numGames, int threadID) {
+void threadFunction(int numGames) {
+    Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     for(int i = 0; i < numGames; i++) {
         std::vector<std::string> fenVector;
-        double result = runGame(fenVector);
-        if(result == 2) std::cout << "Error! invalid game result\n";
+        double result = runGame(fenVector, board);
+        if(result == 2) {
+            fenVector.clear();
+            i--;
+            continue;
+        }
         dumpToArray(result, fenVector);
     }
 }
@@ -41,10 +47,9 @@ void threadFunction(int numGames, int threadID) {
 constexpr uint8_t threadCount = 5;
 constexpr int moveLimit = 1000;
 // manages the games
-double runGame(std::vector<std::string>& fenVector) {
+double runGame(std::vector<std::string>& fenVector, Board board) {
     int score = 0;
     bool outOfBounds = false;
-    Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     for(int i = 0; i <= moveLimit; i++) {
         if(i < 8) {
             // make a random move
@@ -67,9 +72,7 @@ double runGame(std::vector<std::string>& fenVector) {
             }
             // checkmate or stalemate? doesn't matter, restart
             if(legalMoves == 0) {
-                board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-                i = -1;
-                continue;
+                return 2;
             }
             // distribution
             std::uniform_int_distribution distribution{0, legalMoves - 1};
@@ -79,7 +82,7 @@ double runGame(std::vector<std::string>& fenVector) {
             // move has been made now, cool
             //std::cout << board.getFenString() << std::endl;
         } else {
-            if(board.isRepeated) return 0.5;
+            if(board.isRepeatedPosition()) return 0.5;
             if(board.getFiftyMoveCount() >= 50) return 0.5;
             // checkmate check
             // get moves
@@ -110,17 +113,18 @@ double runGame(std::vector<std::string>& fenVector) {
             // get move from engine normally
             //std::cout << "sending board with position " << board.getFenString() << std::endl;
             const auto result = dataGenSearch(board, 5000);
-            const uint64_t capturable = board.getOccupiedBitboard();
             score = (board.getColorToMove() == 1 ? result.second : -result.second);
             // i think that this score might be a problem
             if(abs(score) > 2500) {
                 if(outOfBounds) break;
                 outOfBounds = true;
             }
-            if(((1ULL << result.first.getEndSquare()) & capturable) == 0 || result.first.getFlag() == EnPassant) {
+            if(((1ULL << result.first.getEndSquare()) & board.getOccupiedBitboard()) == 0 && result.first.getFlag() != EnPassant) {
                 if(abs(score) < abs(mateScore + 256)) {
-                    // non-mate, add fen string to vector
-                    fenVector.push_back(board.getFenString() + " | " + std::to_string(score));
+                    if(!board.isInCheck()) {
+                        // non-mate, not in check, add fen string to vector
+                        fenVector.push_back(board.getFenString() + " | " + std::to_string(score));
+                    }
                 } else {
                     // checkmate found, no more use for this
                     break;
@@ -163,5 +167,6 @@ void dumpToArray(double result, std::vector<std::string>& fenVector) {
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime).count();
         std::cout << "Time: " << (elapsedTime / 1000) << " seconds " << std::endl;
         std::cout << "Positions per second: " << (totalPositions / (elapsedTime / 1000)) << std::endl;
+        std::cout << "Positions per game: " << (totalPositions / games) << std::endl;
     }
 }

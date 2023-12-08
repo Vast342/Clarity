@@ -23,7 +23,7 @@ Board Representation:
   3. Pext bitboards, lookups, and setwise move generation
   4. Repetition detection
   5. Incremental Zobrist hashing
-  6. Incremental PSQT updates
+  6. Incremental NNUE Updates
 
 Search: 
   1. PVS search
@@ -35,7 +35,7 @@ Search:
   7. Fail-soft
 
 Evaluation:
-  1. Tuned PSQTs (soon to be NNUE)
+  1. NNUE trained from self play
 
 Move ordering:
   1. TT best move
