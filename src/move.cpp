@@ -8,11 +8,6 @@
     S is the start square, where the piece starts out
 */
 
-// gets the internal value of the move
-int Move::getValue() const {
-    return value;
-}
-
 // gets the start square
 int Move::getStartSquare() const {
     return value & 0b111111;

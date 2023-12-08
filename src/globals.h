@@ -16,6 +16,7 @@
 #include <chrono>
 #include <fstream>
 #include "eval.h"
+#include <memory>
 
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
@@ -61,7 +62,6 @@ struct Move {
         int getStartSquare() const;
         int getEndSquare() const;
         int getFlag() const;
-        int getValue() const;
         Move(int startSquare, int endSquare, int flag);
         Move();
         Move(std::string longAlgebraic, const Board& board);

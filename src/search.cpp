@@ -1,6 +1,7 @@
 #include "search.h"
 #include "psqt.h"
 #include "tt.h"
+#include <cstring>
 
 constexpr int hardNodeCap = 400000;
 
@@ -53,36 +54,11 @@ std::chrono::steady_clock::time_point begin;
 bool timesUp = false;
 
 // resets the history, done when ucinewgame is sent, and at the start of each turn
+// thanks zzzzz
 void clearHistory() {
-    for(int h = 0; h < 2; h++) {
-        for(int i = 0; i < 64; i++) {
-            for(int j = 0; j < 64; j++) {
-                historyTable[h][i][j] = 0;
-            }
-        }
-    }
-    for(int i = 0; i < 2; i++) {
-        for(int j = 0; j < 6; j++) {
-            for(int k = 0; k < 64; k++) {
-                for(int l = 0; l < 6; l++) {
-                    captureHistoryTable[i][j][k][l] = 0;
-                }
-            }
-        }   
-    }
-    for(int i = 0; i < 2; i++) {
-        for(int j = 0; j < 7; j++) {
-            for(int k = 0; k < 64; k++) {
-                for(int l = 0; l < 2; l++) {
-                    for(int m = 0; m < 7; m++) {
-                        for(int n = 0; n < 64; n++) {
-                            conthistTable[i][j][k][l][m][n] = 0;
-                        }
-                    }
-                }
-            }
-        }   
-    }
+    std::memset(historyTable.data(), 0, sizeof(historyTable));
+    std::memset(captureHistoryTable.data(), 0, sizeof(captureHistoryTable));
+    std::memset(conthistTable.data(), 0, sizeof(conthistTable));
 }
 
 // resizes the transposition table
