@@ -69,6 +69,7 @@ void identify() {
     std::cout << "id name Clarity V3.0.0\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 256 min 1 max 2048\n";
+    std::cout << "uciok\n";
 }
 
 // tells the engine to search, with support for a few different types
@@ -132,7 +133,6 @@ void interpretCommand(std::string command) {
         std::cout << "readyok\n";
     } else if(bits[0] == "uci") {
         identify();
-        std::cout << "uciok\n";
     } else if(bits[0] == "go") {
         go(bits);
     } else if(bits[0] == "ucinewgame") {

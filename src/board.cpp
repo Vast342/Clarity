@@ -1,5 +1,4 @@
 #include "globals.h"
-#include "psqt.h"
 #include <cstdlib>
 
 // zobrist hashing values 
@@ -23,7 +22,7 @@ constexpr std::array<uint8_t, 2> kingRightMasks = {
 	0b0011, 0b1100
 };
 
-int directionalOffsets[] = {8, -8, 1, -1, 7, -7, 9, -9};
+std::array<int, 8> directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
 
 void Board::toString() {
     for(int rank = 7; rank >= 0; rank--) {

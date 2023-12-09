@@ -1,5 +1,4 @@
 #include "search.h"
-#include "psqt.h"
 #include "tt.h"
 #include <cstring>
 
@@ -404,6 +403,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         extensions++;
     }
 
+    int baseReductions = 0;
+    if(entry.bestMove == Move() && depth > 3) baseReductions++;
+
     // Mate Distance Pruning (I need to test this more sometime soon)
     /*if (!isPV) {
         // my mateScore is a large negative number and that is what I return, people seem to get confused by that when I talk with other devs.
@@ -431,7 +433,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         // futility pruning
         if(bestScore > mateScore && !inCheck && depth <= 8 && staticEval + 250 + depth * 60 <= alpha) break;
         // Late Move Pruning
-        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > 5 + depth * depth / (2 - improving)) continue;
+        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > 5 + depth * depth / (2 - improving)) break;
         // see pruning
         if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
         if(board.makeMove(moves[i])) {
@@ -450,7 +452,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
             } else {
                 // Late Move Reductions (LMR)
-                int depthReduction = 0;
+                int depthReduction = baseReductions;
                 if(extensions == 0 && depth > 1 && isQuiet) {
                     depthReduction = reductions[depth][legalMoves];
                 }
@@ -712,7 +714,6 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
 }
 
 std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
-    //std::cout << "recieved board with position " << board.getFenString() << std::endl;
     //clearHistory();
     dataGeneration = true;
     nodes = 0;

@@ -41,6 +41,11 @@ enum Pieces {
 constexpr int Black = 0;
 constexpr int White = 8;
 
+// piece values left over from a long time ago
+constexpr int mg_value[6] = {64, 271, 299, 375, 769, 0};
+constexpr int eg_value[6] = {112, 351, 361, 627, 1187, 0};
+
+extern std::array<std::array<uint8_t, 218>, 50> reductions;
 
 // structs and stuff
 struct Board;
