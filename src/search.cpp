@@ -173,16 +173,17 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
-        const int end = moves[i].getEndSquare();
-        const int start = moves[i].getStartSquare();
+        Move move = moves[i];
+        const int end = move.getEndSquare();
+        const int start = move.getStartSquare();
         const int piece = getType(board.pieceAtIndex(start));
-        if(moves[i] == ttMove) {
+        if(move == ttMove) {
             values[i] = 1000000000;
         } else if((occupied & (1ULL << end)) != 0) {
             // Captures!
             const int victim = getType(board.pieceAtIndex(end));
             // see!
-            if(see(board, moves[i], 0)) {
+            if(see(board, move, 0)) {
                 // good captures
                 // mvv lva
                 values[i] = 500 * eg_value[victim] - eg_value[piece];
@@ -192,7 +193,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             }
             // capthist, I'll be back soon
             /*values[i] =  200 * eg_value[victim] + captureHistoryTable[colorToMove][piece][end][victim];
-            if(see(board, moves[i], 0)) {
+            if(see(board, move, 0)) {
                 // good captures
                 values[i] += 1000000;
             }*/
@@ -203,11 +204,11 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
                 + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
-                if(moves[i] == stack[ply].killers[0]) {
+                if(move == stack[ply].killers[0]) {
                     values[i] = 54000;
-                } else if(moves[i] == stack[ply].killers[1]) {
+                } else if(move == stack[ply].killers[1]) {
                     values[i] = 53000;
-                }  else if(moves[i] == stack[ply].killers[2]) {
+                }  else if(move == stack[ply].killers[2]) {
                     values[i] = 52000;
                 }
             }
@@ -268,33 +269,35 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
                 std::swap(moves[j], moves[i]);
             }
         }
+        Move move = moves[i];
         if(moveValues[i] == badCaptureScore) {
             continue;
         }
-        if(board.makeMove(moves[i])) {
-            nodes++;
-            // searches from this node
-            const int score = -qSearch(board, -beta, -alpha, ply + 1);
-            board.undoMove();
-            // time check
-            if(timesUp) return 0;
+        if(!board.makeMove(move)) {
+            continue;
+        }
+        nodes++;
+        // searches from this node
+        const int score = -qSearch(board, -beta, -alpha, ply + 1);
+        board.undoMove();
+        // time check
+        if(timesUp) return 0;
 
-            if(score > bestScore) {
-                bestScore = score;
+        if(score > bestScore) {
+            bestScore = score;
 
-                // Improve alpha
-                if(score > alpha) {
-                    flag = Exact;
-                    alpha = score;
-                    bestMove = moves[i];
-                }
+            // Improve alpha
+            if(score > alpha) {
+                flag = Exact;
+                alpha = score;
+                bestMove = move;
+            }
 
-                // Fail-high
-                if(score >= beta) {
-                    flag = BetaCutoff;
-                    bestMove = moves[i];
-                    break;
-                }
+            // Fail-high
+            if(score >= beta) {
+                flag = BetaCutoff;
+                bestMove = move;
+                break;
             }
         }
     }
@@ -365,6 +368,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         return entry.score; 
     }
 
+    // IIR, no clue what it stands for, I'll get back to it, 1220 games says 6.6 +/- 14.4
+    //if(entry.bestMove == Move() && depth > 3) depth--;
+
     // Reverse Futility Pruning
     const int staticEval = board.getEvaluation();
     stack[ply].staticEval = staticEval;
@@ -374,7 +380,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // !isPV looked equal, but I have more important things to test here than fractional elo
     if(nmpAllowed && depth >= nmpMin && !inCheck && staticEval >= beta) {
-        stack[ply].ch_entry = &conthistTable[1][0][0];
+        stack[ply].ch_entry = &conthistTable[0][0][0];
         board.changeColor();
         const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
@@ -403,9 +409,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         extensions++;
     }
 
-    int baseReductions = 0;
-    if(entry.bestMove == Move() && depth > 3) baseReductions++;
-
     // Mate Distance Pruning (I need to test this more sometime soon)
     /*if (!isPV) {
         // my mateScore is a large negative number and that is what I return, people seem to get confused by that when I talk with other devs.
@@ -427,93 +430,98 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 std::swap(moves[j], moves[i]);
             }
         }
-        bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
-        bool isQuiet = (!isCapture && (moves[i].getFlag() <= DoublePawnPush));
+        Move move = moves[i];
+        int moveStartSquare = move.getStartSquare();
+        int moveEndSquare = move.getEndSquare();
+        int moveFlag = move.getFlag();
+        bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
+        bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
         // futility pruning
         if(bestScore > mateScore && !inCheck && depth <= 8 && staticEval + 250 + depth * 60 <= alpha) break;
         // Late Move Pruning
-        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > 5 + depth * depth / (2 - improving)) break;
+        if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > 5 + depth * depth / (2 - improving)) continue;
         // see pruning
-        if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
-        if(board.makeMove(moves[i])) {
-            stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
-            testedLegalMoves[legalMoves] = moves[i];
-            legalMoves++;
-            nodes++;
-            if(isQuiet) {
-                testedQuiets[quietCount] = moves[i];
-                quietCount++;
+        if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (!isCapture ? -50 : -90))) continue;
+        if(!board.makeMove(move)) {
+            continue;
+        }
+        stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
+        testedLegalMoves[legalMoves] = move;
+        legalMoves++;
+        nodes++;
+        if(isQuiet) {
+            testedQuiets[quietCount] = move;
+            quietCount++;
+        }
+        int score = 0;
+        // Principal Variation Search
+        if(legalMoves == 1) {
+            // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
+            score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
+        } else {
+            // Late Move Reductions (LMR)
+            int depthReduction = 0;
+            if(extensions == 0 && depth > 1 && isQuiet) {
+                depthReduction = reductions[depth][legalMoves];
             }
-            int score = 0;
-            // Principal Variation Search
-            if(legalMoves == 1) {
-                // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
+            // this is more PVS stuff, searching with a reduced margin
+            score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
+            // and then if it fails high or low we search again with the original bounds
+            if(score > alpha && (score < beta || depthReduction > 0)) {
                 score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
-            } else {
-                // Late Move Reductions (LMR)
-                int depthReduction = baseReductions;
-                if(extensions == 0 && depth > 1 && isQuiet) {
-                    depthReduction = reductions[depth][legalMoves];
-                }
-                // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
-                // and then if it fails high or low we search again with the original bounds
-                if(score > alpha && (score < beta || depthReduction > 0)) {
-                    score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
-                }
             }
-            board.undoMove();
+        }
+        board.undoMove();
 
-            // backup time check
-            if(timesUp) return 0;
+        // backup time check
+        if(timesUp) return 0;
 
-            if(score > bestScore) {
-                bestScore = score;
+        if(score > bestScore) {
+            bestScore = score;
 
-                // Improve alpha
-                if(score > alpha) {
-                    flag = Exact; 
-                    alpha = score;
-                    bestMove = moves[i];
-                    if(ply == 0) rootBestMove = moves[i];
-                }
+            // Improve alpha
+            if(score > alpha) {
+                flag = Exact; 
+                alpha = score;
+                bestMove = move;
+                if(ply == 0) rootBestMove = move;
+            }
 
-                // Fail-high
-                if(score >= beta) {
-                    flag = BetaCutoff;
-                    bestMove = moves[i];
-                    if(ply == 0) rootBestMove = moves[i];
-                    if(isQuiet) {
-                        // adds to the move's history and adjusts the killer table accordingly
-                        int start = moves[i].getStartSquare();
-                        int end = moves[i].getEndSquare();
-                        int piece = getType(board.pieceAtIndex(start));
-                        // testing berserk history bonus
-                        int bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
-                        const int colorToMove = board.getColorToMove();
+            // Fail-high
+            if(score >= beta) {
+                flag = BetaCutoff;
+                bestMove = move;
+                if(ply == 0) rootBestMove = move;
+                if(isQuiet) {
+                    // adds to the move's history and adjusts the killer table accordingly
+                    int start = moveStartSquare;
+                    int end = moveEndSquare;
+                    int piece = getType(board.pieceAtIndex(start));
+                    // testing berserk history bonus
+                    int bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
+                    const int colorToMove = board.getColorToMove();
+                    updateHistory(colorToMove, start, end, piece, bonus, ply);
+                    bonus = -bonus;
+                    // malus!
+                    for(int quiet = 0; quiet < quietCount - 1; quiet++) {
+                        start = testedQuiets[quiet].getStartSquare();
+                        end = testedQuiets[quiet].getEndSquare();
+                        piece = getType(board.pieceAtIndex(start));
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
-                        bonus = -bonus;
-                        // malus!
-                        for(int quiet = 0; quiet < quietCount - 1; quiet++) {
-                            start = testedQuiets[quiet].getStartSquare();
-                            end = testedQuiets[quiet].getEndSquare();
-                            piece = getType(board.pieceAtIndex(start));
-                            updateHistory(colorToMove, start, end, piece, bonus, ply);
-                        }
-                        if(stack[ply].killers[0] != moves[i] && stack[ply].killers[1] != moves[i]) {
-                            stack[ply].killers[2] = stack[ply].killers[1];
-                            stack[ply].killers[1] = stack[ply].killers[0];
-                            stack[ply].killers[0] = moves[i];
-                        }
-                    } /*else { NEED TO MAKE MALUS BEFORE MAKING THIS
-                        const int end = moves[i].getEndSquare();
-                        const int piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
-                        const int victim = getType(board.pieceAtIndex(end));
-                        updateCaptureHistory(board.getColorToMove(), piece, end, victim, bonus);
-                    }*/
-                    break;
-                }
+                    }
+                    if(stack[ply].killers[0] != move && stack[ply].killers[1] != move) {
+                        stack[ply].killers[2] = stack[ply].killers[1];
+                        stack[ply].killers[1] = stack[ply].killers[0];
+                        stack[ply].killers[0] = move;
+                    }
+                } /*else { NEED TO MAKE MALUS BEFORE MAKING THIS
+                    const int end = move.getEndSquare();
+                    const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
+                    const int victim = getType(board.pieceAtIndex(end));
+                    updateCaptureHistory(board.getColorToMove(), piece, end, victim, bonus);
+                }*/
+                break;
             }
         }
     }
