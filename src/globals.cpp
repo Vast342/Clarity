@@ -1,6 +1,5 @@
 #include "globals.h"
 #include "slidey.h"
-#include "psqt.h"
 
 // takes a piece number and gets the type of it
 int getType(int value) {

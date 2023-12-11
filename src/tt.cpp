@@ -18,9 +18,9 @@ uint8_t TranspositionTable::getFlag(uint64_t zkey) {
     return table[zkey & mask].flag;
 }
 
-Transposition TranspositionTable::getEntry(uint64_t zkey) {
+Transposition* TranspositionTable::getEntry(uint64_t zkey) {
     //if(table[zkey & mask].zobristKey != 0) std::cout << std::to_string(table[zkey & mask].score) << ", " << std::to_string(zkey) << '\n';
-    return table[zkey & mask];
+    return &table[zkey & mask];
 }
 
 int TranspositionTable::getDepth(uint64_t zkey) {

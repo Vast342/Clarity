@@ -1,5 +1,4 @@
 #include "search.h"
-#include "psqt.h"
 #include "tt.h"
 #include <cstring>
 
@@ -174,16 +173,17 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
-        const int end = moves[i].getEndSquare();
-        const int start = moves[i].getStartSquare();
+        Move move = moves[i];
+        const int end = move.getEndSquare();
+        const int start = move.getStartSquare();
         const int piece = getType(board.pieceAtIndex(start));
-        if(moves[i] == ttMove) {
+        if(move == ttMove) {
             values[i] = 1000000000;
         } else if((occupied & (1ULL << end)) != 0) {
             // Captures!
             const int victim = getType(board.pieceAtIndex(end));
             // see!
-            if(see(board, moves[i], 0)) {
+            if(see(board, move, 0)) {
                 // good captures
                 // mvv lva
                 values[i] = 500 * eg_value[victim] - eg_value[piece];
@@ -193,7 +193,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
             }
             // capthist, I'll be back soon
             /*values[i] =  200 * eg_value[victim] + captureHistoryTable[colorToMove][piece][end][victim];
-            if(see(board, moves[i], 0)) {
+            if(see(board, move, 0)) {
                 // good captures
                 values[i] += 1000000;
             }*/
@@ -204,11 +204,11 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
                 + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
             if(!inQSearch) {
-                if(moves[i] == stack[ply].killers[0]) {
+                if(move == stack[ply].killers[0]) {
                     values[i] = 54000;
-                } else if(moves[i] == stack[ply].killers[1]) {
+                } else if(move == stack[ply].killers[1]) {
                     values[i] = 53000;
-                }  else if(moves[i] == stack[ply].killers[2]) {
+                }  else if(move == stack[ply].killers[2]) {
                     values[i] = 52000;
                 }
             }
@@ -236,14 +236,14 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     if(ply > seldepth) seldepth = ply;
     const uint64_t hash = board.getZobristHash();
     // TT check
-    Transposition entry = TT.getEntry(hash);
+    Transposition* entry = TT.getEntry(hash);
 
-    if(entry.zobristKey == hash && (
-        entry.flag == Exact // exact score
-            || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
-            || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
+    if(entry->zobristKey == hash && (
+        entry->flag == Exact // exact score
+            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
     )) {
-        return entry.score;
+        return entry->score;
     }
 
     // stand pat shenanigans
@@ -255,7 +255,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove, -1, true);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, -1, true);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -269,33 +269,35 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
                 std::swap(moves[j], moves[i]);
             }
         }
+        Move move = moves[i];
         if(moveValues[i] == badCaptureScore) {
             continue;
         }
-        if(board.makeMove(moves[i])) {
-            nodes++;
-            // searches from this node
-            const int score = -qSearch(board, -beta, -alpha, ply + 1);
-            board.undoMove();
-            // time check
-            if(timesUp) return 0;
+        if(!board.makeMove(move)) {
+            continue;
+        }
+        nodes++;
+        // searches from this node
+        const int score = -qSearch(board, -beta, -alpha, ply + 1);
+        board.undoMove();
+        // time check
+        if(timesUp) return 0;
 
-            if(score > bestScore) {
-                bestScore = score;
+        if(score > bestScore) {
+            bestScore = score;
 
-                // Improve alpha
-                if(score > alpha) {
-                    flag = Exact;
-                    alpha = score;
-                    bestMove = moves[i];
-                }
+            // Improve alpha
+            if(score > alpha) {
+                flag = Exact;
+                alpha = score;
+                bestMove = move;
+            }
 
-                // Fail-high
-                if(score >= beta) {
-                    flag = BetaCutoff;
-                    bestMove = moves[i];
-                    break;
-                }
+            // Fail-high
+            if(score >= beta) {
+                flag = BetaCutoff;
+                bestMove = move;
+                break;
             }
         }
     }
@@ -353,18 +355,21 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     const uint64_t hash = board.getZobristHash();
 
     // TT check
-    Transposition entry = TT.getEntry(hash);
+    Transposition* entry = TT.getEntry(hash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
     // turns out that score above was complete bs lol, my isPV was broken
-    if(!isPV && ply > 0 && entry.zobristKey == hash && entry.depth >= depth && (
-            entry.flag == Exact // exact score
-                || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
-                || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
+    if(!isPV && ply > 0 && entry->zobristKey == hash && entry->depth >= depth && (
+            entry->flag == Exact // exact score
+                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
         )) {
-        return entry.score; 
+        return entry->score; 
     }
+
+    // Internal Iterative Reduction (IIR)
+    if((entry->zobristKey != hash || entry->bestMove == Move()) && depth > 3) depth--;
 
     // Reverse Futility Pruning
     const int staticEval = board.getEvaluation();
@@ -375,7 +380,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     // !isPV looked equal, but I have more important things to test here than fractional elo
     if(nmpAllowed && depth >= nmpMin && !inCheck && staticEval >= beta) {
-        stack[ply].ch_entry = &conthistTable[1][0][0];
+        stack[ply].ch_entry = &conthistTable[0][0][0];
         board.changeColor();
         const int score = -negamax(board, depth - (depth+1)/3 - 2, 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
@@ -386,12 +391,11 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // get the moves
     std::array<Move, 256> moves;
-    std::array<Move, 256> testedLegalMoves;
     std::array<Move, 256> testedQuiets;
     int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove, ply, false);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, ply, false);
 
     // values useful for writing to TT later
     int bestScore = mateScore;
@@ -425,93 +429,97 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                 std::swap(moves[j], moves[i]);
             }
         }
-        bool isCapture = ((capturable & (1ULL << moves[i].getEndSquare())) != 0) || moves[i].getFlag() == EnPassant;
-        bool isQuiet = (!isCapture && (moves[i].getFlag() <= DoublePawnPush));
+        Move move = moves[i];
+        int moveStartSquare = move.getStartSquare();
+        int moveEndSquare = move.getEndSquare();
+        int moveFlag = move.getFlag();
+        bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
+        bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
         // futility pruning
         if(bestScore > mateScore && !inCheck && depth <= 8 && staticEval + 250 + depth * 60 <= alpha) break;
         // Late Move Pruning
         if(depth < 7 && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > 5 + depth * depth / (2 - improving)) continue;
         // see pruning
-        if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, moves[i], depth * (!isCapture ? -50 : -90))) continue;
-        if(board.makeMove(moves[i])) {
-            stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moves[i].getStartSquare()))][moves[i].getEndSquare()];
-            testedLegalMoves[legalMoves] = moves[i];
-            legalMoves++;
-            nodes++;
-            if(isQuiet) {
-                testedQuiets[quietCount] = moves[i];
-                quietCount++;
+        if (depth <= 8 && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (!isCapture ? -50 : -90))) continue;
+        if(!board.makeMove(move)) {
+            continue;
+        }
+        stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
+        legalMoves++;
+        nodes++;
+        if(isQuiet) {
+            testedQuiets[quietCount] = move;
+            quietCount++;
+        }
+        int score = 0;
+        // Principal Variation Search
+        if(legalMoves == 1) {
+            // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
+            score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
+        } else {
+            // Late Move Reductions (LMR)
+            int depthReduction = 0;
+            if(extensions == 0 && depth > 1 && isQuiet) {
+                depthReduction = reductions[depth][legalMoves];
             }
-            int score = 0;
-            // Principal Variation Search
-            if(legalMoves == 1) {
-                // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
+            // this is more PVS stuff, searching with a reduced margin
+            score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
+            // and then if it fails high or low we search again with the original bounds
+            if(score > alpha && (score < beta || depthReduction > 0)) {
                 score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
-            } else {
-                // Late Move Reductions (LMR)
-                int depthReduction = 0;
-                if(extensions == 0 && depth > 1 && isQuiet) {
-                    depthReduction = reductions[depth][legalMoves];
-                }
-                // this is more PVS stuff, searching with a reduced margin
-                score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
-                // and then if it fails high or low we search again with the original bounds
-                if(score > alpha && (score < beta || depthReduction > 0)) {
-                    score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
-                }
             }
-            board.undoMove();
+        }
+        board.undoMove();
 
-            // backup time check
-            if(timesUp) return 0;
+        // backup time check
+        if(timesUp) return 0;
 
-            if(score > bestScore) {
-                bestScore = score;
+        if(score > bestScore) {
+            bestScore = score;
 
-                // Improve alpha
-                if(score > alpha) {
-                    flag = Exact; 
-                    alpha = score;
-                    bestMove = moves[i];
-                    if(ply == 0) rootBestMove = moves[i];
-                }
+            // Improve alpha
+            if(score > alpha) {
+                flag = Exact; 
+                alpha = score;
+                bestMove = move;
+                if(ply == 0) rootBestMove = move;
+            }
 
-                // Fail-high
-                if(score >= beta) {
-                    flag = BetaCutoff;
-                    bestMove = moves[i];
-                    if(ply == 0) rootBestMove = moves[i];
-                    if(isQuiet) {
-                        // adds to the move's history and adjusts the killer table accordingly
-                        int start = moves[i].getStartSquare();
-                        int end = moves[i].getEndSquare();
-                        int piece = getType(board.pieceAtIndex(start));
-                        // testing berserk history bonus
-                        int bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
-                        const int colorToMove = board.getColorToMove();
+            // Fail-high
+            if(score >= beta) {
+                flag = BetaCutoff;
+                bestMove = move;
+                if(ply == 0) rootBestMove = move;
+                if(isQuiet) {
+                    // adds to the move's history and adjusts the killer table accordingly
+                    int start = moveStartSquare;
+                    int end = moveEndSquare;
+                    int piece = getType(board.pieceAtIndex(start));
+                    // testing berserk history bonus
+                    int bonus = std::min(1896, 4 * depth * depth + 120 * depth - 120);
+                    const int colorToMove = board.getColorToMove();
+                    updateHistory(colorToMove, start, end, piece, bonus, ply);
+                    bonus = -bonus;
+                    // malus!
+                    for(int quiet = 0; quiet < quietCount - 1; quiet++) {
+                        start = testedQuiets[quiet].getStartSquare();
+                        end = testedQuiets[quiet].getEndSquare();
+                        piece = getType(board.pieceAtIndex(start));
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
-                        bonus = -bonus;
-                        // malus!
-                        for(int quiet = 0; quiet < quietCount - 1; quiet++) {
-                            start = testedQuiets[quiet].getStartSquare();
-                            end = testedQuiets[quiet].getEndSquare();
-                            piece = getType(board.pieceAtIndex(start));
-                            updateHistory(colorToMove, start, end, piece, bonus, ply);
-                        }
-                        if(stack[ply].killers[0] != moves[i] && stack[ply].killers[1] != moves[i]) {
-                            stack[ply].killers[2] = stack[ply].killers[1];
-                            stack[ply].killers[1] = stack[ply].killers[0];
-                            stack[ply].killers[0] = moves[i];
-                        }
-                    } /*else { NEED TO MAKE MALUS BEFORE MAKING THIS
-                        const int end = moves[i].getEndSquare();
-                        const int piece = getType(board.pieceAtIndex(moves[i].getStartSquare()));
-                        const int victim = getType(board.pieceAtIndex(end));
-                        updateCaptureHistory(board.getColorToMove(), piece, end, victim, bonus);
-                    }*/
-                    break;
-                }
+                    }
+                    if(stack[ply].killers[0] != move && stack[ply].killers[1] != move) {
+                        stack[ply].killers[2] = stack[ply].killers[1];
+                        stack[ply].killers[1] = stack[ply].killers[0];
+                        stack[ply].killers[0] = move;
+                    }
+                } /*else { NEED TO MAKE MALUS BEFORE MAKING THIS
+                    const int end = move.getEndSquare();
+                    const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
+                    const int victim = getType(board.pieceAtIndex(end));
+                    updateCaptureHistory(board.getColorToMove(), piece, end, victim, bonus);
+                }*/
+                break;
             }
         }
     }
@@ -525,8 +533,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // push to TT
-    //bool pushToTT = ((flag == Exact && entry.flag != Exact) || depth + 4 >= entry.depth || entry.zobristKey != hash);
-    if(entry.zobristKey == hash && entry.bestMove != Move() && bestMove == Move()) bestMove = entry.bestMove;
+    //bool pushToTT = ((flag == Exact && entry->flag != Exact) || depth + 4 >= entry->depth || entry->zobristKey != hash);
+    if(entry->zobristKey == hash && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
     /*if(pushToTT)*/ TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
 
     return bestScore;
@@ -712,7 +720,6 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
 }
 
 std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
-    //std::cout << "recieved board with position " << board.getFenString() << std::endl;
     //clearHistory();
     dataGeneration = true;
     nodes = 0;

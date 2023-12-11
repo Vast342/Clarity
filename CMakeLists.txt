@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.11)
 project(Clarity VERSION 0.1.1 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-#set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # all of the main typical files, used for all builds
 set(Common_SRC_Files 
@@ -32,7 +32,7 @@ target_compile_options(Clarity_x86-64-v2 PRIVATE -Wall -Wextra -Werror -Wpedanti
 target_compile_options(Clarity_x86-64-v3_Magic PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v3 -flto)
 target_compile_options(Clarity_x86-64-v3_BMI2 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v3 -flto)
 target_compile_options(Clarity_x86-64-v4 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v4 -flto)
-target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -g -flto)
+target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -flto)
 
 target_compile_options(Clarity_Datagen PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -flto)
 

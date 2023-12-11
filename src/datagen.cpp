@@ -80,7 +80,7 @@ double runGame(std::vector<std::string>& fenVector, Board board) {
             const int index = distribution(gen);
             board.makeMove(moves[index]);
             // move has been made now, cool
-            //std::cout << board.getFenString() << std::endl;
+            //std::cout << board.getFenString() << '\n';
         } else {
             if(board.isRepeatedPosition()) return 0.5;
             if(board.getFiftyMoveCount() >= 50) return 0.5;
@@ -111,7 +111,7 @@ double runGame(std::vector<std::string>& fenVector, Board board) {
                 break;
             }
             // get move from engine normally
-            //std::cout << "sending board with position " << board.getFenString() << std::endl;
+            //std::cout << "sending board with position " << board.getFenString() << '\n';
             const auto result = dataGenSearch(board, 5000);
             score = (board.getColorToMove() == 1 ? result.second : -result.second);
             // i think that this score might be a problem
@@ -130,11 +130,11 @@ double runGame(std::vector<std::string>& fenVector, Board board) {
                     break;
                 }
             }
-            //std::cout << "score is now " << score << std::endl;
+            //std::cout << "score is now " << score << '\n';
             if(!board.makeMove(result.first)) {
                 std::cout << "Engine made an illegal move\n";
             }
-            //std::cout << board.getFenString() << std::endl;
+            //std::cout << board.getFenString() << '\n';
         }
         if(i == moveLimit) return 0.5;
     }
@@ -156,17 +156,17 @@ int outputFrequency = 10;
 int infoOutputFrequency = 100;
 void dumpToArray(double result, std::vector<std::string>& fenVector) {
     games++;
-    if((games % outputFrequency) == 0) std::cout << "Finished game " << games << std::endl;
+    if((games % outputFrequency) == 0) std::cout << "Finished game " << games << '\n';
     for(const std::string &fen : fenVector) {
         // add to file and append result \n
         output << fen << " | " << result << '\n';
         totalPositions++;
     }
     if((games % infoOutputFrequency) == 0) {
-        std::cout << "Total Positions: " << totalPositions << std::endl;
+        std::cout << "Total Positions: " << totalPositions << '\n';
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime).count();
-        std::cout << "Time: " << (elapsedTime / 1000) << " seconds " << std::endl;
-        std::cout << "Positions per second: " << (totalPositions / (elapsedTime / 1000)) << std::endl;
-        std::cout << "Positions per game: " << (totalPositions / games) << std::endl;
+        std::cout << "Time: " << (elapsedTime / 1000) << " seconds " << '\n';
+        std::cout << "Positions per second: " << (totalPositions / (elapsedTime / 1000)) << '\n';
+        std::cout << "Positions per game: " << (totalPositions / games) << '\n';
     }
 }
