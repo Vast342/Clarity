@@ -236,14 +236,14 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     if(ply > seldepth) seldepth = ply;
     const uint64_t hash = board.getZobristHash();
     // TT check
-    Transposition entry = TT.getEntry(hash);
+    Transposition* entry = TT.getEntry(hash);
 
-    if(entry.zobristKey == hash && (
-        entry.flag == Exact // exact score
-            || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
-            || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
+    if(entry->zobristKey == hash && (
+        entry->flag == Exact // exact score
+            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
     )) {
-        return entry.score;
+        return entry->score;
     }
 
     // stand pat shenanigans
@@ -255,7 +255,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove, -1, true);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, -1, true);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -355,21 +355,29 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     const uint64_t hash = board.getZobristHash();
 
     // TT check
-    Transposition entry = TT.getEntry(hash);
+    Transposition* entry = TT.getEntry(hash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
     // turns out that score above was complete bs lol, my isPV was broken
-    if(!isPV && ply > 0 && entry.zobristKey == hash && entry.depth >= depth && (
-            entry.flag == Exact // exact score
-                || (entry.flag == BetaCutoff && entry.score >= beta) // lower bound, fail high
-                || (entry.flag == FailLow && entry.score <= alpha) // upper bound, fail low
+    if(!isPV && ply > 0 && entry->zobristKey == hash && entry->depth >= depth && (
+            entry->flag == Exact // exact score
+                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
         )) {
-        return entry.score; 
+        return entry->score; 
     }
 
-    // IIR, no clue what it stands for, I'll get back to it, 1220 games says 6.6 +/- 14.4
-    //if(entry.bestMove == Move() && depth > 3) depth--;
+    // Internal Iterative Reduction (IIR) I'll get back to it, 1220 games says 6.6 +/- 14.4
+    if((entry->zobristKey != hash || entry->bestMove == Move()) && depth > 3) depth--;
+
+    // Internal Iterative Deepening (IID)
+    // I tested with this, and it lost to IIR
+    // basically if it's likely to take ages to search this node, 
+    /*if(entry->bestMove == Move() && depth > 3 && isPV) {
+        // search with a low depth to get a tt best move
+        negamax(board, depth - 2, alpha, beta, ply, nmpAllowed);
+    }*/
 
     // Reverse Futility Pruning
     const int staticEval = board.getEvaluation();
@@ -391,12 +399,11 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // get the moves
     std::array<Move, 256> moves;
-    std::array<Move, 256> testedLegalMoves;
     std::array<Move, 256> testedQuiets;
     int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry.bestMove, ply, false);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, ply, false);
 
     // values useful for writing to TT later
     int bestScore = mateScore;
@@ -447,7 +454,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             continue;
         }
         stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
-        testedLegalMoves[legalMoves] = move;
         legalMoves++;
         nodes++;
         if(isQuiet) {
@@ -535,8 +541,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // push to TT
-    //bool pushToTT = ((flag == Exact && entry.flag != Exact) || depth + 4 >= entry.depth || entry.zobristKey != hash);
-    if(entry.zobristKey == hash && entry.bestMove != Move() && bestMove == Move()) bestMove = entry.bestMove;
+    //bool pushToTT = ((flag == Exact && entry->flag != Exact) || depth + 4 >= entry->depth || entry->zobristKey != hash);
+    if(entry->zobristKey == hash && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
     /*if(pushToTT)*/ TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
 
     return bestScore;
