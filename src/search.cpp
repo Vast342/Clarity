@@ -368,16 +368,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         return entry->score; 
     }
 
-    // Internal Iterative Reduction (IIR) I'll get back to it, 1220 games says 6.6 +/- 14.4
+    // Internal Iterative Reduction (IIR)
     if((entry->zobristKey != hash || entry->bestMove == Move()) && depth > 3) depth--;
-
-    // Internal Iterative Deepening (IID)
-    // I tested with this, and it lost to IIR
-    // basically if it's likely to take ages to search this node, 
-    /*if(entry->bestMove == Move() && depth > 3 && isPV) {
-        // search with a low depth to get a tt best move
-        negamax(board, depth - 2, alpha, beta, ply, nmpAllowed);
-    }*/
 
     // Reverse Futility Pruning
     const int staticEval = board.getEvaluation();
