@@ -409,15 +409,15 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         extensions++;
     }
 
-    // Mate Distance Pruning
-    if (!isPV) {
+    // Mate Distance Pruning (I will test it at some point I swear)
+    /*if (!isPV) {
         // my mateScore is a large negative number and that is what I return, people seem to get confused by that when I talk with other devs.
         const auto mdAlpha = std::max(alpha, mateScore + ply);
         const auto mdBeta = std::min(beta, -mateScore - ply - 1);
         if (mdAlpha >= mdBeta) {
             return mdAlpha;
         }
-    }
+    }*/
     // capturable squares to determine if a move is a capture.
     const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
@@ -587,7 +587,7 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
     }
 }
 
-// the usual think function, where you give it the amount of time it has left, and it will think in increasing depth steps until it runs out of time
+// the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
 Move think(Board board, int softBound, int hardBound, bool info) {
     //ageHistory();
     //clearHistory();
