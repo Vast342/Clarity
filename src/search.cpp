@@ -360,6 +360,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Transposition* entry = TT.getEntry(hash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
+    // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
+    // turns out that score above was complete bs lol, my isPV was broken
     if(!isPV && ply > 0 && entry->zobristKey == hash && entry->depth >= depth && (
             entry->flag == Exact // exact score
                 || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
@@ -380,6 +382,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 
     // Null Move Pruning (NMP)
     // Things to test: !isPV, alternate formulas, etc
+    // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     if(nmpAllowed && depth >= nmpMin && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &conthistTable[0][0][0];
         board.changeColor();
@@ -404,10 +407,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     int flag = FailLow;
 
     // extensions, currently only extending if you are in check
-    int extensions = 0;
-    if(inCheck) {
-        extensions++;
-    }
+    depth += inCheck;
 
     // Mate Distance Pruning (I will test it at some point I swear)
     /*if (!isPV) {
@@ -457,23 +457,27 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         int presearchNodeCount = nodes;
         if(legalMoves == 1) {
             // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
-            score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
+            score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
         } else {
             // Late Move Reductions (LMR)
             int depthReduction = 0;
-            if(extensions == 0 && depth > 1 && isQuiet) {
+            if(!inCheck && depth > 1 && isQuiet) {
                 depthReduction = reductions[depth][legalMoves];
+                depthReduction -= isPV;
+                depthReduction -= inCheck;
+
+                depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
             // this is more PVS stuff, searching with a reduced margin
-            score = -negamax(board, depth + extensions - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
+            score = -negamax(board, depth - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
             // and then if it fails high or low we search again with the original bounds
             if(score > alpha && (score < beta || depthReduction > 0)) {
-                score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
+                score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
             }
         }
         board.undoMove();
 
-        if(ply == 0) nodeTMTable[move.getStartSquare()][move.getEndSquare()] += nodes - presearchNodeCount;
+        if(ply == 0) nodeTMTable[moveStartSquare][moveEndSquare] += nodes - presearchNodeCount;
 
         // backup time check
         if(timesUp) return 0;
@@ -636,9 +640,9 @@ Move think(Board board, int softBound, int hardBound, bool info) {
         // outputs info which is picked up by the user
         if(info) outputInfo(board, score, depth, elapsedTime);
         // soft time bounds check
-        int frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / nodes;
-        if(elapsedTime >= softBound * (depth > 8 ? (1.5 - frac) * 1.35 : 1)) break;
-        //if(elapsedTime > softBound * frac) break;
+        double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
+        if(elapsedTime >= softBound * (depth > 8 ? (1.5 - frac) * 1.35 : 1.00)) break;
+        //if(elapsedTime > softBound) break;
     }
 
     return rootBestMove;
