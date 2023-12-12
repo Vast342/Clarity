@@ -48,6 +48,8 @@ std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
 std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
 CHTable conthistTable;
 
+std::array<std::array<int, 64>, 64> nodeTMTable;
+
 std::chrono::steady_clock::time_point begin;
 
 bool timesUp = false;
@@ -358,8 +360,6 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     Transposition* entry = TT.getEntry(hash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
-    // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
-    // turns out that score above was complete bs lol, my isPV was broken
     if(!isPV && ply > 0 && entry->zobristKey == hash && entry->depth >= depth && (
             entry->flag == Exact // exact score
                 || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
@@ -369,6 +369,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     }
 
     // Internal Iterative Reduction (IIR)
+    // Things to test: alternative depth
     if((entry->zobristKey != hash || entry->bestMove == Move()) && depth > 3) depth--;
 
     // Reverse Futility Pruning
@@ -377,8 +378,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
     if(staticEval - 80 * (depth - improving) >= beta && !inCheck && depth < 9 && !isPV) return staticEval;
 
-    // nmp, "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    // !isPV looked equal, but I have more important things to test here than fractional elo
+    // Null Move Pruning (NMP)
+    // Things to test: !isPV, alternate formulas, etc
     if(nmpAllowed && depth >= nmpMin && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &conthistTable[0][0][0];
         board.changeColor();
@@ -408,16 +409,15 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         extensions++;
     }
 
-    // Mate Distance Pruning (I need to test this more sometime soon)
-    /*if (!isPV) {
+    // Mate Distance Pruning
+    if (!isPV) {
         // my mateScore is a large negative number and that is what I return, people seem to get confused by that when I talk with other devs.
         const auto mdAlpha = std::max(alpha, mateScore + ply);
         const auto mdBeta = std::min(beta, -mateScore - ply - 1);
         if (mdAlpha >= mdBeta) {
             return mdAlpha;
         }
-    }*/
-
+    }
     // capturable squares to determine if a move is a capture.
     const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
@@ -454,6 +454,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         }
         int score = 0;
         // Principal Variation Search
+        int presearchNodeCount = nodes;
         if(legalMoves == 1) {
             // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
             score = -negamax(board, depth + extensions - 1, -beta, -alpha, ply + 1, true);
@@ -471,6 +472,8 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             }
         }
         board.undoMove();
+
+        if(ply == 0) nodeTMTable[move.getStartSquare()][move.getEndSquare()] += nodes - presearchNodeCount;
 
         // backup time check
         if(timesUp) return 0;
@@ -588,6 +591,7 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
 Move think(Board board, int softBound, int hardBound, bool info) {
     //ageHistory();
     //clearHistory();
+    std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
     nodes = 0;
     hardLimit = hardBound;
     seldepth = 0;
@@ -632,7 +636,9 @@ Move think(Board board, int softBound, int hardBound, bool info) {
         // outputs info which is picked up by the user
         if(info) outputInfo(board, score, depth, elapsedTime);
         // soft time bounds check
-        if(elapsedTime > softBound) break;
+        int frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / nodes;
+        if(elapsedTime >= softBound * (depth > 8 ? (1.5 - frac) * 1.35 : 1)) break;
+        //if(elapsedTime > softBound * frac) break;
     }
 
     return rootBestMove;
