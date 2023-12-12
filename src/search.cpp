@@ -433,6 +433,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         int moveStartSquare = move.getStartSquare();
         int moveEndSquare = move.getEndSquare();
         int moveFlag = move.getFlag();
+        int movePiece = board.pieceAtIndex(moveStartSquare);
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
@@ -445,7 +446,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if(!board.makeMove(move)) {
             continue;
         }
-        stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
+        stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(movePiece)][moveEndSquare];
         legalMoves++;
         nodes++;
         if(isQuiet) {
@@ -461,10 +462,21 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         } else {
             // Late Move Reductions (LMR)
             int depthReduction = 0;
-            if(!inCheck && depth > 1 && isQuiet) {
+            if(!inCheck && depth > 2 && isQuiet) {
                 depthReduction = reductions[depth][legalMoves];
                 depthReduction -= isPV;
                 depthReduction -= inCheck;
+                int colorToMove = board.getColorToMove();
+                int history = historyTable[colorToMove][moveStartSquare][moveEndSquare];
+                if (ply > 0) {
+                    history += (*stack[ply - 1].ch_entry)[colorToMove][getType(movePiece)][moveEndSquare];
+                }
+
+                if (ply > 1) {
+                    history += (*stack[ply - 2].ch_entry)[colorToMove][getType(movePiece)][moveEndSquare];
+                }
+
+                depthReduction -= history / 8192;
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
