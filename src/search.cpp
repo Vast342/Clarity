@@ -33,8 +33,8 @@ using CHTable = std::array<std::array<std::array<CHEntry, 64>, 7>, 2>;
 struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
-    // killer moves, 3 per ply
-    std::array<Move, 3> killers;
+    // killer moves, 2 per ply
+    std::array<Move, 2> killers;
     // static eval used for improving
     int staticEval;
     bool inCheck;
@@ -171,7 +171,7 @@ bool see(const Board& board, Move move, int threshold) {
     4: History: scores of how many times a move has caused a beta cutoff
     5: Bad captures: captures that result in bad exchanges.
 */
-void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch) {
+void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply) {
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
@@ -200,19 +200,16 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
                 values[i] += 1000000;
             }*/
         } else {
-            // read from history
-            values[i] = historyTable[colorToMove][start][end]
-                + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
-            // if not in qsearch, killers
-            if(!inQSearch) {
-                if(move == stack[ply].killers[0]) {
-                    values[i] = 54000;
-                } else if(move == stack[ply].killers[1]) {
-                    values[i] = 53000;
-                }  else if(move == stack[ply].killers[2]) {
-                    values[i] = 52000;
-                }
+            // Killer moves (currently 2)
+            if(move == stack[ply].killers[0]) {
+                values[i] = 54000;
+            } else if(move == stack[ply].killers[1]) {
+                values[i] = 53000;
+            } else {
+                // read from history
+                values[i] = historyTable[colorToMove][start][end]
+                    + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             }
         }
     }
@@ -257,7 +254,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, -1, true);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, -1);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -399,7 +396,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
     int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, ply, false);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, ply);
 
     // values useful for writing to TT later
     int bestScore = mateScore;
@@ -433,6 +430,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         int moveStartSquare = move.getStartSquare();
         int moveEndSquare = move.getEndSquare();
         int moveFlag = move.getFlag();
+        int movePiece = board.pieceAtIndex(moveStartSquare);
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
@@ -445,7 +443,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         if(!board.makeMove(move)) {
             continue;
         }
-        stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
+        stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(movePiece)][moveEndSquare];
         legalMoves++;
         nodes++;
         if(isQuiet) {
@@ -461,10 +459,20 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
         } else {
             // Late Move Reductions (LMR)
             int depthReduction = 0;
-            if(!inCheck && depth > 1 && isQuiet) {
+            if(!inCheck && depth > 2 && isQuiet) {
                 depthReduction = reductions[depth][legalMoves];
                 depthReduction -= isPV;
-                depthReduction -= inCheck;
+                /*int colorToMove = board.getColorToMove();
+                int history = historyTable[colorToMove][moveStartSquare][moveEndSquare];
+                if (ply > 0) {
+                    history += (*stack[ply - 1].ch_entry)[colorToMove][getType(movePiece)][moveEndSquare];
+                }
+
+                if (ply > 1) {
+                    history += (*stack[ply - 2].ch_entry)[colorToMove][getType(movePiece)][moveEndSquare];
+                }
+
+                depthReduction -= history / 8192;*/
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
@@ -515,8 +523,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
                         piece = getType(board.pieceAtIndex(start));
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
                     }
-                    if(stack[ply].killers[0] != move && stack[ply].killers[1] != move) {
-                        stack[ply].killers[2] = stack[ply].killers[1];
+                    if(stack[ply].killers[0] != move) {
                         stack[ply].killers[1] = stack[ply].killers[0];
                         stack[ply].killers[0] = move;
                     }
