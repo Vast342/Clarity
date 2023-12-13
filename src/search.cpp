@@ -464,7 +464,9 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
             if(!inCheck && depth > 1 && isQuiet) {
                 depthReduction = reductions[depth][legalMoves];
                 depthReduction -= isPV;
-                depthReduction -= inCheck;
+                if(moveValues[i] < 53000) {
+                    depthReduction -= moveValues[i] / 8192;
+                }
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
