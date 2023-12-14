@@ -16,64 +16,26 @@ constexpr int badCaptureScore = -500000;
 
 // The main search functions
 
-bool dataGeneration = false;
-
-Move rootBestMove = Move();
-
-int nodes = 0;
-
-int hardLimit = 0;
-
-int seldepth = 0;
-
-using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
-
-using CHTable = std::array<std::array<std::array<CHEntry, 64>, 7>, 2>;
-
-struct StackEntry {
-    // conthist!
-    CHEntry *ch_entry;
-    // killer moves, 3 per ply
-    std::array<Move, 3> killers;
-    // static eval used for improving
-    int staticEval;
-    bool inCheck;
-};
-
-std::array<StackEntry, 120> stack;
-
-TranspositionTable TT;
-
-std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
-std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
-CHTable conthistTable;
-
-std::array<std::array<int, 64>, 64> nodeTMTable;
-
-std::chrono::steady_clock::time_point begin;
-
-bool timesUp = false;
-
 // resets the history, done when ucinewgame is sent, and at the start of each turn
 // thanks zzzzz
-void clearHistory() {
+void Engine::clearHistory() {
     std::memset(historyTable.data(), 0, sizeof(historyTable));
     std::memset(captureHistoryTable.data(), 0, sizeof(captureHistoryTable));
     std::memset(conthistTable.data(), 0, sizeof(conthistTable));
 }
 
 // resizes the transposition table
-void resizeTT(int newSize) {
+void Engine::resizeTT(int newSize) {
     TT.resize(newSize);
 }
 
 // resets the engine, done when ucinewgame is sent
-void resetEngine() {
+void Engine::resetEngine() {
     TT.clearTable();
     clearHistory(); 
 }
 
-int estimateMoveValue(const Board& board, const int end, const int flag) {
+int Engine::estimateMoveValue(const Board& board, const int end, const int flag) {
     // starting with the end square piece
     int value = eg_value[getType(board.pieceAtIndex(end))];
     // promotions! pawn--, newpiece++
@@ -92,7 +54,7 @@ int estimateMoveValue(const Board& board, const int end, const int flag) {
     return value;
 }
 
-bool see(const Board& board, Move move, int threshold) {
+bool Engine::see(const Board& board, Move move, int threshold) {
     // establishing stuff
     const int start = move.getStartSquare();
     const int end = move.getEndSquare();
@@ -171,7 +133,7 @@ bool see(const Board& board, Move move, int threshold) {
     4: History: scores of how many times a move has caused a beta cutoff
     5: Bad captures: captures that result in bad exchanges.
 */
-void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch) {
+void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch) {
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
@@ -219,7 +181,7 @@ void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int
 }
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
-int qSearch(Board &board, int alpha, int beta, int ply) {
+int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
@@ -311,7 +273,7 @@ int qSearch(Board &board, int alpha, int beta, int ply) {
 }
 
 // adds to the history of a particular move
-void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply) {
+void Engine::updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply) {
     int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
     if (ply > 0) {
@@ -325,13 +287,13 @@ void updateHistory(const int colorToMove, const int start, const int end, const 
     }
 }
 
-void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
+void Engine::updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
     const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
     captureHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
 }
 
 // The main search function
-int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
+int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
@@ -550,7 +512,7 @@ int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllow
 }
 
 // gets the PV from the TT, has some inconsistencies or illegal moves, and will be replaced with a triangular PV table eventually
-std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries) {
+std::string Engine::getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries) {
     std::string pv;
     const uint64_t hash = board.getZobristHash();
     for(int i = numEntries; i > -1; i--) {
@@ -571,7 +533,7 @@ std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries
     return pv;
 }
 
-void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
+void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTime) {
     std::string scoreString = " score ";
     if(abs(score) < abs(mateScore + 256)) {
         scoreString += "cp ";
@@ -594,7 +556,7 @@ void outputInfo(const Board& board, int score, int depth, int elapsedTime) {
 }
 
 // the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
-Move think(Board board, int softBound, int hardBound, bool info) {
+Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     //ageHistory();
     //clearHistory();
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
@@ -651,7 +613,7 @@ Move think(Board board, int softBound, int hardBound, bool info) {
 }
 
 // searches done for bench, returns the number of nodes searched.
-int benchSearch(Board board, int depthToSearch) {
+int Engine::benchSearch(Board board, int depthToSearch) {
     //clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
@@ -693,7 +655,7 @@ int benchSearch(Board board, int depthToSearch) {
 }
 
 // searches to a fixed depth when the user says go depth x
-Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
+Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     //ageHistory();
     //clearHistory();
     nodes = 0;
@@ -731,7 +693,7 @@ Move fixedDepthSearch(Board board, int depthToSearch, bool info) {
     return rootBestMove;
 }
 
-std::pair<Move, int> dataGenSearch(Board board, int nodeCap) {
+std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
     //clearHistory();
     dataGeneration = true;
     nodes = 0;

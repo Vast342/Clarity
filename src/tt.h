@@ -7,8 +7,8 @@
     Stores the result of past searches in a large table, so that you don't have to make redundant searches
 */
 
-// at 16 bytes per entry, this gives me a 256mb hash table
-constexpr uint64_t defaultSize = 16777216;
+// at 16 bytes per entry, this gives me a 64mb hash table
+constexpr uint64_t defaultSize = 4194304;
 
 struct Transposition {
     uint64_t zobristKey;

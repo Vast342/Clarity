@@ -1,22 +1,22 @@
 #include "globals.h"
 #include "datagen.h"
 #include "search.h"
+#include <thread>
 
-std::ofstream output;
+std::string directory;
 uint64_t totalPositions = 0;
 std::chrono::steady_clock::time_point beginTime;
 
-// run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games*
+// run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games* *number of threads*
 int main([[maybe_unused]]int argc, char** argv) {
     assert(argc == 2);
     initialize();
-    std::string directory = std::string(argv[1]);
+    directory = std::string(argv[1]);
     int numGames = std::atoi(argv[2]);
-    output.open(directory);
+    int numThreads = std::atoi(argv[3]);
     beginTime = std::chrono::steady_clock::now();
     std::cout << "Beginning data generation\n";
-    generateData(numGames);
-    output.close();
+    generateData(numGames, numThreads);
     std::string response = "";
     std::cout << "Close thread? Y/N\n";
     std::cin >> response;
@@ -24,22 +24,31 @@ int main([[maybe_unused]]int argc, char** argv) {
 }
 
 // manages the threads
-void generateData(int numGames) {
-    threadFunction(numGames);
+void generateData(int numGames, int numThreads) {
+    int perThreadGames = numGames / numThreads;
+    for(int i = 1; i <= numThreads; i++) {
+        // make thread, assign it the following function: 
+        std::thread thread(threadFunction, perThreadGames, i);
+        //threadFunction(perThreadGames, i);
+        // and then start it running and continue on
+    }
 }
 
 // run on each thread
-void threadFunction(int numGames) {
+void threadFunction(int numGames, int threadID) {
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    Engine engine;
+    std::ofstream output;
+    output.open(directory + "/thread" + std::to_string(threadID));
     for(int i = 0; i < numGames; i++) {
         std::vector<std::string> fenVector;
-        double result = runGame(fenVector, board);
+        double result = runGame(engine, fenVector, board);
         if(result == 2) {
             fenVector.clear();
             i--;
             continue;
         }
-        dumpToArray(result, fenVector);
+        dumpToArray(output, result, fenVector);
     }
 }
 
@@ -47,7 +56,7 @@ void threadFunction(int numGames) {
 constexpr uint8_t threadCount = 5;
 constexpr int moveLimit = 1000;
 // manages the games
-double runGame(std::vector<std::string>& fenVector, Board board) {
+double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board) {
     int score = 0;
     bool outOfBounds = false;
     for(int i = 0; i <= moveLimit; i++) {
@@ -112,7 +121,7 @@ double runGame(std::vector<std::string>& fenVector, Board board) {
             }
             // get move from engine normally
             //std::cout << "sending board with position " << board.getFenString() << '\n';
-            const auto result = dataGenSearch(board, 5000);
+            const auto result = engine.dataGenSearch(board, 5000);
             score = (board.getColorToMove() == 1 ? result.second : -result.second);
             // i think that this score might be a problem
             if(abs(score) > 2500) {
@@ -152,9 +161,9 @@ double runGame(std::vector<std::string>& fenVector, Board board) {
 }
 
 int games = 0;
-int outputFrequency = 10;
-int infoOutputFrequency = 100;
-void dumpToArray(double result, std::vector<std::string>& fenVector) {
+int outputFrequency = 100;
+int infoOutputFrequency = 1000;
+void dumpToArray(std::ofstream &output, double result, std::vector<std::string>& fenVector) {
     games++;
     if((games % outputFrequency) == 0) std::cout << "Finished game " << games << '\n';
     for(const std::string &fen : fenVector) {

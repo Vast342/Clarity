@@ -10,17 +10,18 @@
 */
 
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
+Engine engine;
 
 int rootColorToMove;
 
 // runs a fixed depth search on a fixed set of positions, to see if a test changes how the engine behaves
 void runBench(int depth) {
-    resetEngine();
+    engine.resetEngine();
     uint64_t total = 0;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    for(std::string fen : fens) {
+    for(std::string fen : benchFens) {
         Board benchBoard(fen);
-        int j = benchSearch(benchBoard, depth);
+        int j = engine.benchSearch(benchBoard, depth);
         total += j;
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
@@ -37,7 +38,7 @@ void setOption(const std::vector<std::string>& bits) {
         assert(entrySizeB == 16); 
         int newSizeEntries = newSizeB / entrySizeB;
         //std::cout << log2(newSizeEntries);
-        resizeTT(newSizeEntries);
+        engine.resizeTT(newSizeEntries);
     }
 }
 
@@ -68,7 +69,7 @@ void loadPosition(const std::vector<std::string>& bits) {
 void identify() {
     std::cout << "id name Clarity V3.0.0\n";
     std::cout << "id author Vast\n";
-    std::cout << "option name Hash type spin default 256 min 1 max 2048\n";
+    std::cout << "option name Hash type spin default 64 min 1 max 2048\n";
     std::cout << "uciok\n";
 }
 
@@ -101,13 +102,13 @@ void go(std::vector<std::string> bits) {
     Move bestMove;
     // go depth x
     if(depth != 0) {
-        bestMove = fixedDepthSearch(board, depth, true);
+        bestMove = engine.fixedDepthSearch(board, depth, true);
     } else {
         // go wtime x btime x
         // the formulas here are former formulas from Stormphrax
         const int softBound = 0.6 * (time / movestogo + inc * 3 / 4);
         const int hardBound = time / 2;
-        bestMove = think(board, softBound, hardBound, true);
+        bestMove = engine.think(board, softBound, hardBound, true);
     }
     std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
     board.makeMove(bestMove);
@@ -115,7 +116,7 @@ void go(std::vector<std::string> bits) {
 
 // resets everything
 void newGame() {
-    resetEngine();
+    engine.resetEngine();
     board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
 }
 
