@@ -26,11 +26,10 @@ int main([[maybe_unused]]int argc, char** argv) {
 // manages the threads
 void generateData(int numGames, int numThreads) {
     int perThreadGames = numGames / numThreads;
+    std::vector<std::thread> threads;
+    threads.reserve(numThreads);
     for(int i = 1; i <= numThreads; i++) {
-        // make thread, assign it the following function: 
-        std::thread thread(threadFunction, perThreadGames, i);
-        //threadFunction(perThreadGames, i);
-        // and then start it running and continue on
+        threads[i - 1] = std::thread(threadFunction, perThreadGames, i);
     }
 }
 
@@ -39,7 +38,7 @@ void threadFunction(int numGames, int threadID) {
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     Engine engine;
     std::ofstream output;
-    output.open(directory + "/thread" + std::to_string(threadID));
+    output.open(directory + "thread" + std::to_string(threadID) + ".txt");
     for(int i = 0; i < numGames; i++) {
         std::vector<std::string> fenVector;
         double result = runGame(engine, fenVector, board);
