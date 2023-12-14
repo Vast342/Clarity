@@ -141,6 +141,9 @@ void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves,
 int flipIndex(int index);
 uint64_t getPassedPawnMask(int square, int colorToMove);
 extern std::array<uint64_t, 64> squareToBitboard;
+// conthist hehe
+using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
+using CHTable = std::array<std::array<std::array<CHEntry, 64>, 7>, 2>;
 
 // flags for moves
 constexpr uint8_t Normal = 0b0000;
