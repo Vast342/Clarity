@@ -5,7 +5,7 @@
 // this is my first time doing anything with neural networks, or anything with pointers, so code here might be a bit questionable to look at
 
 namespace {
-    INCBIN(networkData, "../src/nets/clarity_net005.nnue");
+    INCBIN(networkData, "../src/nets/clarity_net006.nnue");
     const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
 }
 
@@ -33,22 +33,25 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
     return {blackIdx, whiteIdx};
 }
 
+// SCReLU!
 int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     int sum = 0;
 
     for (int i = 0; i < layer1Size; ++i)
     {
         int activated = std::clamp(static_cast<int>(us[i]), 0, 255);
+        activated *= activated;
         sum += activated * weights[i];
     }
 
     for (int i = 0; i < layer1Size; ++i)
     {
         int activated = std::clamp(static_cast<int>(them[i]), 0, 255);
+        activated *= activated;
         sum += activated * weights[layer1Size + i];
     }
 
-    return sum;
+    return sum / 255;
 }
 
 NetworkState::NetworkState() {

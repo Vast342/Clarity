@@ -23,7 +23,7 @@ struct Engine {
         int benchSearch(Board board, int depthToSearch);
         Move fixedDepthSearch(Board board, int depthToSearch, bool info);
         std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
-    
+        bool timesUp = false;
     private:
         bool dataGeneration = false;
 
@@ -46,8 +46,6 @@ struct Engine {
         std::array<std::array<int, 64>, 64> nodeTMTable;
 
         std::chrono::steady_clock::time_point begin;
-
-        bool timesUp = false;
         void clearHistory();
         int estimateMoveValue(const Board& board, const int end, const int flag);
         bool see(const Board& board, Move move, int threshold);

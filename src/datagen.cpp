@@ -26,10 +26,14 @@ int main([[maybe_unused]]int argc, char** argv) {
 // manages the threads
 void generateData(int numGames, int numThreads) {
     int perThreadGames = numGames / numThreads;
+    //threadFunction(perThreadGames, 1);
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
     for(int i = 1; i <= numThreads; i++) {
-        threads[i - 1] = std::thread(threadFunction, perThreadGames, i);
+        threads.emplace_back(std::thread(threadFunction, perThreadGames, i));
+    }
+    for(auto &thread : threads) {
+        thread.join();
     }
 }
 
