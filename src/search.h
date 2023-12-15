@@ -5,11 +5,43 @@
 
 constexpr int mateScore = -10000000;
 
+extern int ASP_BaseDelta;
+extern double ASP_DeltaMultiplier;
+extern int ASP_DepthCondition;
+
+extern int MVV_VictimScoreMultiplier;
+
+extern int FirstKillerScore;
+extern int SecondKillerScore;
+
+extern int RFP_DepthCondition;
+extern int RFP_Multiplier;
+
+extern int IIR_DepthCondition;
+
+extern int FP_DepthCondition;
+extern int FP_Base;
+extern int FP_Multiplier;
+
+extern int LMP_DepthCondition;
+extern int LMP_Base;
+
+extern int SPR_DepthCondition;
+extern int SPR_CaptureThreshold;
+extern int SPR_QuietThreshold;
+
+extern int NMP_Adder;
+extern int NMP_Divisor; 
+extern int NMP_Subtractor;
+extern int NMP_DepthCondition;
+
+extern int badCaptureScore;
+
 struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
-    // killer moves, 3 per ply
-    std::array<Move, 3> killers;
+    // killer moves, 2 per ply
+    std::array<Move, 2> killers;
     // static eval used for improving
     int staticEval;
     bool inCheck;

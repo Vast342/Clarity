@@ -41,10 +41,6 @@ enum Pieces {
 constexpr int Black = 0;
 constexpr int White = 8;
 
-// piece values left over from a long time ago
-constexpr int mg_value[6] = {64, 271, 299, 375, 769, 0};
-constexpr int eg_value[6] = {112, 351, 361, 627, 1187, 0};
-
 extern std::array<std::array<uint8_t, 218>, 50> reductions;
 
 // structs and stuff
@@ -139,8 +135,18 @@ std::vector<std::string> split(const std::string string, const char seperator);
 void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves);
 void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves, int i);
 int flipIndex(int index);
+void calculateReductions();
 uint64_t getPassedPawnMask(int square, int colorToMove);
 extern std::array<uint64_t, 64> squareToBitboard;
+
+// Tunable Parameters
+extern double lmrBase;
+extern double lmrMultiplier;
+extern int hardBoundDivisor;
+extern int softBoundFractionNumerator;
+extern int softBoundFractionDenominator;
+extern double softBoundMultiplier;
+extern int defaultMovesToGo;
 // conthist hehe
 using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
 using CHTable = std::array<std::array<std::array<CHEntry, 64>, 7>, 2>;
