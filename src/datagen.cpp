@@ -54,9 +54,6 @@ void threadFunction(int numGames, int threadID) {
         dumpToArray(output, result, fenVector);
     }
 }
-
-// idk what to use here lol
-constexpr uint8_t threadCount = 5;
 constexpr int moveLimit = 1000;
 // manages the games
 double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board) {

@@ -9,8 +9,6 @@ constexpr int historyCap = 16384;
 int MVV_value[6] = {112, 351, 361, 627, 1187, 0};
 int SEE_value[6] = {112, 351, 361, 627, 1187, 0};
 
-constexpr int depthLimit = 100;
-
 // Tunable Values
 int ASP_BaseDelta = 25;
 double ASP_DeltaMultiplier = 1.5;

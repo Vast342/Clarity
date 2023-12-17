@@ -70,10 +70,6 @@ void setOption(const std::vector<std::string>& bits) {
         ASP_DepthCondition = std::stoi(bits[4]);
     } else if(name == "MVV_VictimScoreMultiplier") {
         MVV_VictimScoreMultiplier = std::stoi(bits[4]);
-    } else if(name == "FirstKillerScore") {
-        FirstKillerScore = std::stoi(bits[4]) * 1000;
-    } else if(name == "SecondKillerScore") {
-        SecondKillerScore = std::stoi(bits[4]) * 1000;
     } else if(name == "RFP_DepthCondition") {
         RFP_DepthCondition = std::stoi(bits[4]);
     } else if(name == "RFP_Multiplier") {
@@ -104,6 +100,8 @@ void setOption(const std::vector<std::string>& bits) {
         NMP_Subtractor = std::stoi(bits[4]);
     } else if(name == "NMP_DepthCondition") {
         NMP_DepthCondition = std::stoi(bits[4]);
+    } else {
+        std::cout << "Invalid Option" << std::endl;
     }
 }
 
@@ -138,16 +136,14 @@ void identify() {
     std::cout << "option name lmrBase type spin default 77 min 0 max 200\n";
     std::cout << "option name lmrMultiplier type spin default 42 min 0 max 70\n";
     std::cout << "option name hardBoundDivisor type spin default 2 min 0 max 10\n";
-    std::cout << "option name softBoundNumerator type spin default 3 min 0 max 10\n";
-    std::cout << "option name softBoundDenominator type spin default 4 min 0 max 10\n";
+    std::cout << "option name softBoundFractionNumerator type spin default 3 min 0 max 10\n";
+    std::cout << "option name softBoundFractionDenominator type spin default 4 min 0 max 10\n";
     std::cout << "option name softBoundMultiplier type spin default 60 min 0 max 100\n";
     std::cout << "option name defaultMovesToGo type spin default 20 min 0 max 40\n";
     std::cout << "option name ASP_BaseDelta type spin default 25 min 0 max 100\n";
     std::cout << "option name ASP_DeltaMultiplier type spin default 15 min 0 max 40\n";
     std::cout << "option name ASP_DepthCondition type spin default 3 min 0 max 10\n";
     std::cout << "option name MVV_VictimScoreMultiplier type spin default 500 min 0 max 1000\n";
-    std::cout << "option name FirstKillerScore type spin default 54 min 0 max 100\n";
-    std::cout << "option name SecondKillerScore type spin default 53 min 0 max 100\n";
     std::cout << "option name RFP_DepthCondition type spin default 9 min 0 max 20\n";
     std::cout << "option name RFP_Multiplier type spin default 80 min 0 max 120\n";
     std::cout << "option name IIR_DepthCondition type spin default 3 min 0 max 20\n";

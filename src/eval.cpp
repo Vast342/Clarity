@@ -1,12 +1,25 @@
 #include "globals.h"
-#include "external/incbin.h"
 #include "eval.h"
+
+#ifdef _MSC_VER
+#define SP_MSVC
+#pragma push_macro("_MSC_VER")
+#undef _MSC_VER
+#endif
+
+#define INCBIN_PREFIX g_
+#include "external/incbin.h"
+
+#ifdef SP_MSVC
+#pragma pop_macro("_MSC_VER")
+#undef SP_MSVC
+#endif
 
 // this is my first time doing anything with neural networks, or anything with pointers, so code here might be a bit questionable to look at
 
 namespace {
-    INCBIN(networkData, "../src/nets/clarity_net006.nnue");
-    const Network *network = reinterpret_cast<const Network *>(gnetworkDataData);
+    INCBIN(network, "../src/nets/clarity_net006.nnue");
+    const Network *network = reinterpret_cast<const Network *>(g_networkData);
 }
 
 void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
