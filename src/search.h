@@ -30,10 +30,8 @@ extern int SPR_DepthCondition;
 extern int SPR_CaptureThreshold;
 extern int SPR_QuietThreshold;
 
-extern int NMP_Adder;
 extern int NMP_Divisor; 
 extern int NMP_Subtractor;
-extern int NMP_DepthCondition;
 
 extern int badCaptureScore;
 

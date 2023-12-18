@@ -35,10 +35,8 @@ int SPR_DepthCondition = 8;
 int SPR_CaptureThreshold = -90;
 int SPR_QuietThreshold = -50;
 
-int NMP_Adder = 1;
-int NMP_Divisor = 3; 
-int NMP_Subtractor = 2;
-int NMP_DepthCondition = 2;
+int NMP_Divisor = 200; 
+int NMP_Subtractor = 3;
 
 int badCaptureScore = -500000;
 
@@ -371,10 +369,10 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // Null Move Pruning (NMP)
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    if(nmpAllowed && depth >= NMP_DepthCondition && !inCheck && staticEval >= beta) {
+    if(nmpAllowed && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &conthistTable[0][0][0];
         board.changeColor();
-        const int score = -negamax(board, depth - (depth+NMP_Adder)/NMP_Divisor - NMP_Subtractor, 0-beta, 1-beta, ply + 1, false);
+        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / NMP_Divisor, NMP_Subtractor), 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;

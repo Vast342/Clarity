@@ -54,10 +54,6 @@ void setOption(const std::vector<std::string>& bits) {
         calculateReductions();
     } else if(name == "hardBoundDivisor") {
         hardBoundDivisor = std::stoi(bits[4]);
-    } else if(name == "softBoundFractionNumerator") {
-        softBoundFractionNumerator = std::stoi(bits[4]);
-    } else if(name == "softBoundFractionDenominator") {
-        softBoundFractionDenominator = std::stoi(bits[4]);
     } else if(name == "softBoundMultiplier") {
         softBoundMultiplier = std::stod(bits[4]) / 100;
     } else if(name == "defaultMovesToGo") {
@@ -92,14 +88,10 @@ void setOption(const std::vector<std::string>& bits) {
         SPR_CaptureThreshold = -std::stoi(bits[4]);
     } else if(name == "SPR_QuietThreshold") {
         SPR_QuietThreshold = -std::stoi(bits[4]);
-    } else if(name == "NMP_Adder") {
-        NMP_Adder = std::stoi(bits[4]);
     } else if(name == "NMP_Divisor") {
         NMP_Divisor = std::stoi(bits[4]);
     } else if(name == "NMP_Subtractor") {
         NMP_Subtractor = std::stoi(bits[4]);
-    } else if(name == "NMP_DepthCondition") {
-        NMP_DepthCondition = std::stoi(bits[4]);
     } else {
         std::cout << "Invalid Option" << std::endl;
     }
@@ -136,10 +128,7 @@ void identify() {
     std::cout << "option name lmrBase type spin default 77 min 0 max 200\n";
     std::cout << "option name lmrMultiplier type spin default 42 min 0 max 70\n";
     std::cout << "option name hardBoundDivisor type spin default 2 min 0 max 10\n";
-    std::cout << "option name softBoundFractionNumerator type spin default 3 min 0 max 10\n";
-    std::cout << "option name softBoundFractionDenominator type spin default 4 min 0 max 10\n";
     std::cout << "option name softBoundMultiplier type spin default 60 min 0 max 100\n";
-    std::cout << "option name defaultMovesToGo type spin default 20 min 0 max 40\n";
     std::cout << "option name ASP_BaseDelta type spin default 25 min 0 max 100\n";
     std::cout << "option name ASP_DeltaMultiplier type spin default 15 min 0 max 40\n";
     std::cout << "option name ASP_DepthCondition type spin default 3 min 0 max 10\n";
@@ -155,10 +144,8 @@ void identify() {
     std::cout << "option name SPR_DepthCondition type spin default 8 min 0 max 20\n";
     std::cout << "option name SPR_CaptureThreshold type spin default 90 min 0 max 200\n";
     std::cout << "option name SPR_QuietThreshold type spin default 50 min 0 max 200\n";
-    std::cout << "option name NMP_Adder type spin default 1 min 0 max 15\n";
-    std::cout << "option name NMP_Divisor type spin default 3 min 0 max 10\n";
-    std::cout << "option name NMP_Subtractor type spin default 2 min 0 max 10\n";
-    std::cout << "option name NMP_DepthCondition type spin default 2 min 0 max 20\n";
+    std::cout << "option name NMP_Divisor type spin default 200 min 150 max 250\n";
+    std::cout << "option name NMP_Subtractor type spin default 3 min 0 max 5\n";
     std::cout << "uciok\n";
 }
 
