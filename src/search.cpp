@@ -10,32 +10,32 @@ int MVV_value[6] = {112, 351, 361, 627, 1187, 0};
 int SEE_value[6] = {112, 351, 361, 627, 1187, 0};
 
 // Tunable Values
-int ASP_BaseDelta = 25;
-double ASP_DeltaMultiplier = 1.5;
-int ASP_DepthCondition = 3;
+int ASP_BaseDelta = 20;
+double ASP_DeltaMultiplier = 1.8;
+int ASP_DepthCondition = 4;
 
 int MVV_VictimScoreMultiplier = 500;
 
 int FirstKillerScore = 54000;
 int SecondKillerScore = 53000;
 
-int RFP_DepthCondition = 9;
-int RFP_Multiplier = 80;
+int RFP_DepthCondition = 11;
+int RFP_Multiplier = 82;
 
-int IIR_DepthCondition = 3;
+int IIR_DepthCondition = 5;
 
-int FP_DepthCondition = 8;
-int FP_Base = 250;
-int FP_Multiplier = 60;
+int FP_DepthCondition = 3;
+int FP_Base = 273;
+int FP_Multiplier = 65;
 
-int LMP_DepthCondition = 7;
-int LMP_Base = 5;
+int LMP_DepthCondition = 8;
+int LMP_Base = 0;
 
-int SPR_DepthCondition = 8;
-int SPR_CaptureThreshold = -90;
-int SPR_QuietThreshold = -50;
+int SPR_DepthCondition = 3;
+int SPR_CaptureThreshold = -110;
+int SPR_QuietThreshold = -32;
 
-int NMP_Divisor = 200; 
+int NMP_Divisor = 196; 
 int NMP_Subtractor = 3;
 
 int badCaptureScore = -500000;
