@@ -35,22 +35,25 @@ int main([[maybe_unused]]int argc, char** argv) {
 
 // manages the threads
 void generateData(int numGames, int numThreads) {
-    std::cout << "Made it through the generateData Call\n";
+    //std::cout << "Made it through the generateData Call\n";
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
     for(int i = 1; i <= numThreads; i++) {
-        std::cout << "Made Thread " << i << '\n';
-        threads.emplace_back(threadFunction, numGames, i);
+        //std::cout << "Made Thread " << i << '\n';
+        // lambda AAAAAAAAAAAAAAAAAAA RUN IN FeAR
+        threads.emplace_back([numGames, i] {
+                threadFunction(numGames, i);
+        });
     }
     for(auto &thread : threads) {
-        std::cout << "Joining Thread\n";
+        //std::cout << "Joining Thread\n";
         thread.join();
     }
 }
 
 // run on each thread
 void threadFunction(int numGames, int threadID) {
-    std::cout << "Thread Function called on thread " << threadID << '\n';
+    //std::cout << "Thread Function called on thread " << std::to_string(threadID) << '\n';
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     Engine engine;
     std::ofstream output;
@@ -63,7 +66,7 @@ void threadFunction(int numGames, int threadID) {
             i--;
             continue;
         }
-        std::cout << "Finished Game " << i << "on thread" << threadID << '\n';
+        //std::cout << "Finished Game " << i << "on thread" << threadID << '\n';
         dumpToArray(output, result, fenVector);
     }
 }

@@ -46,8 +46,8 @@ int badCaptureScore = -500000;
 // thanks zzzzz
 void Engine::clearHistory() {
     std::memset(historyTable.data(), 0, sizeof(historyTable));
-    std::memset(captureHistoryTable.data(), 0, sizeof(captureHistoryTable));
-    std::memset(conthistTable.data(), 0, sizeof(conthistTable));
+    //std::memset(captureHistoryTable.data(), 0, sizeof(captureHistoryTable));
+    std::memset(conthistTable.get(), 0, sizeof(conthistTable));
 }
 
 // resizes the transposition table
@@ -311,10 +311,10 @@ void Engine::updateHistory(const int colorToMove, const int start, const int end
     }
 }
 
-void Engine::updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
+/*void Engine::updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
     const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
     captureHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
-}
+}*/
 
 // The main search function
 int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
@@ -370,7 +370,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     if(nmpAllowed && !inCheck && staticEval >= beta) {
-        stack[ply].ch_entry = &conthistTable[0][0][0];
+        stack[ply].ch_entry = &(*conthistTable)[0][0][0];
         board.changeColor();
         const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / NMP_Divisor, NMP_Subtractor), 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
@@ -431,7 +431,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(!board.makeMove(move)) {
             continue;
         }
-        stack[ply].ch_entry = &conthistTable[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
+        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
         legalMoves++;
         nodes++;
         if(isQuiet) {

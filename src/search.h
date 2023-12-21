@@ -53,6 +53,9 @@ struct Engine {
         int benchSearch(Board board, int depthToSearch);
         Move fixedDepthSearch(Board board, int depthToSearch, bool info);
         std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
+        Engine() {
+            conthistTable = std::make_unique<CHTable>();
+        }
         bool timesUp = false;
     private:
         bool dataGeneration = false;
@@ -70,8 +73,8 @@ struct Engine {
         TranspositionTable TT;
 
         std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
-        std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
-        CHTable conthistTable;
+        //std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
+        std::unique_ptr<CHTable> conthistTable;
 
         std::array<std::array<int, 64>, 64> nodeTMTable;
 
