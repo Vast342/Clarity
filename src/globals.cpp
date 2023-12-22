@@ -1,5 +1,6 @@
 #include "globals.h"
 #include "slidey.h"
+#include "tunables.h"
 
 // takes a piece number and gets the type of it
 int getType(int value) {
@@ -55,13 +56,11 @@ std::string toLongAlgebraic(Move move) {
 
 // calculates the reductions used for LMR, ran on startup
 std::array<std::array<uint8_t, 218>, 50> reductions;
-double lmrBase = 0.78;
-double lmrMultiplier = 0.55;
 
 void calculateReductions() {
     for(int depth = 0; depth < 50; depth++) {
         for(int move = 0; move < 218; move++) {
-            reductions[depth][move] = uint8_t(lmrBase + log(depth) * log(move) * lmrMultiplier);
+            reductions[depth][move] = uint8_t(LMR_Base.value + log(depth) * log(move) * LMR_Multiplier.value);
         }
     }
 }

@@ -5,38 +5,12 @@
 
 constexpr int mateScore = -10000000;
 
-extern int ASP_BaseDelta;
-extern double ASP_DeltaMultiplier;
-extern int ASP_DepthCondition;
-
 extern int MVV_VictimScoreMultiplier;
-
-extern int FirstKillerScore;
-extern int SecondKillerScore;
-
-extern int RFP_DepthCondition;
-extern int RFP_Multiplier;
-
-extern int IIR_DepthCondition;
-
-extern int FP_DepthCondition;
-extern int FP_Base;
-extern int FP_Multiplier;
-
-extern int LMP_DepthCondition;
-extern int LMP_Base;
-
-extern int SPR_DepthCondition;
-extern int SPR_CaptureThreshold;
-extern int SPR_QuietThreshold;
-
-extern int NMP_Divisor; 
-extern int NMP_Subtractor;
-extern int NMP_DepthCondition;
 
 extern int badCaptureScore;
 
-extern int lmrDivisor;
+extern int FirstKillerScore;
+extern int SecondKillerScore;
 
 struct StackEntry {
     // conthist!
