@@ -343,11 +343,12 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
 
     // Razoring
-    /*if(!isPV && staticEval < alpha - RAZ_DepthMultiplier * depth && depth < RAZ_DepthCondition) {
-    int score = qSearch(board, alpha-1, alpha, ply);
-    if (score < alpha)
-        return score;
-    }*/
+    if(!isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
+        int score = qSearch(board, alpha-1, alpha, ply);
+        if (score < alpha) {
+            return score;
+        }
+    }
 
     // Reverse Futility Pruning
     if(useTTMove && staticEval - rfpMultiplier.value * (depth - improving) >= beta && !inCheck && depth < rfpDepthCondition.value && !isPV) return staticEval;

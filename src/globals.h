@@ -207,7 +207,6 @@ extern Tunable sinDepthMargin;
 extern Tunable sinDepthScale;
 
 extern Tunable razDepthMultiplier;
-extern Tunable razDepthCondition;
 
 extern std::vector<Tunable *> tunables;
 

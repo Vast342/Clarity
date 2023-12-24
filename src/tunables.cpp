@@ -38,7 +38,6 @@ Tunable sinDepthMargin("SIN_DepthMargin", 3, 1);
 Tunable sinDepthScale("SIN_DepthScale", 32, 1);
 
 Tunable razDepthMultiplier("RAZ_DepthMultiplier", 400, 1);
-Tunable razDepthCondition("RAZ_DepthCondition", 1, 1);
 
 // Declaration of pointers to tunables
 
@@ -70,8 +69,7 @@ std::vector<Tunable *> tunables = {
     &sinDepthCondition,
     &sinDepthMargin,
     &sinDepthScale,
-    &razDepthMultiplier,
-    &razDepthCondition
+    &razDepthMultiplier
 };
 
 
