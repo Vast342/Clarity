@@ -18,6 +18,26 @@
 #include "eval.h"
 #include <memory>
 
+struct Tunable {
+    Tunable(std::string n, double v, int mi, int ma, int d, int s) {
+        name = n;
+        value = v / d;
+        min = mi;
+        max = ma;
+        divisor = d;
+        step = s;
+    }
+    void updateValue(double newValue) {
+        value = newValue / divisor;
+    }
+    std::string name;
+    double value;
+    int min;
+    int max;
+    int divisor;
+    int step;
+};
+
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
 
