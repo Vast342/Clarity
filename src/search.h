@@ -58,7 +58,7 @@ struct Engine {
         int qSearch(Board &board, int alpha, int beta, int ply);
         void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply);
         //void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
-        int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed);
+        int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, bool useTTMove);
         std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries);
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);
 };
