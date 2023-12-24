@@ -139,14 +139,6 @@ void calculateReductions();
 uint64_t getPassedPawnMask(int square, int colorToMove);
 extern std::array<uint64_t, 64> squareToBitboard;
 
-// Tunable Parameters
-extern double lmrBase;
-extern double lmrMultiplier;
-extern int hardBoundDivisor;
-extern int softBoundFractionNumerator;
-extern int softBoundFractionDenominator;
-extern double softBoundMultiplier;
-extern int defaultMovesToGo;
 // conthist hehe
 using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
 using CHTable = std::array<std::array<std::array<CHEntry, 64>, 7>, 2>;
@@ -157,3 +149,69 @@ constexpr std::array<uint8_t, 4> castling = {0b0001, 0b0010, 0b0011, 0b0100};
 constexpr uint8_t EnPassant = 0b0101;
 constexpr uint8_t DoublePawnPush = 0b0110;
 constexpr std::array<uint8_t, 4> promotions = {0b0111, 0b1000, 0b1001, 0b1010};
+
+struct Tunable {
+    explicit Tunable(std::string _name, double _value, int _divisor)
+        : name(std::move(_name)),
+          value(_value),
+          max(value * _divisor * 2),
+          divisor(_divisor),
+          step(max / 20) {}
+
+    void updateValue(double newValue) {
+        value = newValue / divisor;
+    }
+
+    std::string name;
+    double value;
+    int max;
+    int divisor;
+    int step;
+};
+
+extern Tunable aspBaseDelta;
+extern Tunable aspDeltaMultiplier;
+extern Tunable aspDepthCondition;
+
+extern Tunable rfpDepthCondition;
+extern Tunable rfpMultiplier;
+
+extern Tunable iirDepthCondition;
+
+extern Tunable fpDepthCondition;
+extern Tunable fpBase;
+extern Tunable fpMultiplier;
+
+extern Tunable lmpDepthCondition;
+extern Tunable lmpBase;
+
+extern Tunable sprDepthCondition;
+extern Tunable sprCaptureThreshold;
+extern Tunable sprQuietThreshold;
+
+extern Tunable nmpDivisor;
+extern Tunable nmpSubtractor;
+extern Tunable nmpDepthCondition;
+
+extern Tunable hmrDivisor;
+extern Tunable lmrBase;
+extern Tunable lmrMultiplier;
+
+extern Tunable historyMaxBonus;
+extern Tunable historyMultiplier;
+extern Tunable historyAdder;
+extern Tunable historySubtractor;
+
+extern Tunable sinDepthCondition;
+extern Tunable sinDepthMargin;
+extern Tunable sinDepthScale;
+
+extern Tunable razDepthMultiplier;
+
+extern std::vector<Tunable *> tunables;
+
+void outputTunables();
+void outputTunableJSON();
+void adjustTunable(const std::string &name, const int &value);
+void readTunable(const std::string &name);
+void readTunables();

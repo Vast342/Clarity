@@ -46,54 +46,8 @@ void setOption(const std::vector<std::string>& bits) {
         int newSizeEntries = newSizeB / entrySizeB;
         //std::cout << log2(newSizeEntries);
         engine.resizeTT(newSizeEntries);
-    } else if(name == "lmrBase") {
-        lmrBase = std::stod(bits[4]) / 100;
-        calculateReductions();
-    } else if(name == "lmrMultiplier") {
-        lmrMultiplier = std::stod(bits[4]) / 100;
-        calculateReductions();
-    } else if(name == "hardBoundDivisor") {
-        hardBoundDivisor = std::stoi(bits[4]);
-    } else if(name == "softBoundMultiplier") {
-        softBoundMultiplier = std::stod(bits[4]) / 100;
-    } else if(name == "defaultMovesToGo") {
-        defaultMovesToGo = std::stoi(bits[4]);
-    } else if(name == "ASP_BaseDelta") {
-        ASP_BaseDelta = std::stoi(bits[4]);
-    } else if(name == "ASP_DeltaMultiplier") {
-        ASP_DeltaMultiplier = std::stod(bits[4]) / 10;
-    } else if(name == "ASP_DepthCondition") {
-        ASP_DepthCondition = std::stoi(bits[4]);
-    } else if(name == "MVV_VictimScoreMultiplier") {
-        MVV_VictimScoreMultiplier = std::stoi(bits[4]);
-    } else if(name == "RFP_DepthCondition") {
-        RFP_DepthCondition = std::stoi(bits[4]);
-    } else if(name == "RFP_Multiplier") {
-        RFP_Multiplier = std::stoi(bits[4]);
-    } else if(name == "IIR_DepthCondition") {
-        IIR_DepthCondition = std::stoi(bits[4]);
-    } else if(name == "FP_DepthCondition") {
-        FP_DepthCondition = std::stoi(bits[4]);
-    } else if(name == "FP_Base") {
-        FP_Base = std::stoi(bits[4]);
-    } else if(name == "FP_Multiplier") {
-        FP_Multiplier = std::stoi(bits[4]);
-    } else if(name == "LMP_DepthCondition") {
-        LMP_DepthCondition = std::stoi(bits[4]);
-    } else if(name == "LMP_Base") {
-        LMP_Base = std::stoi(bits[4]);
-    } else if(name == "SPR_DepthCondition") {
-        SPR_DepthCondition = std::stoi(bits[4]);
-    } else if(name == "SPR_CaptureThreshold") {
-        SPR_CaptureThreshold = -std::stoi(bits[4]);
-    } else if(name == "SPR_QuietThreshold") {
-        SPR_QuietThreshold = -std::stoi(bits[4]);
-    } else if(name == "NMP_Divisor") {
-        NMP_Divisor = std::stoi(bits[4]);
-    } else if(name == "NMP_Subtractor") {
-        NMP_Subtractor = std::stoi(bits[4]);
     } else {
-        std::cout << "Invalid Option" << std::endl;
+        adjustTunable(name, std::stod(bits[4]));
     }
 }
 
@@ -125,27 +79,7 @@ void identify() {
     std::cout << "id name Clarity V3.0.0\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 64 min 1 max 2048\n";
-    std::cout << "option name lmrBase type spin default 77 min 0 max 200\n";
-    std::cout << "option name lmrMultiplier type spin default 42 min 0 max 70\n";
-    std::cout << "option name hardBoundDivisor type spin default 2 min 0 max 10\n";
-    std::cout << "option name softBoundMultiplier type spin default 60 min 0 max 100\n";
-    std::cout << "option name ASP_BaseDelta type spin default 25 min 0 max 100\n";
-    std::cout << "option name ASP_DeltaMultiplier type spin default 15 min 0 max 40\n";
-    std::cout << "option name ASP_DepthCondition type spin default 3 min 0 max 10\n";
-    std::cout << "option name MVV_VictimScoreMultiplier type spin default 500 min 0 max 1000\n";
-    std::cout << "option name RFP_DepthCondition type spin default 9 min 0 max 20\n";
-    std::cout << "option name RFP_Multiplier type spin default 80 min 0 max 120\n";
-    std::cout << "option name IIR_DepthCondition type spin default 3 min 0 max 20\n";
-    std::cout << "option name FP_DepthCondition type spin default 8 min 0 max 20\n";
-    std::cout << "option name FP_Base type spin default 250 min 0 max 400\n";
-    std::cout << "option name FP_Multiplier type spin default 60 min 0 max 100\n";
-    std::cout << "option name LMP_DepthCondition type spin default 7 min 0 max 20\n";
-    std::cout << "option name LMP_Base type spin default 5 min 0 max 20\n";
-    std::cout << "option name SPR_DepthCondition type spin default 8 min 0 max 20\n";
-    std::cout << "option name SPR_CaptureThreshold type spin default 90 min 0 max 200\n";
-    std::cout << "option name SPR_QuietThreshold type spin default 50 min 0 max 200\n";
-    std::cout << "option name NMP_Divisor type spin default 200 min 150 max 250\n";
-    std::cout << "option name NMP_Subtractor type spin default 3 min 0 max 5\n";
+    outputTunables();
     std::cout << "uciok\n";
 }
 
@@ -243,6 +177,8 @@ void interpretCommand(std::string command) {
         board.undoChangeColor();
     } else if(bits[0] == "isrepeated") {
         std::cout << board.isRepeatedPosition() << '\n';
+    } else if(bits[0] == "tunablejson") {
+        outputTunableJSON();  
     } else {
         std::cout << "invalid or unsupported command\n";
     }

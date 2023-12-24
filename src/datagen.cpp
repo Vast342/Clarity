@@ -9,11 +9,21 @@ std::chrono::steady_clock::time_point beginTime;
 
 // run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games* *number of threads*
 int main([[maybe_unused]]int argc, char** argv) {
-    assert(argc == 2);
     initialize();
-    directory = std::string(argv[1]);
-    int numGames = std::atoi(argv[2]);
-    int numThreads = std::atoi(argv[3]);
+    int numGames;
+    int numThreads;
+    if(argc == 1) {
+        std::cout << "directory: ";
+        std::cin >> directory;
+        std::cout << "number of games: ";
+        std::cin >> numGames;
+        std::cout << "number of threads: ";
+        std::cin >> numThreads;
+    } else {
+        directory = std::string(argv[1]);
+        numGames = std::atoi(argv[2]);
+        numThreads = std::atoi(argv[3]);
+    }
     beginTime = std::chrono::steady_clock::now();
     std::cout << "Beginning data generation\n";
     generateData(numGames, numThreads);
@@ -25,20 +35,25 @@ int main([[maybe_unused]]int argc, char** argv) {
 
 // manages the threads
 void generateData(int numGames, int numThreads) {
-    int perThreadGames = numGames / numThreads;
-    //threadFunction(perThreadGames, 1);
+    //std::cout << "Made it through the generateData Call\n";
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
     for(int i = 1; i <= numThreads; i++) {
-        threads.emplace_back(std::thread(threadFunction, perThreadGames, i));
+        //std::cout << "Made Thread " << i << '\n';
+        // lambda AAAAAAAAAAAAAAAAAAA RUN IN FeAR
+        threads.emplace_back([numGames, i] {
+                threadFunction(numGames, i);
+        });
     }
     for(auto &thread : threads) {
+        //std::cout << "Joining Thread\n";
         thread.join();
     }
 }
 
 // run on each thread
 void threadFunction(int numGames, int threadID) {
+    //std::cout << "Thread Function called on thread " << std::to_string(threadID) << '\n';
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     Engine engine;
     std::ofstream output;
@@ -51,6 +66,7 @@ void threadFunction(int numGames, int threadID) {
             i--;
             continue;
         }
+        //std::cout << "Finished Game " << i << "on thread" << threadID << '\n';
         dumpToArray(output, result, fenVector);
     }
 }

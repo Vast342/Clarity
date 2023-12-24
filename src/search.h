@@ -5,34 +5,6 @@
 
 constexpr int mateScore = -10000000;
 
-extern int ASP_BaseDelta;
-extern double ASP_DeltaMultiplier;
-extern int ASP_DepthCondition;
-
-extern int MVV_VictimScoreMultiplier;
-
-extern int FirstKillerScore;
-extern int SecondKillerScore;
-
-extern int RFP_DepthCondition;
-extern int RFP_Multiplier;
-
-extern int IIR_DepthCondition;
-
-extern int FP_DepthCondition;
-extern int FP_Base;
-extern int FP_Multiplier;
-
-extern int LMP_DepthCondition;
-extern int LMP_Base;
-
-extern int SPR_DepthCondition;
-extern int SPR_CaptureThreshold;
-extern int SPR_QuietThreshold;
-
-extern int NMP_Divisor; 
-extern int NMP_Subtractor;
-
 extern int badCaptureScore;
 
 struct StackEntry {
@@ -53,6 +25,9 @@ struct Engine {
         int benchSearch(Board board, int depthToSearch);
         Move fixedDepthSearch(Board board, int depthToSearch, bool info);
         std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
+        Engine() {
+            conthistTable = std::make_unique<CHTable>();
+        }
         bool timesUp = false;
     private:
         bool dataGeneration = false;
@@ -70,8 +45,8 @@ struct Engine {
         TranspositionTable TT;
 
         std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
-        std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
-        CHTable conthistTable;
+        //std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
+        std::unique_ptr<CHTable> conthistTable;
 
         std::array<std::array<int, 64>, 64> nodeTMTable;
 
@@ -82,8 +57,8 @@ struct Engine {
         void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch);
         int qSearch(Board &board, int alpha, int beta, int ply);
         void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply);
-        void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
-        int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed);
+        //void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
+        int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, bool useTTMove);
         std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries);
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);
 };
