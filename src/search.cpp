@@ -294,7 +294,7 @@ void Engine::updateHistory(const int colorToMove, const int start, const int end
 }*/
 
 // The main search function
-int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, bool notInSingularSearch) {
+int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
@@ -325,7 +325,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
     // turns out that score above was complete bs lol, my isPV was broken
-    if(notInSingularSearch && !isPV && ply > 0 && entry->zobristKey == hash && entry->depth >= depth && (
+    if(!isPV && ply > 0 && entry->zobristKey == hash && entry->depth >= depth && (
             entry->flag == Exact // exact score
                 || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
                 || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
@@ -333,7 +333,6 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         return entry->score; 
     }
 
-    int TTExtensions = 0;
     // Internal Iterative Reduction (IIR)
     // Things to test: alternative depth
     if((entry->zobristKey != hash || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
@@ -351,15 +350,15 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     }
 
     // Reverse Futility Pruning
-    if(notInSingularSearch && staticEval - rfpMultiplier.value * (depth - improving) >= beta && !inCheck && depth < rfpDepthCondition.value && !isPV) return staticEval;
+    if(staticEval - rfpMultiplier.value * (depth - improving) >= beta && !inCheck && depth < rfpDepthCondition.value && !isPV) return staticEval;
 
     // Null Move Pruning (NMP)
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    if(notInSingularSearch && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
+    if(nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0];
         board.changeColor();
-        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, true);
+        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -403,7 +402,6 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             }
         }
         Move move = moves[i];
-        if(move == entry->bestMove && !notInSingularSearch) continue;
         int moveStartSquare = move.getStartSquare();
         int moveEndSquare = move.getEndSquare();
         int moveFlag = move.getFlag();
@@ -431,16 +429,16 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         int presearchNodeCount = nodes;
         if(legalMoves == 1) {
             // determine whether or not to extend TT move (Singular Extensions)
-            if(entry->bestMove == move && notInSingularSearch && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
+            /*if(entry->bestMove == move && notInSingularSearch && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
                 const auto sBeta = std::max(mateScore, entry->score - depth * int(sinDepthScale.value) / 16);
                 const auto sDepth = (depth - 1) / 2;
                 const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true, false);
                 if(score < sBeta) {
                     TTExtensions++;
                 }
-            }
-            // searches TT move at full depth, no reductions or anything, given first by the move ordering step.
-            score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true, true);
+            }*/
+            // searches the first move at full depth
+            score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
         } else {
             // Late Move Reductions (LMR)
             int depthReduction = 0;
@@ -454,10 +452,10 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
             // this is more PVS stuff, searching with a reduced margin
-            score = -negamax(board, depth - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true, true);
+            score = -negamax(board, depth - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
             // and then if it fails high or low we search again with the original bounds
             if(score > alpha && (score < beta || depthReduction > 0)) {
-                score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, true);
+                score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
             }
         }
         board.undoMove();
@@ -525,7 +523,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
 
     // push to TT
     if(entry->zobristKey == hash && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-    if(notInSingularSearch) TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
+    TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
 
     return bestScore;
 }
@@ -600,7 +598,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, true);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 if(timesUp) {
                     return previousBest;
                 } 
@@ -614,7 +612,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, true);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(timesUp) {
@@ -652,7 +650,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
         int beta = std::min(-mateScore, score + delta);
         if(depth > aspDepthCondition.value) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, true);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
@@ -664,7 +662,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, true);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
@@ -692,7 +690,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         int beta = std::min(-mateScore, score + delta);
         if(depth > aspDepthCondition.value) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, true);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
@@ -704,7 +702,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, true);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(info) outputInfo(board, score, depth, elapsedTime);
@@ -733,7 +731,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
         int beta = std::min(-mateScore, score + delta);
         if(depth > aspDepthCondition.value) {
             while (true) {
-                score = negamax(board, depth, alpha, beta, 0, true, true);
+                score = negamax(board, depth, alpha, beta, 0, true);
                 
                 if (score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
@@ -745,7 +743,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, mateScore, -mateScore, 0, true, true);
+            score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
         //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
