@@ -5,6 +5,8 @@
 
 constexpr int mateScore = -10000000;
 
+extern int badCaptureScore;
+
 struct StackEntry {
     // conthist!
     CHEntry *ch_entry;

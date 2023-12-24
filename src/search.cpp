@@ -1,21 +1,22 @@
 #include "search.h"
 #include "tt.h"
 #include <cstring>
-#include "tunables.h"
 
 constexpr int hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
 
-int MVV_value[6] = {112, 351, 361, 627, 1187, 0};
-int SEE_value[6] = {112, 351, 361, 627, 1187, 0};
+int MVV_value[7] = {112, 351, 361, 627, 1187, 0, 0};
+int SEE_value[7] = {112, 351, 361, 627, 1187, 0, 0};
+
+// Tunable Values
 
 int MVV_VictimScoreMultiplier = 500;
 
 int FirstKillerScore = 54000;
 int SecondKillerScore = 53000;
-int badCaptureScore = -500000;
 
+int badCaptureScore = -500000;
 // The main search functions
 
 // resets the history, done when ucinewgame is sent, and at the start of each turn
@@ -335,29 +336,29 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     int TTExtensions = 0;
     // Internal Iterative Reduction (IIR)
     // Things to test: alternative depth
-    if((entry->zobristKey != hash || entry->bestMove == Move()) && depth > IIR_DepthCondition.value) depth--;
+    if((entry->zobristKey != hash || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
 
     const int staticEval = board.getEvaluation();
     stack[ply].staticEval = staticEval;
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
 
     // Razoring
-    /*if(!isPV && staticEval < alpha - RAZ_DepthMultiplier.value * depth && depth < RAZ_DepthCondition.value) {
-      int score = qSearch(board, alpha-1, alpha, ply);
-      if (score < alpha)
+    /*if(!isPV && staticEval < alpha - RAZ_DepthMultiplier * depth && depth < RAZ_DepthCondition) {
+    int score = qSearch(board, alpha-1, alpha, ply);
+    if (score < alpha)
         return score;
     }*/
 
     // Reverse Futility Pruning
-    if(useTTMove && staticEval - RFP_Multiplier.value * (depth - improving) >= beta && !inCheck && depth < RFP_DepthCondition.value && !isPV) return staticEval;
+    if(useTTMove && staticEval - rfpMultiplier.value * (depth - improving) >= beta && !inCheck && depth < rfpDepthCondition.value && !isPV) return staticEval;
 
     // Null Move Pruning (NMP)
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    if(useTTMove && nmpAllowed && depth >= NMP_DepthCondition.value && !inCheck && staticEval >= beta) {
+    if(useTTMove && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0];
         board.changeColor();
-        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / NMP_Divisor.value, NMP_Subtractor.value), 0-beta, 1-beta, ply + 1, false, true);
+        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, true);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -409,11 +410,11 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
         // futility pruning
-        if(bestScore > mateScore && !inCheck && depth <= FP_DepthCondition.value && staticEval + FP_Base.value + depth * FP_Multiplier.value <= alpha) break;
+        if(bestScore > mateScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) break;
         // Late Move Pruning
-        if(depth < LMP_DepthCondition.value && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > LMP_Base.value + depth * depth / (2 - improving)) continue;
+        if(depth < lmpDepthCondition.value && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > lmpBase.value + depth * depth / (2 - improving)) continue;
         // see pruning
-        if (depth <= SP_DepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? SP_CaptureThreshold.value : SP_QuietThreshold.value))) continue;
+        if (depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         if(!board.makeMove(move)) {
             continue;
         }
@@ -446,7 +447,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 depthReduction = reductions[depth][legalMoves];
                 depthReduction -= isPV;
                 if(moveValues[i] < 53000) {
-                    depthReduction -= moveValues[i] / HMR_Divisor.value;
+                    depthReduction -= moveValues[i] / int(hmrDivisor.value);
                 }
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
@@ -487,7 +488,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     int end = moveEndSquare;
                     int piece = getType(board.pieceAtIndex(start));
                     // testing berserk history bonus
-                    int bonus = std::min(HST_MaxBonus.value, HST_Multiplier.value * depth * depth + HST_Adder.value * depth - HST_Subtractor.value);
+                    int bonus = std::min(historyMaxBonus.value, historyMultiplier.value * depth * depth + historyAdder.value * depth - historySubtractor.value);
                     const int colorToMove = board.getColorToMove();
                     updateHistory(colorToMove, start, end, piece, bonus, ply);
                     bonus = -bonus;
@@ -592,11 +593,11 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
         timesUp = false;
-        int delta = ASP_BaseDelta.value;
+        int delta = aspBaseDelta.value;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
         const Move previousBest = rootBestMove;
-        if(depth > ASP_DepthCondition.value) {
+        if(depth > aspDepthCondition.value) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true, true);
                 if(timesUp) {
@@ -609,7 +610,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
                     alpha = std::max(alpha - delta, mateScore);
                 } else break;
 
-                delta *= ASP_DeltaMultiplier.value;
+                delta *= aspDeltaMultiplier.value;
             }
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true, true);
@@ -645,10 +646,10 @@ int Engine::benchSearch(Board board, int depthToSearch) {
     for(int depth = 1; depth <= depthToSearch; depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
-        int delta = ASP_BaseDelta.value;
+        int delta = aspBaseDelta.value;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
-        if(depth > ASP_DepthCondition.value) {
+        if(depth > aspDepthCondition.value) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true, true);
                 
@@ -659,7 +660,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
                     alpha = std::max(alpha - delta, mateScore);
                 } else break;
 
-                delta *= ASP_DeltaMultiplier.value;
+                delta *= aspDeltaMultiplier.value;
             }
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true, true);
@@ -685,10 +686,10 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     for(int depth = 1; depth <= depthToSearch; depth++) {
         seldepth = 0;
         timesUp = false;
-        int delta = ASP_BaseDelta.value;
+        int delta = aspBaseDelta.value;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
-        if(depth > ASP_DepthCondition.value) {
+        if(depth > aspDepthCondition.value) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true, true);
                 
@@ -699,7 +700,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
                     alpha = std::max(alpha - delta, mateScore);
                 } else break;
 
-                delta *= ASP_DeltaMultiplier.value;
+                delta *= aspDeltaMultiplier.value;
             }
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true, true);
@@ -726,10 +727,10 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
     for(int depth = 1; depth <= 100; depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
-        int delta = ASP_BaseDelta.value;
+        int delta = aspBaseDelta.value;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
-        if(depth > ASP_DepthCondition.value) {
+        if(depth > aspDepthCondition.value) {
             while (true) {
                 score = negamax(board, depth, alpha, beta, 0, true, true);
                 
@@ -740,7 +741,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
                     alpha = std::max(alpha - delta, mateScore);
                 } else break;
                 if(nodes > nodeCap) break;
-                delta *= ASP_DeltaMultiplier.value;
+                delta *= aspDeltaMultiplier.value;
             }
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true, true);

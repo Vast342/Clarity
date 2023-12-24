@@ -3,7 +3,7 @@
 #include "search.h"
 #include "tt.h"
 #include "bench.h"
-#include "tunables.h"
+
 /*
     The entirety of my implementation of UCI, read the standard for that if you want more information
     There are things not supported here though, such as go nodes, and quite a few options
@@ -47,7 +47,7 @@ void setOption(const std::vector<std::string>& bits) {
         //std::cout << log2(newSizeEntries);
         engine.resizeTT(newSizeEntries);
     } else {
-        adjustTunable(name, std::stoi(bits[4]));
+        adjustTunable(name, std::stod(bits[4]));
     }
 }
 
@@ -178,9 +178,7 @@ void interpretCommand(std::string command) {
     } else if(bits[0] == "isrepeated") {
         std::cout << board.isRepeatedPosition() << '\n';
     } else if(bits[0] == "tunablejson") {
-        outputTunableJSON();
-    } else if(bits[0] == "readtunables") {
-        readTunables();
+        outputTunableJSON();  
     } else {
         std::cout << "invalid or unsupported command\n";
     }
