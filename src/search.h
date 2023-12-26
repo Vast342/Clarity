@@ -45,7 +45,7 @@ struct Engine {
         TranspositionTable TT;
 
         std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
-        //std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
+        std::array<std::array<std::array<std::array<int, 6>, 64>, 6>, 2> captureHistoryTable;
         std::unique_ptr<CHTable> conthistTable;
 
         std::array<std::array<int, 64>, 64> nodeTMTable;
@@ -57,7 +57,7 @@ struct Engine {
         void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch);
         int qSearch(Board &board, int alpha, int beta, int ply);
         void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply);
-        //void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
+        void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed);
         std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries);
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);

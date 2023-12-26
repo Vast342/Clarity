@@ -156,7 +156,7 @@ struct Tunable {
           value(_value),
           max(value * _divisor * 2),
           divisor(_divisor),
-          step(max / 20) {}
+          step(max / 10 + 1) {}
 
     void updateValue(double newValue) {
         value = newValue / divisor;
@@ -207,6 +207,11 @@ extern Tunable sinDepthMargin;
 extern Tunable sinDepthScale;
 
 extern Tunable razDepthMultiplier;
+
+extern Tunable ntmDepthCondition;
+extern Tunable ntmSubtractor;
+extern Tunable ntmMultiplier;
+extern Tunable ntmDefault;
 
 extern std::vector<Tunable *> tunables;
 
