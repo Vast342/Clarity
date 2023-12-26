@@ -3,6 +3,8 @@
 #include "globals.h"
 #include "tt.h"
 
+constexpr int depthLimit = 120;
+
 constexpr int mateScore = -10000000;
 
 extern int badCaptureScore;
@@ -10,12 +12,13 @@ extern int badCaptureScore;
 struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
-    // killer moves, 2 per ply
+    // killer move
     Move killer;
-    //std::array<Move, 2> killers;
     // static eval used for improving
     int staticEval;
     bool inCheck;
+    // excluded move
+    Move excluded;
 };
 
 struct Engine {
@@ -41,7 +44,7 @@ struct Engine {
 
         int seldepth = 0;
 
-        std::array<StackEntry, 120> stack;
+        std::array<StackEntry, depthLimit> stack;
 
         TranspositionTable TT;
 

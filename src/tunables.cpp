@@ -30,14 +30,14 @@ Tunable cmrDivisor("CMR_Divisor", 3000, 1);
 Tunable lmrBase("LMR_Base", 0.80, 100);  // Adjusted divisor for lmrBase
 Tunable lmrMultiplier("LMR_Multiplier", 0.56, 100);  // Adjusted divisor for lmrMultiplier
 
-Tunable historyMaxBonus("HistoryMaxBonus", 1892, 1);
-Tunable historyMultiplier("HistoryMultiplier", 4, 1);
-Tunable historyAdder("HistoryAdder", 121, 1);
-Tunable historySubtractor("HistorySubtractor", 120, 1);
+Tunable hstMaxBonus("HST_MaxBonus", 1892, 1);
+Tunable hstMultiplier("HST_Multiplier", 4, 1);
+Tunable hstAdder("HST_Adder", 121, 1);
+Tunable hstSubtractor("HST_Subtractor", 120, 1);
 
 Tunable sinDepthCondition("SIN_DepthCondition", 8, 1);
 Tunable sinDepthMargin("SIN_DepthMargin", 3, 1);
-Tunable sinDepthScale("SIN_DepthScale", 32, 1);
+Tunable sinDepthScale("SIN_DepthScale", 24, 1);
 
 Tunable razDepthMultiplier("RAZ_DepthMultiplier", 395, 1);
 
@@ -45,6 +45,9 @@ Tunable ntmDepthCondition("NTM_DepthCondition", 8, 1);
 Tunable ntmSubtractor("NTM_Subtractor", 1.53, 100);
 Tunable ntmMultiplier("NTM_Multiplier", 1.39, 100);
 Tunable ntmDefault("NTM_Default", 0.98, 100);
+
+Tunable hipDepthCondition("HIP_DepthCondition", 4, 1);
+Tunable hipDepthMultiplier("HIP_DepthMultiplier", -1536, -1);
 
 // Declaration of pointers to tunables
 
@@ -67,12 +70,13 @@ std::vector<Tunable *> tunables = {
     &nmpSubtractor,
     &nmpDepthCondition,
     &hmrDivisor,
+    &cmrDivisor,
     &lmrBase,
     &lmrMultiplier,
-    &historyMaxBonus,
-    &historyMultiplier,
-    &historyAdder,
-    &historySubtractor,
+    &hstMaxBonus,
+    &hstMultiplier,
+    &hstAdder,
+    &hstSubtractor,
     &sinDepthCondition,
     &sinDepthMargin,
     &sinDepthScale,
@@ -81,7 +85,8 @@ std::vector<Tunable *> tunables = {
     &ntmSubtractor,
     &ntmMultiplier,
     &ntmDefault,
-    &cmrDivisor
+    &hipDepthCondition,
+    &hipDepthMultiplier
 };
 
 
