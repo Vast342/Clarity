@@ -24,7 +24,9 @@ Tunable nmpDivisor("NMP_Divisor", 196, 1);
 Tunable nmpSubtractor("NMP_Subtractor", 3, 1);
 Tunable nmpDepthCondition("NMP_DepthCondition", 2, 1);
 
-Tunable hmrDivisor("HMR_Divisor", 8074, 1);  // Renamed from lmrDivisor
+Tunable hmrDivisor("HMR_Divisor", 8074, 1); 
+Tunable cmrDivisor("CMR_Divisor", 3000, 1);
+
 Tunable lmrBase("LMR_Base", 0.80, 100);  // Adjusted divisor for lmrBase
 Tunable lmrMultiplier("LMR_Multiplier", 0.56, 100);  // Adjusted divisor for lmrMultiplier
 
@@ -78,7 +80,8 @@ std::vector<Tunable *> tunables = {
     &ntmDepthCondition,
     &ntmSubtractor,
     &ntmMultiplier,
-    &ntmDefault
+    &ntmDefault,
+    &cmrDivisor
 };
 
 

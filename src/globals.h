@@ -194,6 +194,8 @@ extern Tunable nmpSubtractor;
 extern Tunable nmpDepthCondition;
 
 extern Tunable hmrDivisor;
+extern Tunable cmrDivisor;
+
 extern Tunable lmrBase;
 extern Tunable lmrMultiplier;
 

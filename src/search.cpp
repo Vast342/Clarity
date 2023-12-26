@@ -449,11 +449,13 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         } else {
             // Late Move Reductions (LMR)
             int depthReduction = 0;
-            if(!inCheck && depth > 1 && isQuiet) {
+            if(!inCheck && depth > 1 && isQuietOrBadCapture) {
                 depthReduction = reductions[depth][legalMoves];
                 depthReduction -= isPV;
-                if(moveValues[i] < 53000) {
+                if(isQuiet) {
                     depthReduction -= moveValues[i] / int(hmrDivisor.value);
+                } else {
+                    depthReduction -= moveValues[i] / int(cmrDivisor.value);
                 }
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
