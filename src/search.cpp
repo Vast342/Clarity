@@ -136,7 +136,7 @@ bool Engine::see(const Board& board, Move move, int threshold) {
     4: History: scores of how many times a move has caused a beta cutoff
     5: Bad captures: captures that result in bad exchanges.
 */
-void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch) {
+void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply) {
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
@@ -170,13 +170,14 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                 + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
                 + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
             // if not in qsearch, killers
-            if(!inQSearch) {
+            /*if(!inQSearch) {
                 if(move == stack[ply].killers[0]) {
                     values[i] = FirstKillerScore;
                 } else if(move == stack[ply].killers[1]) {
                     values[i] = SecondKillerScore;
                 }
-            }
+            }*/
+            if(move == stack[ply].killer) values[i] = FirstKillerScore;
         }
     }
 }
@@ -224,7 +225,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     std::array<Move, 256> moves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, -1, true);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, -1);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -379,7 +380,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     int quietCount = 0;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, ply, false);
+    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, ply);
 
     // values useful for writing to TT later
     int bestScore = mateScore;
@@ -497,10 +498,11 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     int piece = getType(board.pieceAtIndex(start));
                     updateHistory(colorToMove, start, end, piece, bonus, ply);
                     // update killers
-                    if(stack[ply].killers[0] != move) {
+                    /*if(stack[ply].killers[0] != move) {
                         stack[ply].killers[1] = stack[ply].killers[0];
                         stack[ply].killers[0] = move;
-                    }
+                    }*/
+                    stack[ply].killer = move;
                 } else { //NEED TO MAKE MALUS BEFORE MAKING THIS
                     const int end = move.getEndSquare();
                     const int piece = getType(board.pieceAtIndex(move.getStartSquare()));

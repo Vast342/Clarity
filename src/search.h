@@ -11,7 +11,8 @@ struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
     // killer moves, 2 per ply
-    std::array<Move, 2> killers;
+    Move killer;
+    //std::array<Move, 2> killers;
     // static eval used for improving
     int staticEval;
     bool inCheck;
@@ -54,7 +55,7 @@ struct Engine {
         void clearHistory();
         int estimateMoveValue(const Board& board, const int end, const int flag);
         bool see(const Board& board, Move move, int threshold);
-        void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply, bool inQSearch);
+        void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply);
         int qSearch(Board &board, int alpha, int beta, int ply);
         void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply);
         void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
