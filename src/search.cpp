@@ -334,7 +334,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // Things to test: alternative depth
     if(!inSingularSearch && (entry->zobristKey != hash || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
 
-    const int staticEval = board.getEvaluation();
+    int staticEval = board.getEvaluation();
     if(ply > depthLimit - 1) return staticEval;
     stack[ply].staticEval = staticEval;
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
@@ -429,16 +429,20 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(legalMoves == 1) {
             int TTExtensions = 0;
             // determine whether or not to extend TT move (Singular Extensions)
-            if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
+            /*if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
                 const auto sBeta = std::max(mateScore, entry->score - depth * int(sinDepthScale.value) / 16);
                 const auto sDepth = (depth - 1) / 2;
+
                 stack[ply].excluded = entry->bestMove;
                 const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true);
                 stack[ply].excluded = Move();
+                
                 if(score < sBeta) {
                     TTExtensions++;
+                } else if(sBeta >= beta) {
+                    return sBeta;
                 }
-            }
+            }*/
             // searches the first move at full depth
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true);
         } else {
@@ -489,18 +493,13 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 // testing berserk history bonus
                 int bonus = std::min(hstMaxBonus.value, hstMultiplier.value * depth * depth + hstAdder.value * depth - hstSubtractor.value);
                 if(isQuiet) {
-                    // adds to the move's history and adjusts the killer table accordingly
+                    // adds to the move's history and adjusts the killer move accordingly
                     int start = moveStartSquare;
                     int end = moveEndSquare;
                     int piece = getType(board.pieceAtIndex(start));
                     updateHistory(colorToMove, start, end, piece, bonus, ply);
-                    // update killers
-                    /*if(stack[ply].killers[0] != move) {
-                        stack[ply].killers[1] = stack[ply].killers[0];
-                        stack[ply].killers[0] = move;
-                    }*/
                     stack[ply].killer = move;
-                } else { //NEED TO MAKE MALUS BEFORE MAKING THIS
+                } else {
                     const int end = move.getEndSquare();
                     const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
                     const int victim = getType(board.pieceAtIndex(end));
@@ -530,6 +529,9 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
 
     // checkmate / stalemate detection, if I did legal move generation instead of pseudolegal I could probably do this first
     if(legalMoves == 0) {
+        if(stack[ply].excluded != Move()) {
+            return alpha;
+        }
         if(inCheck) {
             return mateScore + ply;
         }
@@ -537,8 +539,10 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     }
 
     // push to TT
-    if(!inSingularSearch && entry->zobristKey == hash && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-    if(!inSingularSearch) TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
+    if(!inSingularSearch) {
+        if(entry->zobristKey == hash && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
+        TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
+    }
 
     return bestScore;
 }

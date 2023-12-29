@@ -27,7 +27,6 @@ add_executable(Clarity_Native ${Common_SRC_Files} src/bmi2.cpp src/uci.cpp)
 
 # data generator build
 add_executable(Clarity_Datagen ${Common_SRC_Files} src/bmi2.cpp src/datagen.cpp)
-add_executable(Clarity_13900K_DG ${Common_SRC_Files} src/bmi2.cpp src/datagen.cpp)
 
 target_compile_options(Clarity_x86-64-v1 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64 -flto)
 target_compile_options(Clarity_x86-64-v2 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v2 -flto)
@@ -37,7 +36,6 @@ target_compile_options(Clarity_x86-64-v4 PRIVATE -Wall -Wextra -Werror -Wpedanti
 target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -flto)
 
 target_compile_options(Clarity_Datagen PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -flto)
-target_compile_options(Clarity_13900K_DG PRIVATE -Wall -Wextra -Werror -Wpedantic -march=raptorlake -flto)
 
 # making the entire binary need only itself to run, for ease of use
 target_link_libraries(Clarity_x86-64-v1 -static)
@@ -48,4 +46,3 @@ target_link_libraries(Clarity_x86-64-v4 -static)
 target_link_libraries(Clarity_Native -static)
 
 target_link_libraries(Clarity_Datagen -static)
-target_link_libraries(Clarity_13900K_DG -static)
