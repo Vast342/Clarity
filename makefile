@@ -14,7 +14,7 @@ SRC_DIR := src
 BUILD_DIR := build
 
 # Source files
-SRCS := $(src/board.cpp src/bmi2.cpp src/board.cpp src/eval.cpp src/globals.cpp src/move.cpp src/movegen.cpp src/search.cpp src/tests.cpp src/tt.cpp src/tunables.cpp src/uci.cpp)
+SRCS := $(filter-out src/magic.cpp src/datagen.cpp, $(wildcard src/*.cpp))
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
 # Binary name (set to Clarity)
