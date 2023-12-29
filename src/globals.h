@@ -156,7 +156,7 @@ struct Tunable {
           value(_value),
           max(value * _divisor * 2),
           divisor(_divisor),
-          step(max / 20) {}
+          step(max / 15 == 0 ? 1 : max / 15) {}
 
     void updateValue(double newValue) {
         value = newValue / divisor;
@@ -194,19 +194,29 @@ extern Tunable nmpSubtractor;
 extern Tunable nmpDepthCondition;
 
 extern Tunable hmrDivisor;
+extern Tunable cmrDivisor;
+
 extern Tunable lmrBase;
 extern Tunable lmrMultiplier;
 
-extern Tunable historyMaxBonus;
-extern Tunable historyMultiplier;
-extern Tunable historyAdder;
-extern Tunable historySubtractor;
+extern Tunable hstMaxBonus;
+extern Tunable hstMultiplier;
+extern Tunable hstAdder;
+extern Tunable hstSubtractor;
 
 extern Tunable sinDepthCondition;
 extern Tunable sinDepthMargin;
 extern Tunable sinDepthScale;
 
 extern Tunable razDepthMultiplier;
+
+extern Tunable ntmDepthCondition;
+extern Tunable ntmSubtractor;
+extern Tunable ntmMultiplier;
+extern Tunable ntmDefault;
+
+extern Tunable hipDepthCondition;
+extern Tunable hipDepthMultiplier;
 
 extern std::vector<Tunable *> tunables;
 

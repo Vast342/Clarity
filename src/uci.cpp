@@ -31,7 +31,7 @@ void runBench(int depth) {
         total += j;
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-    std::cout << "nodes " << total << " time " << elapsedTime << '\n';
+    std::cout << total << " nodes " << std::to_string(int(total / (double(elapsedTime) / 1000))) << " nps" << '\n';
 }
 
 // sets options, though currently just the hash size
@@ -79,6 +79,7 @@ void identify() {
     std::cout << "id name Clarity V3.0.0\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 64 min 1 max 2048\n";
+    std::cout << "option name Threads type spin default 1 min 1 max 1\n";
     outputTunables();
     std::cout << "uciok\n";
 }
@@ -166,7 +167,11 @@ void interpretCommand(std::string command) {
     } else if(bits[0] == "evaluate") {
         std::cout << "evaluation " << board.getEvaluation() << '\n';
     } else if(bits[0] == "bench") {
-        runBench(std::stoi(bits[1]));
+        if(bits.size() == 1) {
+            runBench(14);
+        } else {
+            runBench(std::stoi(bits[1]));
+        }
     } else if(bits[0] == "makemove") {
         board.makeMove(Move(bits[1], board));
     } else if(bits[0] == "undomove") {
