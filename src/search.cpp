@@ -213,6 +213,8 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     }
     if(ply > seldepth) seldepth = ply;
     const uint64_t hash = board.getZobristHash();
+    // approximating depth using the distance from seldepth
+    int qDepth = seldepth - ply;
     // TT check
     Transposition* entry = TT.getEntry(hash);
 
@@ -251,13 +253,12 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
             }
         }
         Move move = moves[i];
-        /*if(staticEval + deltas[getType(board.pieceAtIndex(move.getEndSquare()))] <= alpha) {
-            continue;
-        }*/
         // this detects bad captures
         if(moveValues[i] < MVV_value[Queen] + historyCap) {
             continue;
         }
+        // History Pruning
+        if (moveValues[i] < qhpDepthMultiplier.value * qDepth) break;
         if(!board.makeMove(move)) {
             continue;
         }
@@ -284,9 +285,8 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
             if(score >= beta) {
                 flag = BetaCutoff;
                 bestMove = move;
-                // I need to tune this value, or perhaps use the berserk formula again with seldepth - ply as a sorta knockoff depth
-                int qDepth = seldepth - ply;
-                int bonus = std::min(hstMaxBonus.value, hstMultiplier.value * qDepth * qDepth + hstAdder.value * qDepth - hstSubtractor.value);
+                // using regular history formula but with using seldepth - ply as a vague measurement of depth
+                int bonus = std::min(qhsMaxBonus.value, qhsMultiplier.value * qDepth * qDepth + qhsAdder.value * qDepth - qhsSubtractor.value);
                 const int end = move.getEndSquare();
                 const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
                 const int victim = getType(board.pieceAtIndex(end));

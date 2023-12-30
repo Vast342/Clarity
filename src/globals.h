@@ -218,7 +218,12 @@ extern Tunable ntmDefault;
 extern Tunable hipDepthCondition;
 extern Tunable hipDepthMultiplier;
 
-extern Tunable qshBonus;
+extern Tunable qhsMaxBonus;
+extern Tunable qhsMultiplier;
+extern Tunable qhsAdder;
+extern Tunable qhsSubtractor;
+
+extern Tunable qhpDepthMultiplier;
 
 extern std::vector<Tunable *> tunables;
 
