@@ -167,6 +167,30 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
     }
 }
 
+void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove) {
+    const int colorToMove = board.getColorToMove();
+    for(int i = 0; i < numMoves; i++) {
+        Move move = moves[i];
+        const int end = move.getEndSquare();
+        const int start = move.getStartSquare();
+        const int piece = getType(board.pieceAtIndex(start));
+        if(move == ttMove) {
+            values[i] = 1000000000;
+        } else {
+            // Captures!
+            const int victim = getType(board.pieceAtIndex(end));
+            // Capthist!
+            values[i] = MVV_value[victim] + qsHistoryTable[colorToMove][piece][end][victim];
+            // see!
+            // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
+            if(see(board, move, 0)) {
+                // good captures
+                values[i] += goodCaptureBonus;
+            }
+        }
+    }
+}
+
 // ice4 deltas
 //constexpr int deltas[] = {814, 139, 344, 403, 649, 867, 0};
 
@@ -208,14 +232,16 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
 
     // get the legal moves and sort them
     std::array<Move, 256> moves;
+    std::array<Move, 256> testedMoves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, -1);
+    scoreMovesQS(board, moves, moveValues, totalMoves, entry->bestMove);
 
     // values useful for writing to TT later
     Move bestMove;
     int flag = FailLow;
-
+    
+    int legalMoves = 0;
     // loop though all the moves
     for(int i = 0; i < totalMoves; i++) {
         for (int j = i + 1; j < totalMoves; j++) {
@@ -235,6 +261,8 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
         if(!board.makeMove(move)) {
             continue;
         }
+        testedMoves[legalMoves] = move;
+        legalMoves++;
         nodes++;
         // searches from this node
         const int score = -qSearch(board, -beta, -alpha, ply + 1);
@@ -256,6 +284,22 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
             if(score >= beta) {
                 flag = BetaCutoff;
                 bestMove = move;
+                // I need to tune this value, or perhaps use the berserk formula again with seldepth - ply as a sorta knockoff depth
+                int qDepth = seldepth - ply;
+                int bonus = std::min(hstMaxBonus.value, hstMultiplier.value * qDepth * qDepth + hstAdder.value * qDepth - hstSubtractor.value);
+                const int end = move.getEndSquare();
+                const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
+                const int victim = getType(board.pieceAtIndex(end));
+                updateQSHistory(board.getColorToMove(), piece, end, victim, bonus);
+                bonus = -bonus;
+                // malus!
+                for(int moveNo = 0; moveNo < legalMoves - 1; moveNo++) {
+                    Move maluMove = testedMoves[moveNo];
+                    const int maluEnd = maluMove.getEndSquare();
+                    const int maluPiece = getType(board.pieceAtIndex(maluMove.getStartSquare()));
+                    const int maluVictim = getType(board.pieceAtIndex(end));
+                    updateQSHistory(board.getColorToMove(), maluPiece, maluEnd, maluVictim, bonus);
+                }
                 break;
             }
         }
@@ -285,6 +329,11 @@ void Engine::updateHistory(const int colorToMove, const int start, const int end
 void Engine::updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
     const int thingToAdd = bonus - captureHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
     captureHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
+}
+
+void Engine::updateQSHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
+    const int thingToAdd = bonus - qsHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
+    qsHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
 }
 
 // The main search function

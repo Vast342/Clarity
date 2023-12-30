@@ -218,6 +218,8 @@ extern Tunable ntmDefault;
 extern Tunable hipDepthCondition;
 extern Tunable hipDepthMultiplier;
 
+extern Tunable qshBonus;
+
 extern std::vector<Tunable *> tunables;
 
 void outputTunables();

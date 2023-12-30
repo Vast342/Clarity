@@ -49,6 +49,8 @@ Tunable ntmDefault("NTM_Default", 0.88, 100);
 Tunable hipDepthCondition("HIP_DepthCondition", 6, 1);
 Tunable hipDepthMultiplier("HIP_DepthMultiplier", -1872, -1);
 
+Tunable qshBonus("QSH_Bonus", 26, 1);
+
 // Declaration of pointers to tunables
 
 std::vector<Tunable *> tunables = {
@@ -86,7 +88,8 @@ std::vector<Tunable *> tunables = {
     &ntmMultiplier,
     &ntmDefault,
     &hipDepthCondition,
-    &hipDepthMultiplier
+    &hipDepthMultiplier,
+    &qshBonus
 };
 
 
