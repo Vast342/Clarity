@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX := clang++-17
 ARCH := -march=native
-CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra
+CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -DNetworkFile="/src/nets/clarity_net007.nnue"
 LDFLAGS :=
 
 # Debug compiler flags

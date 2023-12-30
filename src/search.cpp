@@ -258,7 +258,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
             continue;
         }
         // History Pruning
-        if (moveValues[i] < qhpDepthMultiplier.value * qDepth) break;
+        //if (moveValues[i] < qhpDepthMultiplier.value * qDepth) break;
         if(!board.makeMove(move)) {
             continue;
         }
