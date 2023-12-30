@@ -49,6 +49,13 @@ Tunable ntmDefault("NTM_Default", 0.88, 100);
 Tunable hipDepthCondition("HIP_DepthCondition", 6, 1);
 Tunable hipDepthMultiplier("HIP_DepthMultiplier", -1872, -1);
 
+Tunable qhsMaxBonus("QHS_MaxBonus", 1741, 1);
+Tunable qhsMultiplier("QHS_Multiplier", 4, 1);
+Tunable qhsAdder("QHS_Adder", 132, 1);
+Tunable qhsSubtractor("QHS_Subtractor", 110, 1);
+
+Tunable qhpDepthMultiplier("QHP_DepthMultiplier", -1872, -1);
+
 // Declaration of pointers to tunables
 
 std::vector<Tunable *> tunables = {
@@ -77,16 +84,21 @@ std::vector<Tunable *> tunables = {
     &hstMultiplier,
     &hstAdder,
     &hstSubtractor,
-    &sinDepthCondition,
-    &sinDepthMargin,
-    &sinDepthScale,
+    //&sinDepthCondition,
+    //&sinDepthMargin,
+    //&sinDepthScale,
     &razDepthMultiplier,
     &ntmDepthCondition,
     &ntmSubtractor,
     &ntmMultiplier,
     &ntmDefault,
     &hipDepthCondition,
-    &hipDepthMultiplier
+    &hipDepthMultiplier,
+    &qhsMaxBonus,
+    &qhsMultiplier,
+    &qhsAdder,
+    &qhsSubtractor,
+    &qhpDepthMultiplier
 };
 
 

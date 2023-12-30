@@ -46,3 +46,12 @@ target_link_libraries(Clarity_x86-64-v4 -static)
 target_link_libraries(Clarity_Native -static)
 
 target_link_libraries(Clarity_Datagen -static)
+
+target_compile_definitions(Clarity_x86-64-v1 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+target_compile_definitions(Clarity_x86-64-v2 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+target_compile_definitions(Clarity_x86-64-v3_Magic PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+target_compile_definitions(Clarity_x86-64-v3_BMI2 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+target_compile_definitions(Clarity_x86-64-v4 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+target_compile_definitions(Clarity_Native PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+
+target_compile_definitions(Clarity_Datagen PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
