@@ -48,14 +48,16 @@ Search:
   11. Incremental Move Sorting
   12. Futility Pruning
   13. Late Move Pruning
-  14. Static Exchange Evaluation (SEE) Pruning
-  15. History Pruning
-  16. Quiescence Search
+  14. Late Move Reductions
+  15. Static Exchange Evaluation (SEE) Pruning
+  16. History Pruning
+  17. Quiescence Search
       1. TT cutoffs
       2. Stand Pat Shenanigans
       3. Move Ordering
       4. Incremental Move Sorting
       5. SEE Pruning
+      6. Dedicated capthist for Q search
 
 Evaluation:
   1. (768->256)x2->1 NNUE trained from over 400 million positions of self play data
@@ -63,8 +65,10 @@ Evaluation:
 Move Ordering:
   1. Transposition Table Best Move
   2. Good Captures (As described by SEE) are sorted with MVV and Capthist
-  3. Quiets are scored with main history and ply - 1 and ply - 2 conthist
-  4. Bad Captures are also sorted with MVV and capthist but are not boosted above quiets.
+  3. Killer Move 
+  4. Quiets are scored with main history and ply - 1 and ply - 2 conthist
+  5. Bad Captures are also sorted with MVV and capthist but are not boosted above quiets.
+  6. Dedicated and simplified move ordering function for Q search
 
 
 ### Special Thanks (in no particular order):
