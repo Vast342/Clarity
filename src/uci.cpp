@@ -184,6 +184,8 @@ void interpretCommand(std::string command) {
         std::cout << board.isRepeatedPosition() << '\n';
     } else if(bits[0] == "tunablejson") {
         outputTunableJSON();  
+    } else if(bits[0] == "tunableob") {
+        outputTunableOB();   
     } else {
         std::cout << "invalid or unsupported command\n";
     }

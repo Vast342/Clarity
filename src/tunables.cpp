@@ -119,6 +119,11 @@ void outputTunableJSON() {
     }
     std::cout << "}\n";
 }
+void outputTunableOB() {
+    for(Tunable *tunable : tunables) {
+        std::cout << tunable->name << ", int, " << std::to_string(static_cast<int>(tunable->value * tunable->divisor)) << ", 0, " << tunable->max << ", " << tunable->step << ", 0.002" << std::endl;
+    }
+}
 void adjustTunable(const std::string &name, const int &value) {
     for(Tunable *tunable : tunables) {
         if(tunable->name == name) {

@@ -229,6 +229,7 @@ extern std::vector<Tunable *> tunables;
 
 void outputTunables();
 void outputTunableJSON();
+void outputTunableOB();
 void adjustTunable(const std::string &name, const int &value);
 void readTunable(const std::string &name);
 void readTunables();
