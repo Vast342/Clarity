@@ -213,8 +213,6 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     }
     if(ply > seldepth) seldepth = ply;
     const uint64_t hash = board.getZobristHash();
-    // approximating depth using the distance from seldepth
-    int qDepth = seldepth - ply;
     // TT check
     Transposition* entry = TT.getEntry(hash);
 
@@ -285,7 +283,8 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
             if(score >= beta) {
                 flag = BetaCutoff;
                 bestMove = move;
-                // using regular history formula but with using seldepth - ply as a vague measurement of depth
+                // approximating depth using the distance from seldepth
+                int qDepth = seldepth - ply;
                 int bonus = std::min(qhsMaxBonus.value, qhsMultiplier.value * qDepth * qDepth + qhsAdder.value * qDepth - qhsSubtractor.value);
                 const int end = move.getEndSquare();
                 const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
