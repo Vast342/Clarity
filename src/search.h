@@ -5,8 +5,6 @@
 
 constexpr int depthLimit = 120;
 
-constexpr int plyLimitQS = 150;
-
 constexpr int mateScore = -10000000;
 
 extern int badCaptureScore;
@@ -16,7 +14,6 @@ struct StackEntry {
     CHEntry *ch_entry;
     // killer move
     Move killer;
-    Move qsKiller;
     // static eval used for improving
     int staticEval;
     bool inCheck;
@@ -47,7 +44,7 @@ struct Engine {
 
         int seldepth = 0;
 
-        std::array<StackEntry, plyLimitQS + 1> stack;
+        std::array<StackEntry, depthLimit> stack;
 
         TranspositionTable TT;
 
@@ -63,7 +60,7 @@ struct Engine {
         int estimateMoveValue(const Board& board, const int end, const int flag);
         bool see(const Board& board, Move move, int threshold);
         void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply);
-        void scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply);
+        void scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove);
         int qSearch(Board &board, int alpha, int beta, int ply);
         void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply);
         void updateCaptureHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
