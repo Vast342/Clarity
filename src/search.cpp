@@ -167,25 +167,30 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
     }
 }
 
-void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove) {
+void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply) {
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
         Move move = moves[i];
-        const int end = move.getEndSquare();
-        const int start = move.getStartSquare();
-        const int piece = getType(board.pieceAtIndex(start));
         if(move == ttMove) {
             values[i] = 1000000000;
         } else {
             // Captures!
-            const int victim = getType(board.pieceAtIndex(end));
-            // Capthist!
-            values[i] = MVV_value[victim] + qsHistoryTable[colorToMove][piece][end][victim];
-            // see!
-            // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-            if(see(board, move, 0)) {
-                // good captures
-                values[i] += goodCaptureBonus;
+            if(move == stack[ply].qsKiller) {
+                values[i] = killerScore;
+            } else {
+                const int end = move.getEndSquare();
+                const int start = move.getStartSquare();
+                const int piece = getType(board.pieceAtIndex(start));
+                const int victim = getType(board.pieceAtIndex(end));
+                // Capthist!
+                // so this isn't actually quite capthist, this is my own dedicated qsearch capthist.
+                values[i] = MVV_value[victim] + qsHistoryTable[colorToMove][piece][end][victim];
+                // see!
+                // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
+                if(see(board, move, 0)) {
+                    // good captures
+                    values[i] += goodCaptureBonus;
+                }
             }
         }
     }
@@ -226,6 +231,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
 
     // stand pat shenanigans
     int staticEval = board.getEvaluation();
+    if(ply > plyLimitQS) return staticEval;
     int bestScore = staticEval;
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
@@ -235,7 +241,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     std::array<Move, 256> testedMoves;
     const int totalMoves = board.getMovesQSearch(moves);
     std::array<int, 256> moveValues;
-    scoreMovesQS(board, moves, moveValues, totalMoves, entry->bestMove);
+    scoreMovesQS(board, moves, moveValues, totalMoves, entry->bestMove, ply);
 
     // values useful for writing to TT later
     Move bestMove;
@@ -283,6 +289,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
             if(score >= beta) {
                 flag = BetaCutoff;
                 bestMove = move;
+                stack[ply].qsKiller = move;
                 // approximating depth using the distance from seldepth
                 int qDepth = seldepth - ply;
                 int bonus = std::min(qhsMaxBonus.value, qhsMultiplier.value * qDepth * qDepth + qhsAdder.value * qDepth - qhsSubtractor.value);
@@ -383,7 +390,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     if(!inSingularSearch && (entry->zobristKey != hash || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
 
     int staticEval = board.getEvaluation();
-    if(ply > depthLimit - 1) return staticEval;
+    if(ply > depthLimit) return staticEval;
     stack[ply].staticEval = staticEval;
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
 
