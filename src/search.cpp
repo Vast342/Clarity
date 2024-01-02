@@ -387,6 +387,15 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     stack[ply].staticEval = staticEval;
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
 
+    // adjust staticEval to TT score if it's good enough
+    if (!inCheck && !inSingularSearch && hash == entry->zobristKey && (
+        entry->flag == Exact ||
+        (entry->flag == BetaCutoff && entry->score >= staticEval) ||
+        (entry->flag == FailLow && entry->score <= staticEval)
+    )) {
+        staticEval = entry->score;
+    }
+
     // Razoring
     if(!inSingularSearch && !isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
         int score = qSearch(board, alpha, beta, ply);
