@@ -389,7 +389,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
 
     // Razoring
     if(!inSingularSearch && !isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
-        int score = qSearch(board, alpha-1, alpha, ply);
+        int score = qSearch(board, alpha, beta, ply);
         if (score < alpha) {
             return score;
         }
