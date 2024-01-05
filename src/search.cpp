@@ -489,14 +489,6 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if (depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
         if (ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
-        if(!board.makeMove(move)) {
-            continue;
-        }
-        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];\
-        testedMoves[legalMoves] = move;
-        legalMoves++;
-        nodes++;
-        if(isQuiet) quietCount++;
         int score = 0;
         // Principal Variation Search
         int presearchNodeCount = nodes;
@@ -517,9 +509,25 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     return sBeta;
                 }*/
             }
+            if(!board.makeMove(move)) {
+                continue;
+            }
+            stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];\
+            testedMoves[legalMoves] = move;
+            legalMoves++;
+            nodes++;
+            if(isQuiet) quietCount++;
             // searches the first move at full depth
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true);
         } else {
+            if(!board.makeMove(move)) {
+                continue;
+            }
+            stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];\
+            testedMoves[legalMoves] = move;
+            legalMoves++;
+            nodes++;
+            if(isQuiet) quietCount++;
             // Late Move Reductions (LMR)
             int depthReduction = 0;
             if(!inCheck && depth > 1 && isQuietOrBadCapture) {
