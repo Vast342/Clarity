@@ -503,7 +503,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(legalMoves == 1) {
             int TTExtensions = 0;
             // determine whether or not to extend TT move (Singular Extensions)
-            /*if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
+            if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
                 const auto sBeta = std::max(mateScore, entry->score - depth * int(sinDepthScale.value) / 16);
                 const auto sDepth = (depth - 1) / 2;
 
@@ -513,10 +513,10 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 
                 if(score < sBeta) {
                     TTExtensions++;
-                } else if(sBeta >= beta) {
+                }/* else if(sBeta >= beta) {
                     return sBeta;
-                }
-            }*/
+                }*/
+            }
             // searches the first move at full depth
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true);
         } else {
