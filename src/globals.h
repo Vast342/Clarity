@@ -119,6 +119,7 @@ struct Board {
         uint64_t getPieceBitboard(int piece) const;
         int getFiftyMoveCount() const;
         uint64_t getZobristHash() const;
+        bool isLegal(Move move);
     private:
         NetworkState nnueState;
         BoardState state;
