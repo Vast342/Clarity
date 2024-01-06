@@ -67,14 +67,14 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
 int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     int sum = 0;
 
-    for (int i = 0; i < layer1Size; ++i)
+    for(int i = 0; i < layer1Size; ++i)
     {
         int activated = std::clamp(static_cast<int>(us[i]), 0, 255);
         activated *= activated;
         sum += activated * weights[i];
     }
 
-    for (int i = 0; i < layer1Size; ++i)
+    for(int i = 0; i < layer1Size; ++i)
     {
         int activated = std::clamp(static_cast<int>(them[i]), 0, 255);
         activated *= activated;
@@ -108,7 +108,7 @@ void NetworkState::activateFeature(int square, int type){
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
 
     // change values for all of them
-    for (int i = 0; i < layer1Size; ++i) {
+    for(int i = 0; i < layer1Size; ++i) {
         currentAccumulator->black[i] += network->featureWeights[blackIdx * layer1Size + i];
         currentAccumulator->white[i] += network->featureWeights[whiteIdx * layer1Size + i];
     }
@@ -118,7 +118,7 @@ void NetworkState::disableFeature(int square, int type) {
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
 
     // change values for all of them
-    for (int i = 0; i < layer1Size; ++i) {
+    for(int i = 0; i < layer1Size; ++i) {
         currentAccumulator->black[i] -= network->featureWeights[blackIdx * layer1Size + i];
         currentAccumulator->white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
     }

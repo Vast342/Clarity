@@ -48,7 +48,7 @@ void Board::toString() {
             bool isBlack = getColor(piece) == 0;
             int pieceType = getType(piece);
             char pieceChar = ' ';
-            switch (pieceType)
+            switch(pieceType)
             {
                 case Rook:
                     pieceChar = 'R';
@@ -104,7 +104,7 @@ Board::Board(std::string fen) {
     std::vector<std::string> ranks = split(segments[0], '/');
     std::ranges::reverse(ranks);
     int i = 0;
-    for (const auto& rank : ranks) {
+    for(const auto& rank : ranks) {
         for(char c : rank) {
             switch(c) {
                 case 'p':
@@ -204,19 +204,19 @@ Board::Board(std::string fen) {
 std::string Board::getFenString() {
     // essentially copy and pasted from my c# engine lol
     std::string fen = "";
-    for (int rank = 7; rank >= 0; rank--) {
+    for(int rank = 7; rank >= 0; rank--) {
         int numEmptyFiles = 0;
-        for (int file = 0; file < 8; file++) {
+        for(int file = 0; file < 8; file++) {
             int piece = pieceAtIndex(8*rank+file);
-            if (piece != None) {
-                if (numEmptyFiles != 0) {
+            if(piece != None) {
+                if(numEmptyFiles != 0) {
                     fen += std::to_string(numEmptyFiles);
                     numEmptyFiles = 0;
                 }
                 bool isBlack = getColor(piece) == 0;
                 int pieceType = getType(piece);
                 char pieceChar = ' ';
-                switch (pieceType)
+                switch(pieceType)
                 {
                     case Rook:
                         pieceChar = 'R';
@@ -244,10 +244,10 @@ std::string Board::getFenString() {
             }
 
         }
-        if (numEmptyFiles != 0) {
+        if(numEmptyFiles != 0) {
             fen += std::to_string(numEmptyFiles);
         }
-        if (rank != 0) {
+        if(rank != 0) {
             fen += '/';
         }
     }
@@ -581,23 +581,23 @@ bool Board::squareIsUnderAttack(int square) {
     const auto queens = getColoredPieceBitboard(opponent, Queen);
 
     uint64_t mask = (getRookAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Rook)));
-    if (mask != 0)
+    if(mask != 0)
         return true;
 
     mask = (getBishopAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Bishop)));
-    if (mask != 0)
+    if(mask != 0)
         return true;
 
     mask = getKnightAttacks(square) & getColoredPieceBitboard(opponent, Knight);
-    if (mask != 0)
+    if(mask != 0)
         return true;
 
     mask = getPawnAttacks(square, colorToMove) & getColoredPieceBitboard(opponent, Pawn);
-    if (mask != 0)
+    if(mask != 0)
         return true;
 
     mask = getKingAttacks(square) & getColoredPieceBitboard(opponent, King);
-    if (mask != 0)
+    if(mask != 0)
         return true;
 
     return false;

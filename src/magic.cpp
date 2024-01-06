@@ -27,9 +27,9 @@ std::array<std::array<uint64_t, 4096>, 64> rookAttackLookup;
 {
     uint64_t dst{};
 
-    for (uint64_t bit = 1; mask != 0; bit <<= 1)
+    for(uint64_t bit = 1; mask != 0; bit <<= 1)
     {
-        if ((v & bit) != 0)
+        if((v & bit) != 0)
             dst |= mask & -mask;
         mask &= mask - 1;
     }

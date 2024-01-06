@@ -211,7 +211,7 @@ void interpretCommand(std::string command) {
 int main(int argc, char* argv[]) {
     initialize();
     std::cout << std::boolalpha;
-    if (argc > 1 && std::string(argv[1]) == "bench") {
+    if(argc > 1 && std::string(argv[1]) == "bench") {
         runBench(14);
         return 0;
     }

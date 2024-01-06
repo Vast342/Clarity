@@ -109,7 +109,7 @@ std::vector<std::string> split(const std::string string, const char seperator) {
     std::vector<std::string> list;
 
     // every time that it can get a segment
-    while (std::getline(stream, segment, seperator)) {
+    while(std::getline(stream, segment, seperator)) {
         // add it to the vector
         list.push_back(segment);
     }
@@ -127,7 +127,7 @@ void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int n
         // find the lowest number that hasn't been sorted yet
         lowestIndex = i;
         for(int j = i + 1; j < numMoves; j++) {
-            if (values[j] < values[lowestIndex])
+            if(values[j] < values[lowestIndex])
                 lowestIndex = j;
         }
  
@@ -147,8 +147,8 @@ int flipIndex(int index) {
 // thanks z5
 // also I completely misunderstood how this was supposed to work, this isn't it lol
 void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves, int i) {
-    for (int j = i + 1; j < numMoves; j++) {
-        if (values[j] > values[i]) {
+    for(int j = i + 1; j < numMoves; j++) {
+        if(values[j] > values[i]) {
             std::swap(values[j], values[i]);
             std::swap(moves[j], moves[i]);
         }
