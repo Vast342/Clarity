@@ -17,59 +17,59 @@
 */
 #include "globals.h"
 
-Tunable aspBaseDelta("ASP_BaseDelta", 15, 1);
-Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.6, 10);
+Tunable aspBaseDelta("ASP_BaseDelta", 17, 1);
+Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.67, 10);
 Tunable aspDepthCondition("ASP_DepthCondition", 4, 1);
 
 Tunable rfpDepthCondition("RFP_DepthCondition", 11, 1);
-Tunable rfpMultiplier("RFP_Multiplier", 90, 1);
+Tunable rfpMultiplier("RFP_Multiplier", 96, 1);
 
-Tunable iirDepthCondition("IIR_DepthCondition", 5, 1);
+Tunable iirDepthCondition("IIR_DepthCondition", 4, 1);
 
-Tunable fpDepthCondition("FP_DepthCondition", 3, 1);
-Tunable fpBase("FP_Base", 249, 1);
-Tunable fpMultiplier("FP_Multiplier", 69, 1);
+Tunable fpDepthCondition("FP_DepthCondition", 1, 1);
+Tunable fpBase("FP_Base", 268, 1);
+Tunable fpMultiplier("FP_Multiplier", 64, 1);
 
 Tunable lmpDepthCondition("LMP_DepthCondition", 7, 1);
-Tunable lmpBase("LMP_Base", 1, 1);  // No divisor adjustment
+Tunable lmpBase("LMP_Base", 2, 1);  // No divisor adjustment
 
-Tunable sprDepthCondition("SPR_DepthCondition", 3, 1);
-Tunable sprCaptureThreshold("SPR_CaptureThreshold", -129, -1);
-Tunable sprQuietThreshold("SPR_QuietThreshold", -34, -1);
+Tunable sprDepthCondition("SPR_DepthCondition", 4, 1);
+Tunable sprCaptureThreshold("SPR_CaptureThreshold", -118, -1);
+Tunable sprQuietThreshold("SPR_QuietThreshold", -38, -1);
 
-Tunable nmpDivisor("NMP_Divisor", 156, 1);
+Tunable nmpDivisor("NMP_Divisor", 157, 1);
 Tunable nmpSubtractor("NMP_Subtractor", 5, 1);
 Tunable nmpDepthCondition("NMP_DepthCondition", 1, 1);
 
-Tunable hmrDivisor("HMR_Divisor", 6822, 1); 
-Tunable cmrDivisor("CMR_Divisor", 2744, 1);
+Tunable hmrDivisor("HMR_Divisor", 6823, 1); 
+Tunable cmrDivisor("CMR_Divisor", 2926, 1);
 
-Tunable lmrBase("LMR_Base", 0.78, 100);  // Adjusted divisor for lmrBase
-Tunable lmrMultiplier("LMR_Multiplier", 0.57, 100);  // Adjusted divisor for lmrMultiplier
+Tunable lmrBase("LMR_Base", 0.81, 100);  // Adjusted divisor for lmrBase
+Tunable lmrMultiplier("LMR_Multiplier", 0.58, 100);  // Adjusted divisor for lmrMultiplier
 
-Tunable hstMaxBonus("HST_MaxBonus", 1741, 1);
+Tunable hstMaxBonus("HST_MaxBonus", 1884, 1);
 Tunable hstMultiplier("HST_Multiplier", 4, 1);
-Tunable hstAdder("HST_Adder", 132, 1);
+Tunable hstAdder("HST_Adder", 150, 1);
 Tunable hstSubtractor("HST_Subtractor", 110, 1);
 
 Tunable sinDepthCondition("SIN_DepthCondition", 8, 1);
 Tunable sinDepthMargin("SIN_DepthMargin", 3, 1);
 Tunable sinDepthScale("SIN_DepthScale", 24, 1);
 
-Tunable razDepthMultiplier("RAZ_DepthMultiplier", 401, 1);
+Tunable razDepthMultiplier("RAZ_DepthMultiplier", 394, 1);
 
 Tunable ntmDepthCondition("NTM_DepthCondition", 8, 1);
-Tunable ntmSubtractor("NTM_Subtractor", 1.71, 100);
+Tunable ntmSubtractor("NTM_Subtractor", 1.61, 100);
 Tunable ntmMultiplier("NTM_Multiplier", 1.41, 100);
-Tunable ntmDefault("NTM_Default", 0.88, 100);
+Tunable ntmDefault("NTM_Default", 0.83, 100);
 
-Tunable hipDepthCondition("HIP_DepthCondition", 6, 1);
-Tunable hipDepthMultiplier("HIP_DepthMultiplier", -1872, -1);
+Tunable hipDepthCondition("HIP_DepthCondition", 7, 1);
+Tunable hipDepthMultiplier("HIP_DepthMultiplier", -2066, -1);
 
-Tunable qhsMaxBonus("QHS_MaxBonus", 1741, 1);
-Tunable qhsMultiplier("QHS_Multiplier", 4, 1);
-Tunable qhsAdder("QHS_Adder", 132, 1);
-Tunable qhsSubtractor("QHS_Subtractor", 110, 1);
+Tunable qhsMaxBonus("QHS_MaxBonus", 1830, 1);
+Tunable qhsMultiplier("QHS_Multiplier", 5, 1);
+Tunable qhsAdder("QHS_Adder", 126, 1);
+Tunable qhsSubtractor("QHS_Subtractor", 107, 1);
 
 Tunable qhpDepthMultiplier("QHP_DepthMultiplier", -1872, -1);
 
