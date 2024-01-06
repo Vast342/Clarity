@@ -165,7 +165,7 @@ void interpretCommand(std::string command) {
     } else if(bits[0] == "go") {
         go(bits);
     } else if(bits[0] == "ucinewgame") {
-        newGame();    
+        newGame();
     } else if(bits[0] == "setoption") {
         setOption(bits);
     } else if(bits[0] == "perftsuite") {
@@ -200,9 +200,9 @@ void interpretCommand(std::string command) {
     } else if(bits[0] == "isrepeated") {
         std::cout << board.isRepeatedPosition() << '\n';
     } else if(bits[0] == "tunablejson") {
-        outputTunableJSON();  
+        outputTunableJSON();
     } else if(bits[0] == "tunableob") {
-        outputTunableOB();   
+        outputTunableOB(); 
     } else {
         std::cout << "invalid or unsupported command\n";
     }

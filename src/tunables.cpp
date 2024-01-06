@@ -31,7 +31,7 @@ Tunable fpBase("FP_Base", 268, 1);
 Tunable fpMultiplier("FP_Multiplier", 64, 1);
 
 Tunable lmpDepthCondition("LMP_DepthCondition", 7, 1);
-Tunable lmpBase("LMP_Base", 2, 1);  // No divisor adjustment
+Tunable lmpBase("LMP_Base", 2, 1);// No divisor adjustment
 
 Tunable sprDepthCondition("SPR_DepthCondition", 4, 1);
 Tunable sprCaptureThreshold("SPR_CaptureThreshold", -118, -1);
@@ -44,8 +44,8 @@ Tunable nmpDepthCondition("NMP_DepthCondition", 1, 1);
 Tunable hmrDivisor("HMR_Divisor", 6823, 1); 
 Tunable cmrDivisor("CMR_Divisor", 2926, 1);
 
-Tunable lmrBase("LMR_Base", 0.81, 100);  // Adjusted divisor for lmrBase
-Tunable lmrMultiplier("LMR_Multiplier", 0.58, 100);  // Adjusted divisor for lmrMultiplier
+Tunable lmrBase("LMR_Base", 0.81, 100);// Adjusted divisor for lmrBase
+Tunable lmrMultiplier("LMR_Multiplier", 0.58, 100);// Adjusted divisor for lmrMultiplier
 
 Tunable hstMaxBonus("HST_MaxBonus", 1884, 1);
 Tunable hstMultiplier("HST_Multiplier", 4, 1);

@@ -324,7 +324,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     // push to TT
     TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, 0));
 
-    return bestScore;  
+    return bestScore;
 }
 
 // adds to the history of a particular move

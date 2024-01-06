@@ -383,7 +383,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
                 }
                 if((state.castlingRights & 8) != 0 && (occupiedBitboard & 0xE00000000000000) == 0 && !squareIsUnderAttack(59)) {
                     moves[totalMoves] = Move(60, 58, castling[3]);
-                    totalMoves++;   
+                    totalMoves++; 
                 }
             }
         }
@@ -735,7 +735,7 @@ bool Board::makeMove(Move move) {
 void Board::undoMove() {
     state = stateHistory.back();
     plyCount--;
-    stateHistory.pop_back();  
+    stateHistory.pop_back();
     nnueState.pop();
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
