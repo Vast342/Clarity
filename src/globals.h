@@ -34,6 +34,7 @@
 #include <fstream>
 #include "eval.h"
 #include <memory>
+#include "masks.h"
 
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
@@ -251,38 +252,3 @@ void outputTunableOB();
 void adjustTunable(const std::string &name, const int &value);
 void readTunable(const std::string &name);
 void readTunables();
-
-// between ray calculations from Stormphrax
-inline auto generateBetweenRays()
-{
-    std::array<std::array<uint64_t, 64>, 64> dst{};
-
-    for (int from = 0; from < 64; ++from)
-    {
-        const auto srcMask = 1ULL << from;
-
-        for (int to = 0; to < 64; ++to)
-        {
-            if (from == to)
-                continue;
-
-            const auto dstMask = 1ULL << to;
-
-            dst[from][to]
-                = getRookAttacks(from, dstMask)
-                & getRookAttacks(to, srcMask);
-            dst[from][to]
-                = getBishopAttacks(from, dstMask)
-                & getBishopAttacks(to, srcMask);
-        }
-    }
-
-    return dst;
-}
-
-extern std::array<std::array<uint64_t, 64>, 64> betweenRays;
-
-constexpr auto rayBetween(int src, int dst)
-{
-    return betweenRays[src][dst];
-}

@@ -850,33 +850,30 @@ uint64_t Board::getZobristHash() const {
     return state.zobristHash;
 }
 
-
-// Code adapted from Stormphrax's legality check, this doesn't check pseudolegality, it just assumes the moves work
 bool Board::isLegal(Move move) {
     assert(move != Move());
 
-    const int us = colorToMove;
     const int them = 1 - colorToMove;
 
-    const auto src = move.getStartSquare();
-    const auto dst = move.getEndSquare();
+    const auto from = move.getStartSquare();
+    const auto to = move.getEndSquare();
 
     const auto king = state.kingSquares[colorToMove];
 
     // castling moves
     if (move.getFlag() > 0 && move.getFlag() < EnPassant) {
-        return squareIsUnderAttack(dst);
+        return squareIsUnderAttack(to);
     } else if (move.getFlag() == EnPassant) {
-        auto rank = dst / 8;
-        const auto file = dst % 8;
+        auto rank = to / 8;
+        const auto file = to % 8;
 
         rank = rank == 2 ? 3 : 4;
 
         const auto captureSquare = 8 * rank + file;
 
         const auto postEpOcc = getOccupiedBitboard()
-            ^ (1ULL << src)
-            ^ (1ULL << dst)
+            ^ (1ULL << from)
+            ^ (1ULL << to)
             ^ (1ULL << captureSquare);
 
         const auto theirQueens = getColoredPieceBitboard(them, Queen);
@@ -885,15 +882,11 @@ bool Board::isLegal(Move move) {
             && (getBishopAttacks(king, postEpOcc) & (theirQueens | getColoredPieceBitboard(them, Rook))) == 0;
     }
 
-    const auto moving = pieceAtIndex(src);
+    const auto moving = pieceAtIndex(from);
 
     if (getType(moving) == King)
     {
-        const auto kinglessOcc = getOccupiedBitboard() ^ getColoredPieceBitboard(us, King);
-        const auto theirQueens = getColoredPieceBitboard(them, Queen);
-
-        return (getBishopAttacks(king, kinglessOcc) & (theirQueens | getColoredPieceBitboard(them, Bishop))) == 0
-            && (getBishopAttacks(king, kinglessOcc) & (theirQueens | getColoredPieceBitboard(them, Rook))) == 0;
+        return squareIsUnderAttack(to);
     }
 
     uint64_t kingAttackers = getAttackers(king);
@@ -905,6 +898,8 @@ bool Board::isLegal(Move move) {
     if (__builtin_popcountll(kingAttackers) == 0)
         return true;
 
-    const auto checker = std::countr_zero(kingAttackers);
-    return (rayBetween(king, checker) | (1ULL << checker));
+    //const auto checker = std::countr_zero(kingAttackers);
+    //return (raysBetween[king][checker] | (1ULL << checker));
+    std::cout << "made it through everything else" << std::endl;
+    return false;
 }
