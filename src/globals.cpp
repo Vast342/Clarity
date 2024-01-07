@@ -89,6 +89,39 @@ void generateSquareToBitboard() {
     }
 }
 
+// between ray calculations from Stormphrax
+consteval auto generateBetweenRays()
+{
+    std::array<std::array<uint64_t, 64>, 64> dst{};
+
+    for (int from = 0; from < 64; ++from)
+    {
+        const auto srcMask = squareBit(srcSquare);
+
+        const auto   rookAttacks = attacks::EmptyBoardRooks  [from];
+        const auto bishopAttacks = attacks::EmptyBoardBishops[from];
+
+        for (int to = 0; to < 64; ++to)
+        {
+            if (from == to)
+                continue;
+
+            const auto dstMask = squareBit(dstSquare);
+
+            if (rookAttacks[dstSquare])
+                dst[from][to]
+                    = attacks::genRookAttacks(from, dstMask)
+                    & attacks::genRookAttacks(to, srcMask);
+            else if (bishopAttacks[dstSquare])
+                dst[from][to]
+                    = attacks::genBishopAttacks(from, dstMask)
+                    & attacks::genBishopAttacks(to, srcMask);
+        }
+    }
+
+    return dst;
+}
+
 /*ran on startup, does 4 things:
 1: generates the lookups for sliding pieces
 2: generates the numbers used for zobrist hashing
@@ -97,6 +130,7 @@ void generateSquareToBitboard() {
  */
 void initialize() {
     generateSquareToBitboard();
+    betweenRays = generateBetweenRays;
     generateLookups();
     initializeZobrist();
     calculateReductions();

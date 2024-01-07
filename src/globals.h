@@ -251,3 +251,10 @@ void outputTunableOB();
 void adjustTunable(const std::string &name, const int &value);
 void readTunable(const std::string &name);
 void readTunables();
+
+extern std::array<std::array<uint64_t, 64>, 64> betweenRays;
+
+constexpr auto rayBetween(Square src, Square dst)
+{
+    return betweenRays[src][dst];
+}
