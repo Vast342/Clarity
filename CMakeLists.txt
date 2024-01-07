@@ -30,10 +30,10 @@ add_executable(Clarity_Datagen ${Common_SRC_Files} src/bmi2.cpp src/datagen.cpp)
 
 target_compile_options(Clarity_x86-64-v1 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64 -flto)
 target_compile_options(Clarity_x86-64-v2 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v2 -flto)
-target_compile_options(Clarity_x86-64-v3_Magic PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v3 -flto)
-target_compile_options(Clarity_x86-64-v3_BMI2 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v3 -flto)
-target_compile_options(Clarity_x86-64-v4 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v4 -flto)
-target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -flto)
+target_compile_options(Clarity_x86-64-v3_Magic PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v3 -flto -DUSE_AVX2)
+target_compile_options(Clarity_x86-64-v3_BMI2 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v3 -flto -DUSE_AVX2)
+target_compile_options(Clarity_x86-64-v4 PRIVATE -Wall -Wextra -Werror -Wpedantic -march=x86-64-v4 -flto -DUSE_AVX512)
+target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -flto -DUSE_AVX2)
 
 target_compile_options(Clarity_Datagen PRIVATE -Wall -Wextra -Werror -Wpedantic -march=native -flto)
 

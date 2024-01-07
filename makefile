@@ -6,7 +6,7 @@ _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 _ROOT     := $(_THIS)
 EVALFILE   = $(_ROOT)/src/nets/clarity_net007.nnue
 
-CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\"
+CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\" -DUSE_AVX2
 LDFLAGS :=
 
 # Debug compiler flags
