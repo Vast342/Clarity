@@ -1,6 +1,6 @@
 # initializing stuff
 cmake_minimum_required(VERSION 3.11)
-project(Clarity VERSION 4.0.0 LANGUAGES C CXX)
+project(Clarity VERSION 4.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
