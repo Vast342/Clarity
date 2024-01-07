@@ -494,7 +494,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
         if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
-        if(!board.makeMove(move)) {
+        if(!board.isLegal(move)) {
             continue;
         }
         stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];\
@@ -508,7 +508,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(legalMoves == 1) {
             int TTExtensions = 0;
             // determine whether or not to extend TT move (Singular Extensions)
-            /*if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
+            if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
                 const auto sBeta = std::max(mateScore, entry->score - depth * int(sinDepthScale.value) / 16);
                 const auto sDepth = (depth - 1) / 2;
 
@@ -518,13 +518,15 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 
                 if(score < sBeta) {
                     TTExtensions++;
-                } else if(sBeta >= beta) {
+                }/* else if(sBeta >= beta) {
                     return sBeta;
-                }
-            }*/
+                }*/
+            }
+            board.makeMove(move);
             // searches the first move at full depth
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true);
         } else {
+            board.makeMove(move);
             // Late Move Reductions (LMR)
             int depthReduction = 0;
             if(!inCheck && depth > 1 && isQuietOrBadCapture) {

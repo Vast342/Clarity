@@ -96,6 +96,7 @@ void generateSquareToBitboard() {
 4: calculates numbers for square to bitboard lookups
  */
 void initialize() {
+    betweenRays = generateBetweenRays();
     generateSquareToBitboard();
     generateLookups();
     initializeZobrist();
