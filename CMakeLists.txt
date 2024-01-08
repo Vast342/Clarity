@@ -1,4 +1,6 @@
 # initializing stuff
+
+set(net_file \"../src/nets/clarity_net008.nnue\")
 cmake_minimum_required(VERSION 3.11)
 project(Clarity VERSION 4.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
@@ -47,11 +49,11 @@ target_link_libraries(Clarity_Native -static)
 
 target_link_libraries(Clarity_Datagen -static)
 
-target_compile_definitions(Clarity_x86-64-v1 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
-target_compile_definitions(Clarity_x86-64-v2 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
-target_compile_definitions(Clarity_x86-64-v3_Magic PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
-target_compile_definitions(Clarity_x86-64-v3_BMI2 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
-target_compile_definitions(Clarity_x86-64-v4 PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
-target_compile_definitions(Clarity_Native PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+target_compile_definitions(Clarity_x86-64-v1 PUBLIC NetworkFile=${net_file})
+target_compile_definitions(Clarity_x86-64-v2 PUBLIC NetworkFile=${net_file})
+target_compile_definitions(Clarity_x86-64-v3_Magic PUBLIC NetworkFile=${net_file})
+target_compile_definitions(Clarity_x86-64-v3_BMI2 PUBLIC NetworkFile=${net_file})
+target_compile_definitions(Clarity_x86-64-v4 PUBLIC NetworkFile=${net_file})
+target_compile_definitions(Clarity_Native PUBLIC NetworkFile=${net_file})
 
-target_compile_definitions(Clarity_Datagen PUBLIC NetworkFile="../src/nets/clarity_net007.nnue")
+target_compile_definitions(Clarity_Datagen PUBLIC NetworkFile=${net_file})

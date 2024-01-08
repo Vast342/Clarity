@@ -47,7 +47,7 @@ void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
 constexpr uint32_t ColorStride = 64 * 6;
 constexpr uint32_t PieceStride = 64;
 constexpr int Scale = 400;
-constexpr int Q = 255 * 64;
+constexpr int Q = 181 * 64;
 
 
 std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int type) {
