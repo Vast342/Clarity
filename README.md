@@ -2,7 +2,11 @@
 
 <img src="assets/Clarity%20Logo.png" width="150" height="150">
 
-> Relatively strong UCI chess engine
+> UCI chess engine with NNUE evaluation
+
+A UCI-compatible chess engine. The engine uses an alpha-beta search with many enhancements, and evaluation is handled by a small-size, efficiently updatable neural network (NNUE) trained on data from simulated games against itself.
+
+The last major release (4.0.0 as of the time of typing this) has been rated 3448 Elo in CCRL Blitz and is yet to be fully tested for CCRL 40/15. The blitz elo of 3438 puts it as the 52nd highest-ranked engine based on their testing.
 
 ## Feature List:
 
