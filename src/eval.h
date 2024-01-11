@@ -39,16 +39,12 @@ struct Accumulator {
 
 class NetworkState {
     public:
-        NetworkState();
-        void push();
-        void pop();
         void reset();
         void activateFeature(int square, int type);
         void disableFeature(int square, int type);
         int evaluate(int colorToMove);
     private:
-        std::vector<Accumulator> accumulatorStates;
-        Accumulator *currentAccumulator;
+        Accumulator currentAccumulator;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
         int forward(const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::array<std::int16_t, layer1Size * 2> weights);
 };

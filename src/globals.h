@@ -65,6 +65,7 @@ struct Board;
 
 // holds the state of the board, specifically the factors that can't be brought back after a move is made
 struct BoardState {
+    NetworkState nnueState;
     std::array<uint64_t, 2> coloredBitboards;
     std::array<uint64_t, 6> pieceBitboards;
     uint8_t enPassantIndex;
@@ -92,6 +93,7 @@ struct Move {
 struct Board {
     public:
         Board(std::string fen);
+        Board(BoardState s);
         bool makeMove(Move move);
         void undoMove();
         int getMoves(std::array<Move, 256> &moves);
@@ -119,8 +121,9 @@ struct Board {
         uint64_t getPieceBitboard(int piece) const;
         int getFiftyMoveCount() const;
         uint64_t getZobristHash() const;
+        BoardState getBoardState() const;
+        NetworkState getNetworkState() const;
     private:
-        NetworkState nnueState;
         BoardState state;
         int plyCount;
         uint8_t colorToMove;
