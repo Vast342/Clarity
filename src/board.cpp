@@ -852,4 +852,5 @@ BoardState Board::getBoardState() const {
 }
 Board::Board(BoardState s) {
     state = s;
+    stateHistory.reserve(256);
 }
