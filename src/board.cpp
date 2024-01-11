@@ -91,7 +91,7 @@ void Board::toString() {
 Board::Board(std::string fen) {
     stateHistory.clear();
     stateHistory.reserve(256);
-    nnueState.reset();
+    state.nnueState.reset();
     state.zobristHash = 0;
     for(int i = 0; i < 6; i++) {
         state.pieceBitboards[i] = 0ULL;
@@ -301,7 +301,7 @@ void Board::addPiece(int square, int type) {
     state.coloredBitboards[getColor(type)] ^= bitboardSquare;
     state.pieceBitboards[getType(type)] ^= bitboardSquare;
     assert(pieceAtIndex(square) == type);
-    nnueState.activateFeature(square, type);
+    state.nnueState.activateFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
 }
 
@@ -313,7 +313,7 @@ void Board::removePiece(int square, int type) {
     const uint64_t bitboardSquare = squareToBitboard[square];
     state.coloredBitboards[getColor(type)] ^= bitboardSquare;
     state.pieceBitboards[getType(type)] ^= bitboardSquare;
-    nnueState.disableFeature(square, type);
+    state.nnueState.disableFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
@@ -606,7 +606,6 @@ bool Board::squareIsUnderAttack(int square) {
 bool Board::makeMove(Move move) {
     // push to vectors
     stateHistory.push_back(state);
-    nnueState.push();
 
     // get information
     int start = move.getStartSquare();
@@ -736,7 +735,6 @@ void Board::undoMove() {
     state = stateHistory.back();
     plyCount--;
     stateHistory.pop_back();
-    nnueState.pop();
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
@@ -762,7 +760,7 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
-    return nnueState.evaluate(colorToMove);
+    return state.nnueState.evaluate(colorToMove);
 }
 
 int Board::getCastlingRights() const {
@@ -848,4 +846,10 @@ int Board::getFiftyMoveCount() const {
 
 uint64_t Board::getZobristHash() const {
     return state.zobristHash;
+}
+BoardState Board::getBoardState() const {
+    return state;
+}
+Board::Board(BoardState s) {
+    state = s;
 }

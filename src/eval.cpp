@@ -32,11 +32,13 @@
 #undef SP_MSVC
 #endif
 
-// this is my first time doing anything with neural networks, or anything with pointers, so code here might be a bit questionable to look at
-
 namespace {
     INCBIN(network, NetworkFile);
     const Network *network = reinterpret_cast<const Network *>(g_networkData);
+}
+
+void NetworkState::reset() {
+    currentAccumulator.initialize(network->featureBiases);
 }
 
 void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
@@ -83,34 +85,13 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
 
     return sum / 255;
 }
-
-NetworkState::NetworkState() {
-    accumulatorStates.reserve(256);
-}
-
-void NetworkState::push() {
-    accumulatorStates.push_back(*currentAccumulator);
-    currentAccumulator = &accumulatorStates.back();
-}
-
-void NetworkState::pop() {
-    accumulatorStates.pop_back();
-    currentAccumulator = &accumulatorStates.back();
-}
-
-void NetworkState::reset() {
-    accumulatorStates.clear();
-    currentAccumulator = &accumulatorStates.emplace_back();
-    currentAccumulator->initialize(network->featureBiases);
-}
-
 void NetworkState::activateFeature(int square, int type){ 
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        currentAccumulator->black[i] += network->featureWeights[blackIdx * layer1Size + i];
-        currentAccumulator->white[i] += network->featureWeights[whiteIdx * layer1Size + i];
+        currentAccumulator.black[i] += network->featureWeights[blackIdx * layer1Size + i];
+        currentAccumulator.white[i] += network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
@@ -119,12 +100,12 @@ void NetworkState::disableFeature(int square, int type) {
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        currentAccumulator->black[i] -= network->featureWeights[blackIdx * layer1Size + i];
-        currentAccumulator->white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
+        currentAccumulator.black[i] -= network->featureWeights[blackIdx * layer1Size + i];
+        currentAccumulator.white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
 int NetworkState::evaluate(int colorToMove) {
-    const auto output = colorToMove == 0 ? forward(currentAccumulator->black, currentAccumulator->white, network->outputWeights) : forward(currentAccumulator->white, currentAccumulator->black, network->outputWeights);
+    const auto output = colorToMove == 0 ? forward(currentAccumulator.black, currentAccumulator.white, network->outputWeights) : forward(currentAccumulator.white, currentAccumulator.black, network->outputWeights);
     return (output + network->outputBias) * Scale / Q;
 }
