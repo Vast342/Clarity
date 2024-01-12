@@ -494,7 +494,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
         if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
-        BoardState beforeBoardState = board.getBoardState();
+        //BoardState beforeBoardState = board.getBoardState();
         if(!board.makeMove(move)) {
             continue;
         }
@@ -514,8 +514,10 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 const auto sDepth = (depth - 1) / 2;
 
                 stack[ply].excluded = entry->bestMove;
-                Board beforeBoard = Board(beforeBoardState, 1 - board.getColorToMove());
-                const auto score = negamax(beforeBoard, sDepth, sBeta - 1, sBeta, ply, true);
+                board.undoMove();
+                //Board beforeBoard = Board(beforeBoardState, 1 - board.getColorToMove());
+                const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true);
+                board.makeMove(move);
                 stack[ply].excluded = Move();
                 
                 if(score < sBeta) {
