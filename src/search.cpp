@@ -494,7 +494,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
         if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
-        //BoardState beforeBoardState = board.getBoardState();
+        BoardState beforeBoardState = board.getBoardState();
         if(!board.makeMove(move)) {
             continue;
         }
@@ -509,12 +509,12 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(legalMoves == 1) {
             int TTExtensions = 0;
             // determine whether or not to extend TT move (Singular Extensions)
-            /*if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
+            if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
                 const auto sBeta = std::max(mateScore, entry->score - depth * int(sinDepthScale.value) / 16);
                 const auto sDepth = (depth - 1) / 2;
 
                 stack[ply].excluded = entry->bestMove;
-                Board beforeBoard = Board(beforeBoardState);
+                Board beforeBoard = Board(beforeBoardState, 1 - board.getColorToMove());
                 const auto score = negamax(beforeBoard, sDepth, sBeta - 1, sBeta, ply, true);
                 stack[ply].excluded = Move();
                 
@@ -523,7 +523,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 } //else if(sBeta >= beta) {
                    // return sBeta;
                 //}
-            }*/
+            }
             // searches the first move at full depth
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true);
         } else {
