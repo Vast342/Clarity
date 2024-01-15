@@ -604,6 +604,7 @@ bool Board::squareIsUnderAttack(int square) {
 }
 
 bool Board::makeMove(Move move) {
+    //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     // push to vectors
     stateHistory.push_back(state);
 
@@ -850,7 +851,10 @@ uint64_t Board::getZobristHash() const {
 BoardState Board::getBoardState() const {
     return state;
 }
-Board::Board(BoardState s) {
+Board::Board(BoardState s, int ctm) {
     state = s;
+    colorToMove = ctm;
+    state.hundredPlyCounter = 0;
+    plyCount = 0;
     stateHistory.reserve(256);
 }

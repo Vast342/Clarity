@@ -93,7 +93,7 @@ struct Move {
 struct Board {
     public:
         Board(std::string fen);
-        Board(BoardState s);
+        Board(BoardState s, int ctm);
         bool makeMove(Move move);
         void undoMove();
         int getMoves(std::array<Move, 256> &moves);
@@ -122,7 +122,6 @@ struct Board {
         int getFiftyMoveCount() const;
         uint64_t getZobristHash() const;
         BoardState getBoardState() const;
-        NetworkState getNetworkState() const;
     private:
         BoardState state;
         int plyCount;

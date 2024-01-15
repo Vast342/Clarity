@@ -494,7 +494,22 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         if(depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
         if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
-        //BoardState beforeBoardState = board.getBoardState();
+        int TTExtensions = 0;
+        // determine whether or not to extend TT move (Singular Extensions)
+        if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
+            const auto sBeta = std::max(mateScore, entry->score - depth * int(sinDepthScale.value) / 16);
+            const auto sDepth = (depth - 1) / 2;
+
+            stack[ply].excluded = entry->bestMove;
+            const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true);
+            stack[ply].excluded = Move();
+            
+            if(score < sBeta) {
+                TTExtensions++;
+            } //else if(sBeta >= beta) {
+                // return sBeta;
+            //}
+        }
         if(!board.makeMove(move)) {
             continue;
         }
@@ -507,23 +522,6 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         // Principal Variation Search
         int presearchNodeCount = nodes;
         if(legalMoves == 1) {
-            int TTExtensions = 0;
-            // determine whether or not to extend TT move (Singular Extensions)
-            /*if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
-                const auto sBeta = std::max(mateScore, entry->score - depth * int(sinDepthScale.value) / 16);
-                const auto sDepth = (depth - 1) / 2;
-
-                stack[ply].excluded = entry->bestMove;
-                Board beforeBoard = Board(beforeBoardState);
-                const auto score = negamax(beforeBoard, sDepth, sBeta - 1, sBeta, ply, true);
-                stack[ply].excluded = Move();
-                
-                if(score < sBeta) {
-                    TTExtensions++;
-                } //else if(sBeta >= beta) {
-                   // return sBeta;
-                //}
-            }*/
             // searches the first move at full depth
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true);
         } else {
@@ -640,8 +638,9 @@ std::string Engine::getPV(Board board, std::vector<uint64_t> &hashVector, int nu
     }
     hashVector.push_back(hash);
     numEntries++;
-    if(TT.matchZobrist(hash)) {
-        Move bestMove = TT.getBestMove(hash);
+    Transposition* entry = TT.getEntry(hash);
+    if(entry->zobristKey == hash && entry->flag == Exact) {
+        Move bestMove = entry->bestMove;
         if(bestMove != Move() && board.makeMove(bestMove)) {
             std::string restOfPV = getPV(board, hashVector, numEntries);
             pv = toLongAlgebraic(bestMove) + " " + restOfPV;
