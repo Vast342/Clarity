@@ -638,8 +638,9 @@ std::string Engine::getPV(Board board, std::vector<uint64_t> &hashVector, int nu
     }
     hashVector.push_back(hash);
     numEntries++;
-    if(TT.matchZobrist(hash)) {
-        Move bestMove = TT.getBestMove(hash);
+    Transposition* entry = TT.getEntry(hash);
+    if(entry->zobristKey == hash && entry->flag == Exact) {
+        Move bestMove = entry->bestMove;
         if(bestMove != Move() && board.makeMove(bestMove)) {
             std::string restOfPV = getPV(board, hashVector, numEntries);
             pv = toLongAlgebraic(bestMove) + " " + restOfPV;
