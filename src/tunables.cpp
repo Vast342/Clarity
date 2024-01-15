@@ -54,7 +54,7 @@ Tunable hstSubtractor("HST_Subtractor", 110, 1);
 
 Tunable sinDepthCondition("SIN_DepthCondition", 8, 1);
 Tunable sinDepthMargin("SIN_DepthMargin", 3, 1);
-Tunable sinDepthScale("SIN_DepthScale", 24, 1);
+Tunable sinDepthScale("SIN_DepthScale", 48, 1);
 
 Tunable razDepthMultiplier("RAZ_DepthMultiplier", 394, 1);
 
