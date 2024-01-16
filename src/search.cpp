@@ -506,9 +506,9 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             
             if(score < sBeta) {
                 TTExtensions++;
-            } //else if(sBeta >= beta) {
-                // return sBeta;
-            //}
+            } else if(sBeta >= beta) {
+                return sBeta;
+            }
         }
         if(!board.makeMove(move)) {
             continue;
