@@ -507,7 +507,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 if (!isPV && score < sBeta - dexMargin.value) {
                     TTExtensions = 2;
                 } else {
-                    TTExtensions++;
+                    TTExtensions = 1;
                 }
             } else if(sBeta >= beta) {
                 return sBeta;
