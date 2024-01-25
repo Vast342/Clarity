@@ -244,6 +244,8 @@ extern Tunable qhsSubtractor;
 
 extern Tunable qhpDepthMultiplier;
 
+extern Tunable dexMargin;
+
 extern std::vector<Tunable *> tunables;
 
 void outputTunables();
