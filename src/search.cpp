@@ -503,9 +503,12 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             stack[ply].excluded = entry->bestMove;
             const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true);
             stack[ply].excluded = Move();
-            
             if(score < sBeta) {
-                TTExtensions++;
+                if (!isPV && score < sBeta - dexMargin.value) {
+                    TTExtensions = 2;
+                } else {
+                    TTExtensions++;
+                }
             } else if(sBeta >= beta) {
                 return sBeta;
             }
