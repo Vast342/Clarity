@@ -20,7 +20,7 @@
 #include "globals.h"
 
 constexpr int inputSize = 768;
-constexpr int layer1Size = 256;
+constexpr int layer1Size = 512;
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
