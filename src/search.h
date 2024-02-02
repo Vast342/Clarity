@@ -40,14 +40,14 @@ struct StackEntry {
 
 struct Engine {
     public: 
-        void resizeTT(int newSize);
         void resetEngine();
         Move think(Board board, int softBound, int hardBound, bool info);
         int benchSearch(Board board, int depthToSearch);
         Move fixedDepthSearch(Board board, int depthToSearch, bool info);
         std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
-        Engine() {
+        Engine(TranspositionTable *tt) {
             conthistTable = std::make_unique<CHTable>();
+            TT = tt;
         }
         bool timesUp = false;
     private:
@@ -63,7 +63,7 @@ struct Engine {
 
         std::array<StackEntry, depthLimit> stack;
 
-        TranspositionTable TT;
+        TranspositionTable* TT;
 
         std::array<std::array<std::array<int, 64>, 64>, 2> historyTable;
         std::array<std::array<std::array<std::array<int, 7>, 64>, 7>, 2> noisyHistoryTable;

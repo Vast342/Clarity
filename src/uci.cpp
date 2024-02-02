@@ -33,18 +33,31 @@ double softBoundMultiplier = 0.6;
 int defaultMovesToGo = 20;
 
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
-Engine engine;
+TranspositionTable TT;
+std::vector<Engine> engines;
+std::vector<std::thread> threads;
+int threadCount;
 
 int rootColorToMove;
 
+// resets everything
+void newGame() {
+    engines.resize(0, Engine(nullptr));
+    for(int i = 0; i < threadCount; i++) {
+        engines.emplace_back(&TT);
+    }
+    TT.clearTable();
+    board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
+}
+
 // runs a fixed depth search on a fixed set of positions, to see if a test changes how the engine behaves
 void runBench(int depth) {
-    engine.resetEngine();
+    engines[0].resetEngine();
     uint64_t total = 0;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for(std::string fen : benchFens) {
         Board benchBoard(fen);
-        int j = engine.benchSearch(benchBoard, depth);
+        int j = engines[0].benchSearch(benchBoard, depth);
         total += j;
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
@@ -62,7 +75,10 @@ void setOption(const std::vector<std::string>& bits) {
         assert(entrySizeB == 16); 
         int newSizeEntries = newSizeB / entrySizeB;
         //std::cout << log2(newSizeEntries);
-        engine.resizeTT(newSizeEntries);
+        TT.resize(newSizeEntries);
+    } else if(name == "Threads") {
+        threadCount = std::stoi(bits[4]);
+        newGame();
     } else {
         adjustTunable(name, std::stod(bits[4]));
     }
@@ -127,26 +143,34 @@ void go(std::vector<std::string> bits) {
             inc = std::stoi(bits[i+1]);
         }
     }
-    Move bestMove;
     // go depth x
     if(depth != 0) {
-        bestMove = engine.fixedDepthSearch(board, depth, true);
+        for(int i = 0; i < threadCount; i++) {
+            threads.emplace_back([depth, i]{
+                engines[i].fixedDepthSearch(board, depth, true);
+            });
+        }
+        //bestMove = engines.fixedDepthSearch(board, depth, true);
     } else {
         // go wtime x btime x
         // the formulas here are former formulas from Stormphrax
         const int softBound = softBoundMultiplier * (time / movestogo + inc * softBoundFractionNumerator / softBoundFractionDenominator);
         const int hardBound = time / hardBoundDivisor;
-        bestMove = engine.think(board, softBound, hardBound, true);
+        for(int i = 0; i < threadCount; i++) {
+            threads.emplace_back([i, softBound, hardBound]{
+                engines[i].think(board, softBound, hardBound, true);
+            });
+        }
+        //bestMove = engine.think(board, softBound, hardBound, true);
     }
+    for(int i = 0; i < threadCount; i++) {
+        threads[i].join();
+    }
+    Move bestMove = TT.getBestMove(board.getZobristHash());
     std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
     board.makeMove(bestMove);
 }
 
-// resets everything
-void newGame() {
-    engine.resetEngine();
-    board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
-}
 
 // interprets the command
 void interpretCommand(std::string command) {
@@ -221,7 +245,7 @@ int main(int argc, char* argv[]) {
         if(command == "quit") {
             return 0;
         }
-            interpretCommand(command);
+        interpretCommand(command);
     }
     return 0;
 };

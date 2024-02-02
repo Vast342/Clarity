@@ -72,7 +72,8 @@ void generateData(int numGames, int numThreads) {
 void threadFunction(int numGames, int threadID) {
     //std::cout << "Thread Function called on thread " << std::to_string(threadID) << '\n';
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    Engine engine;
+    TranspositionTable TT;
+    Engine engine(&TT);
     std::ofstream output;
     output.open(directory + "thread" + std::to_string(threadID) + ".txt");
     for(int i = 0; i < numGames; i++) {
