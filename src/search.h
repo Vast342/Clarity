@@ -55,8 +55,6 @@ struct Engine {
 
         Move rootBestMove = Move();
 
-        int nodes = 0;
-
         int hardLimit = 0;
 
         int seldepth = 0;

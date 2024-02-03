@@ -36,13 +36,13 @@ Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 TranspositionTable TT;
 std::vector<Engine> engines;
 std::vector<std::thread> threads;
-int threadCount;
+int threadCount = 1;
 
 int rootColorToMove;
 
 // resets everything
 void newGame() {
-    engines.resize(0, Engine(nullptr));
+    engines.clear();
     for(int i = 0; i < threadCount; i++) {
         engines.emplace_back(&TT);
     }
@@ -112,7 +112,7 @@ void identify() {
     std::cout << "id name Clarity V4.1.0\n";
     std::cout << "id author Vast\n";
     std::cout << "option name Hash type spin default 64 min 1 max 2048\n";
-    std::cout << "option name Threads type spin default 1 min 1 max 1\n";
+    std::cout << "option name Threads type spin default 1 min 1 max 64\n";
     outputTunables();
     std::cout << "uciok\n";
 }
@@ -147,7 +147,7 @@ void go(std::vector<std::string> bits) {
     if(depth != 0) {
         for(int i = 0; i < threadCount; i++) {
             threads.emplace_back([depth, i]{
-                engines[i].fixedDepthSearch(board, depth, true);
+                engines[i].fixedDepthSearch(board, depth, i == 0);
             });
         }
         //bestMove = engines.fixedDepthSearch(board, depth, true);
@@ -158,7 +158,7 @@ void go(std::vector<std::string> bits) {
         const int hardBound = time / hardBoundDivisor;
         for(int i = 0; i < threadCount; i++) {
             threads.emplace_back([i, softBound, hardBound]{
-                engines[i].think(board, softBound, hardBound, true);
+                engines[i].think(board, softBound, hardBound, i == 0);
             });
         }
         //bestMove = engine.think(board, softBound, hardBound, true);
@@ -169,6 +169,7 @@ void go(std::vector<std::string> bits) {
     Move bestMove = TT.getBestMove(board.getZobristHash());
     std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
     board.makeMove(bestMove);
+    threads.clear();
 }
 
 
@@ -234,6 +235,7 @@ void interpretCommand(std::string command) {
 
 int main(int argc, char* argv[]) {
     initialize();
+    newGame();
     std::cout << std::boolalpha;
     if(argc > 1 && std::string(argv[1]) == "bench") {
         runBench(14);

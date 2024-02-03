@@ -15,6 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
+int nodes = 0;
+
 #include "search.h"
 #include "tt.h"
 #include <cstring>
