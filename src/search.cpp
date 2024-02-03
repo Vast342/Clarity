@@ -15,6 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
+int nodes = 0;
+
 #include "search.h"
 #include "tt.h"
 #include <cstring>
@@ -40,14 +43,13 @@ void Engine::clearHistory() {
     std::memset(conthistTable.get(), 0, sizeof(conthistTable));
 }
 
-// resizes the transposition table
-void Engine::resizeTT(int newSize) {
-    TT.resize(newSize);
+Move Engine::getBestMove() {
+    return rootBestMove;
 }
 
 // resets the engine, done when ucinewgame is sent
 void Engine::resetEngine() {
-    TT.clearTable();
+    TT->clearTable();
     clearHistory(); 
 }
 
@@ -231,7 +233,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     if(ply > seldepth) seldepth = ply;
     const uint64_t hash = board.getZobristHash();
     // TT check
-    Transposition* entry = TT.getEntry(hash);
+    Transposition* entry = TT->getEntry(hash);
 
     if(entry->zobristKey == hash && (
         entry->flag == Exact // exact score
@@ -327,7 +329,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     }
 
     // push to TT
-    TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, 0));
+    TT->setEntry(hash, Transposition(hash, bestMove, flag, bestScore, 0));
 
     return bestScore;
 }
@@ -387,7 +389,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // TT check
     Transposition* entry = nullptr;
     
-    if(!inSingularSearch) entry = TT.getEntry(hash);
+    if(!inSingularSearch) entry = TT->getEntry(hash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
@@ -623,7 +625,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // push to TT
     if(!inSingularSearch) {
         if(entry->zobristKey == hash && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-        TT.setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
+        TT->setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
     }
 
     return bestScore;
@@ -641,7 +643,7 @@ std::string Engine::getPV(Board board, std::vector<uint64_t> &hashVector, int nu
     }
     hashVector.push_back(hash);
     numEntries++;
-    Transposition* entry = TT.getEntry(hash);
+    Transposition* entry = TT->getEntry(hash);
     if(entry->zobristKey == hash && entry->flag == Exact) {
         Move bestMove = entry->bestMove;
         if(bestMove != Move() && board.makeMove(bestMove)) {
