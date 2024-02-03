@@ -43,6 +43,10 @@ void Engine::clearHistory() {
     std::memset(conthistTable.get(), 0, sizeof(conthistTable));
 }
 
+Move Engine::getBestMove() {
+    return rootBestMove;
+}
+
 // resets the engine, done when ucinewgame is sent
 void Engine::resetEngine() {
     TT->clearTable();

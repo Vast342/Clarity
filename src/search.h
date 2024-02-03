@@ -42,6 +42,7 @@ struct Engine {
     public: 
         void resetEngine();
         Move think(Board board, int softBound, int hardBound, bool info);
+        Move getBestMove();
         int benchSearch(Board board, int depthToSearch);
         Move fixedDepthSearch(Board board, int depthToSearch, bool info);
         std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
