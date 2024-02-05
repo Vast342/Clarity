@@ -493,7 +493,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             continue;
         }
         // futility pruning
-        if(bestScore > mateScore && isQuiet && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) {
+        if(bestScore > mateScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) {
             skipQuiets = true;
             continue;
         }
