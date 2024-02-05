@@ -473,7 +473,6 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
     int legalMoves = 0;
-    bool skipQuiets = false;
     for(int i = 0; i < totalMoves; i++) {
         for(int j = i + 1; j < totalMoves; j++) {
             if(moveValues[j] > moveValues[i]) {
@@ -489,14 +488,8 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
-        if(isQuiet && skipQuiets) {
-            continue;
-        }
         // futility pruning
-        if(bestScore > mateScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) {
-            skipQuiets = true;
-            continue;
-        }
+        if(bestScore > mateScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) break;
         // Late Move Pruning
         if(depth < lmpDepthCondition.value && !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > lmpBase.value + depth * depth / (2 - improving)) continue;
         // see pruning
