@@ -19,7 +19,7 @@ SRC_DIR := src
 BUILD_DIR := build
 
 # Source files
-SRCS := $(filter-out src/magic.cpp src/datagen.cpp, $(wildcard src/*.cpp))
+SRCS := $(filter-out src/magic.cpp src/datagen.cpp src/wdldatagen.cpp, $(wildcard src/*.cpp))
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
 
 # Binary name (set to Clarity)
