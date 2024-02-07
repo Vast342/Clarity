@@ -474,12 +474,15 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // loop through the moves
     int legalMoves = 0;
     for(int i = 0; i < totalMoves; i++) {
+        // gets the best move (according to move ordering) from the list, incrementally sorting it.
         for(int j = i + 1; j < totalMoves; j++) {
             if(moveValues[j] > moveValues[i]) {
                 std::swap(moveValues[j], moveValues[i]);
                 std::swap(moves[j], moves[i]);
             }
         }
+
+        // information gathering
         Move move = moves[i];
         if(move == stack[ply].excluded) continue;
         int moveStartSquare = move.getStartSquare();
@@ -488,14 +491,18 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
+
+        // move loop prunings:
         // futility pruning
         if(bestScore > mateScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) break;
         // Late Move Pruning
-        if(/*depth < lmpDepthCondition.value &&*/ !isPV && isQuiet && bestScore > mateScore + 256 && quietCount > lmpBase.value + depth * depth / (2 - improving)) continue;
+        if(!isPV && isQuiet && bestScore > mateScore + 256 && quietCount > lmpBase.value + depth * depth / (2 - improving)) continue;
         // see pruning
         if(depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > mateScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
         if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
+
+
         int TTExtensions = 0;
         // determine whether or not to extend TT move (Singular Extensions)
         if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
@@ -512,14 +519,18 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     TTExtensions = 1;
                 }
             } else if(sBeta >= beta) {
+                // multicut!
                 return sBeta;
             } else if (entry->score >= beta) {
+                // negative extensions!
                 TTExtensions = -2;
             }
         }
+
         if(!board.makeMove(move)) {
             continue;
         }
+
         stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];\
         testedMoves[legalMoves] = move;
         legalMoves++;
