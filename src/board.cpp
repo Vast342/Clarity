@@ -867,15 +867,15 @@ uint64_t Board::keyAfter(const Move move) const {
     const int endSquare = move.getEndSquare();
     
     const int moving = pieceAtIndex(startSquare);
-    const int captured = pieceAtIndex(move.getEndSquare());
+    const int captured = pieceAtIndex(endSquare);
 
     uint64_t key = state.zobristHash;
 
-    key ^= zobTable[moving][startSquare];
-    key ^= zobTable[moving][endSquare];
+    key ^= zobTable[startSquare][moving];
+    key ^= zobTable[endSquare][moving];
 
     if (captured != None) {
-        key ^= zobTable[captured][endSquare];
+        key ^= zobTable[endSquare][captured];
     }
 
     key ^= zobColorToMove;
