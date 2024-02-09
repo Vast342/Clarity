@@ -502,6 +502,9 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         // History Pruning
         if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
 
+        // TT prefetching
+        uint64_t afterKey = board.keyAfter(move);
+        __builtin_prefetch(TT->getEntry(afterKey));
 
         int TTExtensions = 0;
         // determine whether or not to extend TT move (Singular Extensions)

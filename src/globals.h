@@ -122,6 +122,7 @@ struct Board {
         int getFiftyMoveCount() const;
         uint64_t getZobristHash() const;
         BoardState getBoardState() const;
+        uint64_t keyAfter(const Move move) const;
     private:
         BoardState state;
         int plyCount;
