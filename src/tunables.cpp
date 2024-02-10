@@ -30,7 +30,6 @@ Tunable fpDepthCondition("FP_DepthCondition", 1, 1);
 Tunable fpBase("FP_Base", 268, 1);
 Tunable fpMultiplier("FP_Multiplier", 64, 1);
 
-Tunable lmpDepthCondition("LMP_DepthCondition", 7, 1);
 Tunable lmpBase("LMP_Base", 2, 1);// No divisor adjustment
 
 Tunable sprDepthCondition("SPR_DepthCondition", 4, 1);
@@ -87,7 +86,6 @@ std::vector<Tunable *> tunables = {
     &fpDepthCondition,
     &fpBase,
     &fpMultiplier,
-    &lmpDepthCondition,
     &lmpBase,
     &sprDepthCondition,
     &sprCaptureThreshold,

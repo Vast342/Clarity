@@ -32,6 +32,7 @@
 #include <random>
 #include <chrono>
 #include <fstream>
+#include <thread>
 #include "eval.h"
 #include <memory>
 
@@ -202,7 +203,6 @@ extern Tunable fpDepthCondition;
 extern Tunable fpBase;
 extern Tunable fpMultiplier;
 
-extern Tunable lmpDepthCondition;
 extern Tunable lmpBase;
 
 extern Tunable sprDepthCondition;
