@@ -32,6 +32,7 @@
 #include <random>
 #include <chrono>
 #include <fstream>
+#include <thread>
 #include "eval.h"
 #include <memory>
 
@@ -122,6 +123,7 @@ struct Board {
         int getFiftyMoveCount() const;
         uint64_t getZobristHash() const;
         BoardState getBoardState() const;
+        uint64_t keyAfter(const Move move) const;
     private:
         BoardState state;
         int plyCount;
@@ -201,7 +203,6 @@ extern Tunable fpDepthCondition;
 extern Tunable fpBase;
 extern Tunable fpMultiplier;
 
-extern Tunable lmpDepthCondition;
 extern Tunable lmpBase;
 
 extern Tunable sprDepthCondition;

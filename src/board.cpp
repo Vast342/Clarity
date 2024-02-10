@@ -848,13 +848,37 @@ int Board::getFiftyMoveCount() const {
 uint64_t Board::getZobristHash() const {
     return state.zobristHash;
 }
+
 BoardState Board::getBoardState() const {
     return state;
 }
+
 Board::Board(BoardState s, int ctm) {
     state = s;
     colorToMove = ctm;
     state.hundredPlyCounter = 0;
     plyCount = 0;
     stateHistory.reserve(256);
+}
+
+// estimates the resulting zobrist key from a move
+uint64_t Board::keyAfter(const Move move) const {
+    const int startSquare = move.getStartSquare();
+    const int endSquare = move.getEndSquare();
+    
+    const int moving = pieceAtIndex(startSquare);
+    const int captured = pieceAtIndex(endSquare);
+
+    uint64_t key = state.zobristHash;
+
+    key ^= zobTable[startSquare][moving];
+    key ^= zobTable[endSquare][moving];
+
+    if (captured != None) {
+        key ^= zobTable[endSquare][captured];
+    }
+
+    key ^= zobColorToMove;
+
+    return key;
 }
