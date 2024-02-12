@@ -745,7 +745,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         if(elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value)) break;
         //if(elapsedTime > softBound) break;
     }
-
+    if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove);
     return rootBestMove;
 }
 
@@ -827,6 +827,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(info) outputInfo(board, score, depth, elapsedTime);
     }
+    std::cout << "bestmove " << toLongAlgebraic(rootBestMove);
     return rootBestMove;
 }
 
