@@ -163,13 +163,6 @@ void go(std::vector<std::string> bits) {
         }
         //bestMove = engine.think(board, softBound, hardBound, true);
     }
-    for(int i = 0; i < threadCount; i++) {
-        threads[i].join();
-    }
-    Move bestMove = engines[0].getBestMove();
-    std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
-    board.makeMove(bestMove);
-    threads.clear();
 }
 
 void stopThePresses() {
@@ -178,6 +171,7 @@ void stopThePresses() {
         engines[i].timesUp = true;
         threads[i].join();
     }
+    threads.clear();
 }
 
 // interprets the command
