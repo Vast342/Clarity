@@ -163,15 +163,17 @@ void go(std::vector<std::string> bits) {
         }
         //bestMove = engine.think(board, softBound, hardBound, true);
     }
+}
+
+void stopThePresses() {
+    for(int i = 0; i < threadCount; i++) {
+        engines[i].timesUp = true;
+    }
     for(int i = 0; i < threadCount; i++) {
         threads[i].join();
     }
-    Move bestMove = engines[0].getBestMove();
-    std::cout << "bestmove " << toLongAlgebraic(bestMove) << '\n';
-    board.makeMove(bestMove);
     threads.clear();
 }
-
 
 // interprets the command
 void interpretCommand(std::string command) {
@@ -228,6 +230,8 @@ void interpretCommand(std::string command) {
         outputTunableJSON();
     } else if(bits[0] == "tunableob") {
         outputTunableOB(); 
+    } else if(bits[0] == "stop") {
+        stopThePresses();
     } else {
         std::cout << "invalid or unsupported command\n";
     }
@@ -245,6 +249,7 @@ int main(int argc, char* argv[]) {
     while(true) {
         std::getline(std::cin, command, '\n');
         if(command == "quit") {
+            stopThePresses();
             return 0;
         }
         interpretCommand(command);
