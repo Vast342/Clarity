@@ -21,6 +21,7 @@ int nodes = 0;
 #include "search.h"
 #include "tt.h"
 #include <cstring>
+#include "normalize.h"
 
 constexpr int hardNodeCap = 400000;
 
@@ -674,7 +675,7 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
     std::string scoreString = " score ";
     if(abs(score) < abs(mateScore + 256)) {
         scoreString += "cp ";
-        scoreString += std::to_string(score);
+        scoreString += std::to_string(normalize(score, board.getPlyCount()));
     } else {
         // score is checkmate in score - mateScore ply
         // position fen rn1q2rk/pp3p1p/2p4Q/3p4/7P/2NP2R1/PPP3P1/4RK2 w - - 0 1
@@ -733,18 +734,16 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
+        if(timesUp) rootBestMove = previousBest;
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        if(timesUp) {
-            return previousBest;
-        }
-        // outputs info which is picked up by the user
-        if(info) outputInfo(board, score, depth, elapsedTime);
         // soft time bounds check
         double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
-        if(elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value)) break;
+        if(timesUp || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value)) break;
+        // outputs info which is picked up by the user
+        if(info) outputInfo(board, score, depth, elapsedTime);
         //if(elapsedTime > softBound) break;
     }
-
+    if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
     return rootBestMove;
 }
 
@@ -823,9 +822,11 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
+        if(timesUp) break;
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(info) outputInfo(board, score, depth, elapsedTime);
     }
+    if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
     return rootBestMove;
 }
 
