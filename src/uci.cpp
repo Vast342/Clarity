@@ -166,9 +166,7 @@ void go(std::vector<std::string> bits) {
 }
 
 void stopThePresses() {
-    for(int i = 0; i < threadCount; i++) {
-        engines[i].timesUp = true;
-    }
+    timesUp = true;
     for(int i = 0; i < threadCount; i++) {
         threads[i].join();
     }

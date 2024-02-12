@@ -20,6 +20,8 @@
 #include "globals.h"
 #include "tt.h"
 
+extern bool timesUp;
+
 constexpr int depthLimit = 120;
 
 constexpr int mateScore = -10000000;
@@ -50,7 +52,6 @@ struct Engine {
             conthistTable = std::make_unique<CHTable>();
             TT = tt;
         }
-        bool timesUp = false;
     private:
         bool dataGeneration = false;
 

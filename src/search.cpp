@@ -16,6 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+bool timesUp = false;
+
 int nodes = 0;
 
 #include "search.h"
@@ -711,7 +713,6 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     for(int depth = 1; depth < 100; depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
-        timesUp = false;
         int delta = aspBaseDelta.value;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
@@ -719,9 +720,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, depth, alpha, beta, 0, true);
-                if(timesUp) {
-                    return previousBest;
-                } 
+                if(timesUp) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -mateScore);
                 } else if(score <= alpha) {
@@ -796,13 +795,15 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     nodes = 0;
     seldepth = 0;
     hardLimit = 1215752192;
+    timesUp = false;
     begin = std::chrono::steady_clock::now();
 
     int score = 0;
 
+    Move previousBest;
+
     for(int depth = 1; depth <= depthToSearch; depth++) {
         seldepth = 0;
-        timesUp = false;
         int delta = aspBaseDelta.value;
         int alpha = std::max(mateScore, score - delta);
         int beta = std::min(-mateScore, score + delta);
@@ -822,9 +823,13 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         } else {
             score = negamax(board, depth, mateScore, -mateScore, 0, true);
         }
-        if(timesUp) break;
+        if(timesUp) {
+            rootBestMove = previousBest;
+            break;
+        }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         if(info) outputInfo(board, score, depth, elapsedTime);
+        previousBest = rootBestMove;
     }
     if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
     return rootBestMove;
