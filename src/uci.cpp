@@ -172,6 +172,13 @@ void go(std::vector<std::string> bits) {
     threads.clear();
 }
 
+void stopThePresses() {
+    timesUp = true;
+    for(int i = 0; i < threadCount; i++) {
+        engines[i].timesUp = true;
+        threads[i].join();
+    }
+}
 
 // interprets the command
 void interpretCommand(std::string command) {
@@ -228,6 +235,8 @@ void interpretCommand(std::string command) {
         outputTunableJSON();
     } else if(bits[0] == "tunableob") {
         outputTunableOB(); 
+    } else if(bits[0] == "stop") {
+        stopThePresses();
     } else {
         std::cout << "invalid or unsupported command\n";
     }
@@ -245,6 +254,7 @@ int main(int argc, char* argv[]) {
     while(true) {
         std::getline(std::cin, command, '\n');
         if(command == "quit") {
+            stopThePresses();
             return 0;
         }
         interpretCommand(command);
