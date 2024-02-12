@@ -21,6 +21,7 @@ int nodes = 0;
 #include "search.h"
 #include "tt.h"
 #include <cstring>
+#include "normalize.h"
 
 constexpr int hardNodeCap = 400000;
 
@@ -674,7 +675,7 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
     std::string scoreString = " score ";
     if(abs(score) < abs(mateScore + 256)) {
         scoreString += "cp ";
-        scoreString += std::to_string(score);
+        scoreString += std::to_string(normalize(score, board.getPlyCount()));
     } else {
         // score is checkmate in score - mateScore ply
         // position fen rn1q2rk/pp3p1p/2p4Q/3p4/7P/2NP2R1/PPP3P1/4RK2 w - - 0 1

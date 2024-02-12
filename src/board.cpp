@@ -752,6 +752,7 @@ void Board::changeColor() {
     state.hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
     state.zobristHash ^= zobColorToMove;
+    plyCount--;
 }
 
 void Board::undoChangeColor() {
@@ -881,4 +882,8 @@ uint64_t Board::keyAfter(const Move move) const {
     key ^= zobColorToMove;
 
     return key;
+}
+
+int Board::getPlyCount() const {
+    return plyCount;
 }
