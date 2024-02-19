@@ -44,6 +44,7 @@ void Engine::clearHistory() {
     std::memset(historyTable.data(), 0, sizeof(historyTable));
     std::memset(noisyHistoryTable.data(), 0, sizeof(noisyHistoryTable));
     std::memset(conthistTable.get(), 0, sizeof(conthistTable));
+    std::memset(qsHistoryTable.data(), 0, sizeof(qsHistoryTable));
 }
 
 Move Engine::getBestMove() {
