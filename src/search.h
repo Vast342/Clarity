@@ -38,7 +38,6 @@ struct StackEntry {
     bool inCheck;
     // excluded move
     Move excluded;
-    int doubleExtensions;
 };
 
 struct Engine {

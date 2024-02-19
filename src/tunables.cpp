@@ -73,7 +73,6 @@ Tunable qhsSubtractor("QHS_Subtractor", 107, 1);
 Tunable qhpDepthMultiplier("QHP_DepthMultiplier", -1872, -1);
 
 Tunable dexMargin("DEX_Margin", 50, 1);
-Tunable dexLimit("DEX_Limit", 20, 1);
 
 // Declaration of pointers to tunables
 

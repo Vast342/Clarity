@@ -522,9 +522,8 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true);
             stack[ply].excluded = Move();
             if(score < sBeta) {
-                if (!isPV && score < sBeta - dexMargin.value && stack[ply].doubleExtensions <= dexLimit.value) {
+                if (!isPV && score < sBeta - dexMargin.value) {
                     TTExtensions = 2;
-                    stack[ply].doubleExtensions++;
                 } else {
                     TTExtensions = 1;
                 }
