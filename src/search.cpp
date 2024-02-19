@@ -53,6 +53,7 @@ Move Engine::getBestMove() {
 
 // resets the engine, done when ucinewgame is sent
 void Engine::resetEngine() {
+    stack = {};
     TT->clearTable();
     clearHistory(); 
 }
@@ -448,6 +449,8 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         }
     }
 
+    if(ply > 0) stack[ply].doubleExtensions = stack[ply - 1].doubleExtensions;
+
     // get the moves
     std::array<Move, 256> moves;
     std::array<Move, 256> testedMoves;
@@ -697,6 +700,7 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
 
 // the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
 Move Engine::think(Board board, int softBound, int hardBound, bool info) {
+    stack[0].doubleExtensions = 0;
     //ageHistory();
     //clearHistory();
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
@@ -772,6 +776,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
 
 // searches done for bench, returns the number of nodes searched.
 int Engine::benchSearch(Board board, int depthToSearch) {
+    stack[0].doubleExtensions = 0;
     //clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
@@ -815,6 +820,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
 
 // searches to a fixed depth when the user says go depth x
 Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
+    stack[0].doubleExtensions = 0;
     //ageHistory();
     //clearHistory();
     nodes = 0;
@@ -884,6 +890,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
 }
 
 std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
+    stack[0].doubleExtensions = 0;
     //clearHistory();
     dataGeneration = true;
     nodes = 0;
