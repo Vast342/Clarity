@@ -49,7 +49,9 @@ void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
 constexpr uint32_t ColorStride = 64 * 6;
 constexpr uint32_t PieceStride = 64;
 constexpr int Scale = 400;
-constexpr int Q = 255 * 64;
+constexpr int Qa = 255;
+constexpr int Qb = 64;
+constexpr int Qab = Qa * Qb;
 
 
 std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int type) {
@@ -70,20 +72,16 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
     int sum = 0;
 
     for(int i = 0; i < layer1Size; ++i)
-    {
-        int activated = std::clamp(static_cast<int>(us[i]), 0, 255);
-        activated *= activated;
-        sum += activated * weights[i];
+    {   // changing the order of this is changing bench but speeding up, maybe? 
+        int activatedUs = std::clamp(static_cast<int>(us[i]), 0, Qa);
+        activatedUs *= weights[i];
+        sum += activatedUs * activatedUs;
+        int activatedThem = std::clamp(static_cast<int>(them[i]), 0, Qa);
+        activatedThem *= weights[layer1Size + i];
+        sum += activatedThem * activatedThem;
     }
 
-    for(int i = 0; i < layer1Size; ++i)
-    {
-        int activated = std::clamp(static_cast<int>(them[i]), 0, 255);
-        activated *= activated;
-        sum += activated * weights[layer1Size + i];
-    }
-
-    return sum / 255;
+    return sum;
 }
 void NetworkState::activateFeature(int square, int type){ 
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
@@ -107,5 +105,5 @@ void NetworkState::disableFeature(int square, int type) {
 
 int NetworkState::evaluate(int colorToMove) {
     const auto output = colorToMove == 0 ? forward(currentAccumulator.black, currentAccumulator.white, network->outputWeights) : forward(currentAccumulator.white, currentAccumulator.black, network->outputWeights);
-    return (output + network->outputBias) * Scale / Q;
+    return (output / Qa + network->outputBias) * Scale / Qab;
 }
