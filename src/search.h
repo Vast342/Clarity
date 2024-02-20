@@ -24,7 +24,7 @@ extern bool timesUp;
 
 constexpr int depthLimit = 120;
 
-constexpr int mateScore = -10000000;
+constexpr int matedScore = -10000000;
 
 extern int badCaptureScore;
 
@@ -38,6 +38,7 @@ struct StackEntry {
     bool inCheck;
     // excluded move
     Move excluded;
+    int doubleExtensions;
 };
 
 struct Engine {
