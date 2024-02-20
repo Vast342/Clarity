@@ -147,7 +147,7 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
                 int colorMultiplier = 2 * board.getColorToMove() - 1;
                 if(board.isInCheck()) {
                     // checkmate! opponent wins, so if black wins it's -1000000 * -(-1)
-                    score = mateScore * -colorMultiplier;
+                    score = matedScore * -colorMultiplier;
                 } else {
                     score = 0;
                 }
@@ -163,7 +163,7 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
                 outOfBounds = true;
             }
             if(((1ULL << result.first.getEndSquare()) & board.getOccupiedBitboard()) == 0 && result.first.getFlag() != EnPassant) {
-                if(abs(score) < abs(mateScore + 256)) {
+                if(abs(score) < abs(matedScore + 256)) {
                     if(!board.isInCheck()) {
                         // non-mate, not in check, add fen string to vector
                         fenVector.push_back(board.getFenString() + " | " + std::to_string(score));
