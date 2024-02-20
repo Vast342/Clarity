@@ -74,11 +74,9 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
     for(int i = 0; i < layer1Size; ++i)
     {   // changing the order of this is changing bench but speeding up, maybe? 
         int activatedUs = std::clamp(static_cast<int>(us[i]), 0, Qa);
-        activatedUs *= weights[i];
-        sum += activatedUs * activatedUs;
+        sum += (activatedUs * weights[i]) * activatedUs;
         int activatedThem = std::clamp(static_cast<int>(them[i]), 0, Qa);
-        activatedThem *= weights[layer1Size + i];
-        sum += activatedThem * activatedThem;
+        sum += (activatedThem * weights[layer1Size + i]) * activatedThem;
     }
 
     return sum;
