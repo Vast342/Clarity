@@ -17,6 +17,7 @@
 */
 #include "globals.h"
 #include "eval.h"
+#include "simd.h"
 
 #ifdef _MSC_VER
 #define SP_MSVC
@@ -52,6 +53,7 @@ constexpr int Scale = 400;
 constexpr int Qa = 255;
 constexpr int Qb = 64;
 constexpr int Qab = Qa * Qb;
+constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 
 
 std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int type) {
@@ -69,17 +71,25 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
 
 // SCReLU!
 int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
-    int sum = 0;
+    Vector sum = zeroVector();
+    Vector vector0, vector1;
 
-    for(int i = 0; i < layer1Size; ++i)
+    for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
-        int activatedUs = std::clamp(static_cast<int>(us[i]), 0, Qa);
-        sum += (activatedUs * weights[i]) * activatedUs;
-        int activatedThem = std::clamp(static_cast<int>(them[i]), 0, Qa);
-        sum += (activatedThem * weights[layer1Size + i]) * activatedThem;
+        // us
+        vector0 = clip(loadToVector(us, i * weightsPerVector), Qa);
+        vector1 = mullo(vector1, loadWeightsToVector(weights, i * weightsPerVector));
+        vector1 = madd(vector0, vector1);
+        sum = add(sum, vector1);
+        
+        // them
+        vector0 = clip(loadToVector(them, i * weightsPerVector), Qa);
+        vector1 = mullo(vector1, loadWeightsToVector(weights, layer1Size + i * weightsPerVector));
+        vector1 = madd(vector0, vector1);
+        sum = add(sum, vector1);
     }
 
-    return sum;
+    return vectorSum(sum);
 }
 void NetworkState::activateFeature(int square, int type){ 
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
