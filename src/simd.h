@@ -26,12 +26,12 @@
         return _mm512_mullo_epi16(x, y);
     }
 
-    inline Vector add(Vector x, Vector y) {
-        return _mm512_add_epi32(x, y);
-    }
-
     inline Vector madd(Vector x, Vector y) {
         return _mm512_madd_epi16(x, y);
+    }
+
+    inline Vector add(Vector x, Vector y) {
+        return _mm512_add_epi32(x, y);
     }
 
     inline int vectorSum(Vector vector) {
@@ -60,14 +60,15 @@
         return _mm256_mullo_epi16(x, y);
     }
 
-    inline Vector add(Vector x, Vector y) {
-        return _mm256_add_epi32(x, y);
-    }
-
     inline Vector madd(Vector x, Vector y) {
         return _mm256_madd_epi16(x, y);
     }
 
+    inline Vector add(Vector x, Vector y) {
+        return _mm256_add_epi32(x, y);
+    }
+
+    // Gabe, developer of Obsidian's approach to the same technique as below
     inline int vectorSum(Vector vector) {
         __m128i sum0;
         __m128i sum1;
@@ -110,12 +111,12 @@
         return _mm_mullo_epi16(x, y);
     }
 
-    inline Vector add(Vector x, Vector y) {
-        return _mm_add_epi32(x, y);
-    }
-
     inline Vector madd(Vector x, Vector y) {
         return _mm_madd_epi16(x, y);
+    }
+
+    inline Vector add(Vector x, Vector y) {
+        return _mm_add_epi32(x, y);
     }
 
     // "the normal way:tm:" ~ Ciekce, 2024

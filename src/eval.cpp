@@ -78,13 +78,13 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
     {
         // us
         vector0 = clip(loadToVector(us, i * weightsPerVector), Qa);
-        vector1 = mullo(vector1, loadWeightsToVector(weights, i * weightsPerVector));
+        vector1 = mullo(vector0, loadWeightsToVector(weights, i * weightsPerVector));
         vector1 = madd(vector0, vector1);
         sum = add(sum, vector1);
         
         // them
         vector0 = clip(loadToVector(them, i * weightsPerVector), Qa);
-        vector1 = mullo(vector1, loadWeightsToVector(weights, layer1Size + i * weightsPerVector));
+        vector1 = mullo(vector0, loadWeightsToVector(weights, layer1Size + i * weightsPerVector));
         vector1 = madd(vector0, vector1);
         sum = add(sum, vector1);
     }
