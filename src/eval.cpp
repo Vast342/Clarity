@@ -75,16 +75,16 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
         // us
-        vector0 = clip(loadToVector(us, i * weightsPerVector), Qa);
-        vector1 = mullo(vector0, loadWeightsToVector(weights, i * weightsPerVector));
-        vector1 = madd(vector0, vector1);
-        sum = add(sum, vector1);
+        vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
+        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector])));
+        vector1 = _mm256_madd_epi16(vector0, vector1);
+        sum = _mm256_add_epi32(sum, vector1);
         
         // them
-        vector0 = clip(loadToVector(them, i * weightsPerVector), Qa);
-        vector1 = mullo(vector0, loadWeightsToVector(weights, layer1Size + i * weightsPerVector));
-        vector1 = madd(vector0, vector1);
-        sum = add(sum, vector1);
+        vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
+        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector])));
+        vector1 = _mm256_madd_epi16(vector0, vector1);
+        sum = _mm256_add_epi32(sum, vector1);
     }
 
     return vectorSum(sum);
