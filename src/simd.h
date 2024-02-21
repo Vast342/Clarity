@@ -96,11 +96,11 @@
     }
 
     inline Vector loadToVector(std::span<int16_t, layer1Size> span, int index) {
-        return _mm_load_si(reinterpret_cast<const Vector *>(&span[index]));
+        return _mm_load_si128(reinterpret_cast<const Vector *>(&span[index]));
     }
 
     inline Vector loadWeightsToVector(std::array<int16_t, layer1Size * 2> span, int index) {
-        return _mm_load_si(reinterpret_cast<const Vector *>(&span[index]));
+        return _mm_load_si128(reinterpret_cast<const Vector *>(&span[index]));
     }
 
     inline Vector zeroVector() {
@@ -121,8 +121,8 @@
 
     // "the normal way:tm:" ~ Ciekce, 2024
     inline int vectorSum(Vector vector) {
-        const auto high64 = _mm_unpackhi_epi64(v, v);
-        const auto sum64 = _mm_add_epi32(v, high64);
+        const auto high64 = _mm_unpackhi_epi64(vector, vector);
+        const auto sum64 = _mm_add_epi32(vector, high64);
 
         const auto high32 = _mm_shuffle_epi32(sum64, _MM_SHUFFLE(2, 3, 0, 1));
         const auto sum32 = _mm_add_epi32(sum64, high32);
