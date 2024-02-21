@@ -67,6 +67,14 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
     return {blackIdx, whiteIdx};
 }
 
+/*
+    A technique that I am using here was invented yesterday by SomeLizard, developer of the engine Lizard
+    I am using the SCReLU activation function, which is CReLU(x)^2 * W
+    the technique is to use CReLU(x) * w * CReLU(x) which allows you (assuming weight is in (-127, 127))
+    to fit the resulting number in a 16 bit integer, allowing you to perform the remaining functions
+    on twice as many numbers at once, leading to a pretty sizeable speedup
+*/
+
 #if defined(__AVX512F__) && defined(__AVX512BW__)
 using Vector = __m512i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
