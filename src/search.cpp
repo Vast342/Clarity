@@ -366,8 +366,8 @@ void Engine::updateQSHistory(const int colorToMove, const int piece, const int e
 
 // The main search function
 int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
-    // if it's a repeated position, it's a draw
-    if(ply > 0 && board.isRepeatedPosition()) return 0;
+    // if it's a repeated position or been 50 moves, it's a draw
+    if(ply > 0 && (board.isRepeatedPosition() || board.getFiftyMoveCount() >= 50)) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
         if(dataGeneration) {
