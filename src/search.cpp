@@ -525,6 +525,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 if (!isPV && score < sBeta - dexMargin.value && stack[ply].doubleExtensions <= dexLimit.value) {
                     TTExtensions = 2;
                     stack[ply].doubleExtensions++;
+                    depth += depth < deiMargin.value;
                 } else {
                     TTExtensions = 1;
                 }
