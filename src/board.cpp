@@ -93,6 +93,7 @@ Board::Board(std::string fen) {
     stateHistory.reserve(256);
     state.nnueState.reset();
     state.zobristHash = 0;
+    state.materialCount = 0;
     for(int i = 0; i < 6; i++) {
         state.pieceBitboards[i] = 0ULL;
     }
@@ -303,6 +304,7 @@ void Board::addPiece(int square, int type) {
     assert(pieceAtIndex(square) == type);
     state.nnueState.activateFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
+    state.materialCount++;
 }
 
 void Board::removePiece(int square, int type) {
@@ -316,6 +318,7 @@ void Board::removePiece(int square, int type) {
     state.nnueState.disableFeature(square, type);
     state.zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
+    state.materialCount--;
 }
 
 void Board::movePiece(int square1, int type1, int square2, int type2) {

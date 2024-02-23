@@ -87,7 +87,7 @@ constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm512_setzero_si512();
     Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * (bucket - 1);
+    const int bucketIncrement = 2 * layer1Size * bucket;
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
@@ -99,7 +99,7 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
         
         // them
         vector0 = _mm512_max_epi16(_mm512_min_epi16(_mm512_load_si512(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm512_set1_epi16(Qa)), _mm512_setzero_si512());
-        vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector])));
+        vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
         vector1 = _mm512_madd_epi16(vector0, vector1);
         sum = _mm512_add_epi32(sum, vector1);
     }
@@ -114,13 +114,13 @@ constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm256_setzero_si256();
     Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * (bucket - 1);
+    const int bucketIncrement = 2 * layer1Size * bucket;
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
         // us
         vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
-        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement + bucketIncrement])));
+        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
         vector1 = _mm256_madd_epi16(vector0, vector1);
         sum = _mm256_add_epi32(sum, vector1);
         
@@ -156,7 +156,7 @@ constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm_setzero_si128();
     Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * (bucket - 1);
+    const int bucketIncrement = 2 * layer1Size * bucket;
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
@@ -168,7 +168,7 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
         
         // them
         vector0 = _mm_max_epi16(_mm_min_epi16(_mm_load_si128(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm_set1_epi16(Qa)), _mm_setzero_si128());
-        vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector])));
+        vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
         vector1 = _mm_madd_epi16(vector0, vector1);
         sum = _mm_add_epi32(sum, vector1);
     }
