@@ -196,7 +196,7 @@ Board::Board(std::string fen) {
         state.enPassantIndex = 64;
     }
     // 50 move counter, segment 5
-    state.hundredPlyCounter = 0;
+    state.hundredPlyCounter = std::stoi(segments[4]) * 2;
     // ply count, segment 6
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
 }
