@@ -84,10 +84,10 @@ int getBucket(int pieceCount) {
 using Vector = __m512i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
+int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm512_setzero_si512();
     Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * bucket;
+    const int bucketIncrement = 2 * layer1Size * (bucket - 1);
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
@@ -111,10 +111,10 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 using Vector = __m256i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
+int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm256_setzero_si256();
     Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * bucket;
+    const int bucketIncrement = 2 * layer1Size * (bucket - 1);
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
@@ -153,10 +153,10 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 using Vector = __m128i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
+int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm_setzero_si128();
     Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * bucket;
+    const int bucketIncrement = 2 * layer1Size * (bucket - 1);
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {

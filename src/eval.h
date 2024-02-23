@@ -21,7 +21,7 @@
 
 constexpr int inputSize = 768;
 constexpr int layer1Size = 512;
-constexpr int outputBucketCount = 1;
+constexpr int outputBucketCount = 8;
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
@@ -47,5 +47,5 @@ class NetworkState {
     private:
         Accumulator currentAccumulator;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
-        int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::array<std::int16_t, layer1Size * 2> weights);
+        int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::array<std::int16_t, layer1Size * 2 * outputBucketCount> weights);
 };
