@@ -762,7 +762,7 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
-    return state.nnueState.evaluate(colorToMove);
+    return state.nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
 }
 
 int Board::getCastlingRights() const {

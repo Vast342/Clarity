@@ -67,6 +67,11 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
     return {blackIdx, whiteIdx};
 }
 
+int getBucket(int pieceCount) {
+    int divisor = (32 + outputBucketCount - 1) / outputBucketCount;
+    return (pieceCount - 2) / divisor;
+}
+
 /*
     A technique that I am using here was invented yesterday by SomeLizard, developer of the engine Lizard
     I am using the SCReLU activation function, which is CReLU(x)^2 * W
@@ -79,7 +84,7 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
 using Vector = __m512i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
+int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     Vector sum = _mm512_setzero_si512();
     Vector vector0, vector1;
 
@@ -87,7 +92,7 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
     {
         // us
         vector0 = _mm512_max_epi16(_mm512_min_epi16(_mm512_load_si512(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm512_set1_epi16(Qa)), _mm512_setzero_si512());
-        vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector])));
+        vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
         vector1 = _mm512_madd_epi16(vector0, vector1);
         sum = _mm512_add_epi32(sum, vector1);
         
@@ -105,21 +110,22 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
 using Vector = __m256i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
+int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     Vector sum = _mm256_setzero_si256();
     Vector vector0, vector1;
+    int bucketIncrement = 2 * layer1Size * bucket;
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
         // us
         vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
-        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector])));
+        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement + bucketIncrement])));
         vector1 = _mm256_madd_epi16(vector0, vector1);
         sum = _mm256_add_epi32(sum, vector1);
         
         // them
         vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
-        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector])));
+        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
         vector1 = _mm256_madd_epi16(vector0, vector1);
         sum = _mm256_add_epi32(sum, vector1);
     }
@@ -146,7 +152,7 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
 using Vector = __m128i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
+int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     Vector sum = _mm_setzero_si128();
     Vector vector0, vector1;
 
@@ -154,7 +160,7 @@ int NetworkState::forward(const std::span<int16_t, layer1Size> us, const std::sp
     {
         // us
         vector0 = _mm_max_epi16(_mm_min_epi16(_mm_load_si128(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm_set1_epi16(Qa)), _mm_setzero_si128());
-        vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector])));
+        vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
         vector1 = _mm_madd_epi16(vector0, vector1);
         sum = _mm_add_epi32(sum, vector1);
         
@@ -195,7 +201,8 @@ void NetworkState::disableFeature(int square, int type) {
     }
 }
 
-int NetworkState::evaluate(int colorToMove) {
-    const auto output = colorToMove == 0 ? forward(currentAccumulator.black, currentAccumulator.white, network->outputWeights) : forward(currentAccumulator.white, currentAccumulator.black, network->outputWeights);
-    return (output / Qa + network->outputBias) * Scale / Qab;
+int NetworkState::evaluate(int colorToMove, int materialCount) {
+    const int bucket = getBucket(materialCount);
+    const auto output = colorToMove == 0 ? forward(bucket, currentAccumulator.black, currentAccumulator.white, network->outputWeights) : forward(bucket, currentAccumulator.white, currentAccumulator.black, network->outputWeights);
+    return (output / Qa + network->outputBiases[bucket]) * Scale / Qab;
 }
