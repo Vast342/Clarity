@@ -516,6 +516,20 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
             totalMoves++;
         }
     }
+	// pawn pushes
+    uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
+    uint64_t emptyBitboard = ~occupiedBitboard;
+    uint64_t pawnPushes = getPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
+    uint64_t pawnPushPromotions = pawnPushes & getRankMask(7 * colorToMove);
+    pawnPushes ^= pawnPushPromotions;
+    while(pawnPushPromotions != 0) {
+        uint8_t index = popLSB(pawnPushPromotions);
+        uint8_t startSquare = (index + directionalOffsets[colorToMove]);
+        for(int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
+            totalMoves++;
+        }
+    }
     // pawn captures
     const uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
     uint64_t capturable = state.coloredBitboards[1 - colorToMove];
