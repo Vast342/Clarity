@@ -68,7 +68,7 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
 }
 
 int getBucket(int pieceCount) {
-    int divisor = (32 + outputBucketCount - 1) / outputBucketCount;
+    const int divisor = (32 + outputBucketCount - 1) / outputBucketCount;
     return (pieceCount - 2) / divisor;
 }
 
@@ -87,6 +87,7 @@ constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     Vector sum = _mm512_setzero_si512();
     Vector vector0, vector1;
+    const int bucketIncrement = 2 * layer1Size * bucket;
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
@@ -113,7 +114,7 @@ constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     Vector sum = _mm256_setzero_si256();
     Vector vector0, vector1;
-    int bucketIncrement = 2 * layer1Size * bucket;
+    const int bucketIncrement = 2 * layer1Size * bucket;
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
@@ -155,6 +156,7 @@ constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::array<int16_t, layer1Size * 2> weights) {
     Vector sum = _mm_setzero_si128();
     Vector vector0, vector1;
+    const int bucketIncrement = 2 * layer1Size * bucket;
 
     for(int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
