@@ -74,7 +74,6 @@ struct BoardState {
     uint8_t hundredPlyCounter;
     uint8_t castlingRights;
     uint64_t zobristHash;
-    uint8_t materialCount;
 };
 
 // a single move, stored in 16 bits
