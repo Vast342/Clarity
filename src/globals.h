@@ -244,10 +244,10 @@ extern Tunable qhsMultiplier;
 extern Tunable qhsAdder;
 extern Tunable qhsSubtractor;
 
-extern Tunable qhpDepthMultiplier;
-
 extern Tunable dexMargin;
 extern Tunable dexLimit;
+
+extern Tunable deiDepth;
 
 extern std::vector<Tunable *> tunables;
 
