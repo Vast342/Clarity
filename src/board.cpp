@@ -524,10 +524,10 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     while(pawnPushPromotions != 0) {
         const uint8_t index = popLSB(pawnPushPromotions);
         const uint8_t startSquare = (index + directionalOffsets[colorToMove]);
-        moves[totalMoves] = Move(startSquare, index, promotions[Queen-1]);
-        totalMoves++;
-        moves[totalMoves] = Move(startSquare, index, promotions[Knight-1]);
-        totalMoves++;
+        for(int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
+            totalMoves++;
+        }
     }
 
     // captures
@@ -563,18 +563,18 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     while(leftCapturePromotions != 0) {
         int index = popLSB(leftCapturePromotions);
         int startSquare = index + (colorToMove == 0 ? 9 : -7);
-        moves[totalMoves] = Move(startSquare, index, promotions[Queen-1]);
-        totalMoves++;
-        moves[totalMoves] = Move(startSquare, index, promotions[Knight-1]);
-        totalMoves++;
+        for(int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
+            totalMoves++;
+        }
     }
     while(rightCapturePromotions != 0) {
         int index = popLSB(rightCapturePromotions);
         int startSquare = index + (colorToMove == 0 ? 7 : -9);
-        moves[totalMoves] = Move(startSquare, index, promotions[Queen-1]);
-        totalMoves++;
-        moves[totalMoves] = Move(startSquare, index, promotions[Knight-1]);
-        totalMoves++;
+        for(int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
+            totalMoves++;
+        }
     }
     return totalMoves;
 }
