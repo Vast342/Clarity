@@ -311,6 +311,8 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
                 int qDepth = seldepth - ply;
                 int bonus = std::min(qhsMaxBonus.value, qhsMultiplier.value * qDepth * qDepth + qhsAdder.value * qDepth - qhsSubtractor.value);
                 // if it's a capture or queen promotion
+                // things to test: allow all moves to update history here
+                // also test getting rid of qsearch history
                 if(move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
                     const int end = move.getEndSquare();
                     const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
@@ -321,6 +323,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
                 // malus!
                 for(int moveNo = 0; moveNo < legalMoves - 1; moveNo++) {
                     Move maluMove = testedMoves[moveNo];
+                    // if capture or queen promotion
                     if(maluMove.getFlag() < promotions[0] || maluMove.getFlag() == promotions[3]) {
                         const int maluEnd = maluMove.getEndSquare();
                         const int maluPiece = getType(board.pieceAtIndex(maluMove.getStartSquare()));
