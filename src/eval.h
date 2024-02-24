@@ -21,7 +21,7 @@
 
 constexpr int inputSize = 768;
 constexpr int layer1Size = 512;
-constexpr int outputBucketCount = 8;
+constexpr int outputBucketCount = 1;
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
