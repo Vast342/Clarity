@@ -47,5 +47,5 @@ class NetworkState {
     private:
         Accumulator currentAccumulator;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
-        int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::array<std::int16_t, layer1Size * 2 * outputBucketCount> weights);
+        int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::span<const std::int16_t, layer1Size * 2 * outputBucketCount> weights);
 };
