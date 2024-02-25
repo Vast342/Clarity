@@ -70,10 +70,10 @@ Tunable qhsMultiplier("QHS_Multiplier", 5, 1);
 Tunable qhsAdder("QHS_Adder", 126, 1);
 Tunable qhsSubtractor("QHS_Subtractor", 107, 1);
 
-Tunable qhpDepthMultiplier("QHP_DepthMultiplier", -1872, -1);
-
 Tunable dexMargin("DEX_Margin", 50, 1);
 Tunable dexLimit("DEX_Limit", 20, 1);
+
+Tunable deiDepth("DEI_Depth", 10, 1);
 
 // Declaration of pointers to tunables
 
@@ -116,8 +116,9 @@ std::vector<Tunable *> tunables = {
     &qhsMultiplier,
     &qhsAdder,
     &qhsSubtractor,
-    &qhpDepthMultiplier,
-    &dexMargin
+    &dexMargin,
+    &dexLimit,
+    &deiDepth
 };
 
 
