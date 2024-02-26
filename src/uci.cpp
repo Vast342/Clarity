@@ -123,6 +123,7 @@ void go(std::vector<std::string> bits) {
     int depth = 0;
     int inc = 0;
     int movestogo = defaultMovesToGo;
+    int nodes = 0;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
             time = std::stoi(bits[i+1]);
@@ -142,6 +143,9 @@ void go(std::vector<std::string> bits) {
         if(bits[i] == "binc" && board.getColorToMove() == 0) {
             inc = std::stoi(bits[i+1]);
         }
+        if(bits[i] == "nodes") {
+            nodes = std::stoi(bits[i+1]);
+        }
     }
     // go depth x
     if(depth != 0) {
@@ -151,6 +155,12 @@ void go(std::vector<std::string> bits) {
             });
         }
         //bestMove = engines.fixedDepthSearch(board, depth, true);
+    } else if(nodes != 0) {
+        for(int i = 0; i < threadCount; i++) {
+            threads.emplace_back([nodes, i]{
+                engines[i].fixedNodesSearch(board, nodes, i == 0);
+            });
+        }
     } else {
         // go wtime x btime x
         // the formulas here are former formulas from Stormphrax
