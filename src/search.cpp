@@ -25,7 +25,7 @@ int nodes = 0;
 #include <cstring>
 #include "normalize.h"
 
-constexpr int hardNodeCap = 400000;
+int hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
 
@@ -223,7 +223,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(dataGeneration) {
+        if(useNodeCap) {
             if(nodes > hardNodeCap) {
                 timesUp = true;
                 return 0;
@@ -370,7 +370,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     if(ply > 0 && board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(nodes % 4096 == 0) {
-        if(dataGeneration) {
+        if(useNodeCap) {
             if(nodes > hardNodeCap) {
                 timesUp = true;
                 return 0;
@@ -706,6 +706,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     //clearHistory();
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
     nodes = 0;
+    useNodeCap = false;
     hardLimit = hardBound;
     seldepth = 0;
     timesUp = false;
@@ -781,6 +782,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
     //clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
+    useNodeCap = false;
     seldepth = 0;
     timesUp = false;
     
@@ -825,6 +827,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     //ageHistory();
     //clearHistory();
     nodes = 0;
+    useNodeCap = false;
     seldepth = 0;
     hardLimit = 1215752192;
     timesUp = false;
@@ -893,7 +896,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
 std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
     stack[0].doubleExtensions = 0;
     //clearHistory();
-    dataGeneration = true;
+    useNodeCap = true;
     nodes = 0;
     hardLimit = 1215752192;
     seldepth = 0;
@@ -932,4 +935,77 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
         if(nodes > nodeCap) break;
     }
     return std::pair<Move, int>(rootBestMove, score);
+}
+
+Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
+    stack[0].doubleExtensions = 0;
+    nodes = 0;
+    hardNodeCap = nodeCount;
+    useNodeCap = true;
+    seldepth = 0;
+    timesUp = false;
+
+    begin = std::chrono::steady_clock::now();
+
+    rootBestMove = Move();
+    int score = 0;
+
+    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
+    for(int depth = 1; depth < 100; depth++) {
+        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
+        seldepth = depth;
+        int delta = aspBaseDelta.value;
+        int alpha = std::max(matedScore, score - delta);
+        int beta = std::min(-matedScore, score + delta);
+        const Move previousBest = rootBestMove;
+        if(depth > aspDepthCondition.value) {
+            while(true) {
+                score = negamax(board, depth, alpha, beta, 0, true);
+                if(timesUp) break;
+                if(score >= beta) {
+                    beta = std::min(beta + delta, -matedScore);
+                } else if(score <= alpha) {
+                    beta = (alpha + beta) / 2;
+                    alpha = std::max(alpha - delta, matedScore);
+                } else break;
+
+                delta *= aspDeltaMultiplier.value;
+            }
+        } else {
+            score = negamax(board, depth, matedScore, -matedScore, 0, true);
+        }
+        if(timesUp) {
+            rootBestMove = previousBest;
+            break;
+        }
+        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+        // outputs info which is picked up by the user
+        if(info) outputInfo(board, score, depth, elapsedTime);
+        //if(elapsedTime > softBound) break;
+    }
+
+    if(rootBestMove == Move()) {
+        std::array<Move, 256> moves;
+        int totalMoves = board.getMoves(moves);
+        std::array<int, 256> moveValues;
+        Transposition* entry = TT->getEntry(board.getZobristHash());
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+
+        for(int i = 0; i < totalMoves; i++) {
+            for(int j = i + 1; j < totalMoves; j++) {
+                if(moveValues[j] > moveValues[i]) {
+                    std::swap(moveValues[j], moveValues[i]);
+                    std::swap(moves[j], moves[i]);
+                }
+            }
+            if(board.makeMove(moves[i])) {
+                board.undoMove();
+                rootBestMove = moves[i];
+                break;
+            }
+        }
+    }
+    
+    if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+    return rootBestMove;
 }
