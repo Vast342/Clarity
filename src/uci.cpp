@@ -35,7 +35,7 @@ int defaultMovesToGo = 20;
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 TranspositionTable TT;
 std::vector<Engine> engines;
-std::vector<std::thread> threads;
+std::vector<std::jthread> threads;
 int threadCount = 1;
 
 int rootColorToMove;
@@ -257,7 +257,9 @@ int main(int argc, char* argv[]) {
     while(true) {
         std::getline(std::cin, command, '\n');
         if(command == "quit") {
-            stopThePresses();
+            if(threads.size() != 0) {
+                stopThePresses();
+            }
             return 0;
         }
         interpretCommand(command);
