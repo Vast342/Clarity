@@ -19,8 +19,10 @@
 
 #include "globals.h"
 
+// Current Net: clarity_net010
+// Arch: (768->768)x2->1x8 
 constexpr int inputSize = 768;
-constexpr int layer1Size = 512;
+constexpr int layer1Size = 768;
 constexpr int outputBucketCount = 8;
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
