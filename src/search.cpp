@@ -278,13 +278,13 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
 
         // this detects bad captures
         if(moveValues[i] < MVV_value[Queen] + historyCap) {
-            continue;
+            break;
         }
 
         // TT prefetching
         uint64_t afterKey = board.keyAfter(move);
         __builtin_prefetch(TT->getEntry(afterKey));
-        
+
         // History Pruning
         //if(moveValues[i] < qhpDepthMultiplier.value * qDepth) break;
         if(!board.makeMove(move)) {
