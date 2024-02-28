@@ -53,7 +53,7 @@ int main([[maybe_unused]]int argc, char** argv) {
 // manages the threads
 void generateData(int numGames, int numThreads) {
     //std::cout << "Made it through the generateData Call\n";
-    std::vector<std::thread> threads;
+    std::vector<std::jthread> threads;
     threads.reserve(numThreads);
     for(int i = 1; i <= numThreads; i++) {
         //std::cout << "Made Thread " << i << '\n';
