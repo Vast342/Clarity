@@ -176,7 +176,7 @@ struct Tunable {
     explicit Tunable(std::string _name, double _value, int _divisor)
         : name(std::move(_name)),
           value(_value),
-          max(std::max(value * _divisor * 2, 5)),
+          max(value * _divisor * 2),
           divisor(_divisor),
           step(max / 15 == 0 ? 1 : max / 15) {}
 
