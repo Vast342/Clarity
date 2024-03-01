@@ -249,6 +249,8 @@ extern Tunable dexLimit;
 
 extern Tunable deiDepth;
 
+extern Tunable lmrDepth;
+
 extern std::vector<Tunable *> tunables;
 
 void outputTunables();
