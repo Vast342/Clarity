@@ -60,7 +60,7 @@ void Engine::resetEngine() {
 
 int Engine::estimateMoveValue(const Board& board, const int end, const int flag) {
     // starting with the end square piece
-    int value = SEE_value[board.pieceAtIndex(end))];
+    int value = SEE_value[board.pieceAtIndex(end)];
     // promotions! pawn--, newpiece++
     for(int i = 0; i < 4; i++) {
         if(flag == promotions[i]) {
@@ -83,7 +83,7 @@ bool Engine::see(const Board& board, Move move, int threshold) {
     const int end = move.getEndSquare();
     const int flag = move.getFlag();
 
-    int nextVictim = board.pieceAtIndex(start));
+    int nextVictim = board.pieceAtIndex(start);
     // handle promotions
     // promotion flags are the 4 highest numbers, so this saves a loop if it's not necessary
     if(flag > DoublePawnPush) {
@@ -163,12 +163,12 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
         Move move = moves[i];
         const int end = move.getEndSquare();
         const int start = move.getStartSquare();
-        const int piece = board.pieceAtIndex(start));
+        const int piece = board.pieceAtIndex(start);
         if(move == ttMove) {
             values[i] = 1000000000;
         } else if((occupied & (1ULL << end)) != 0) {
             // Captures!
-            const int victim = board.pieceAtIndex(end));
+            const int victim = board.pieceAtIndex(end);
             // Capthist!
             values[i] = MVV_value[victim] + noisyHistoryTable[colorToMove][piece][end][victim];
             // see!
@@ -197,12 +197,12 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
         Move move = moves[i];
         const int end = move.getEndSquare();
         const int start = move.getStartSquare();
-        const int piece = board.pieceAtIndex(start));
+        const int piece = board.pieceAtIndex(start);
         if(move == ttMove) {
             values[i] = 1000000000;
         } else {
             // Captures!
-            const int victim = board.pieceAtIndex(end));
+            const int victim = board.pieceAtIndex(end);
             // Capthist!
             values[i] = MVV_value[victim] + qsHistoryTable[colorToMove][piece][end][victim];
             // see!
@@ -319,8 +319,8 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
                 // if it's a capture or queen promotion
                 if(move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
                     const int end = move.getEndSquare();
-                    const int piece = board.pieceAtIndex(move.getStartSquare()));
-                    const int victim = board.pieceAtIndex(end));
+                    const int piece = board.pieceAtIndex(move.getStartSquare());
+                    const int victim = board.pieceAtIndex(end);
                     updateQSHistory(board.getColorToMove(), piece, end, victim, bonus);
                 }
                 bonus = -bonus;
@@ -329,8 +329,8 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
                     Move maluMove = testedMoves[moveNo];
                     if(maluMove.getFlag() < promotions[0] || maluMove.getFlag() == promotions[3]) {
                         const int maluEnd = maluMove.getEndSquare();
-                        const int maluPiece = board.pieceAtIndex(maluMove.getStartSquare()));
-                        const int maluVictim = board.pieceAtIndex(maluEnd));
+                        const int maluPiece = board.pieceAtIndex(maluMove.getStartSquare());
+                        const int maluVictim = board.pieceAtIndex(maluEnd);
                         updateQSHistory(board.getColorToMove(), maluPiece, maluEnd, maluVictim, bonus);
                     }
                 }
@@ -548,7 +548,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             continue;
         }
 
-        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][board.pieceAtIndex(moveEndSquare))][moveEndSquare];\
+        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][board.pieceAtIndex(moveEndSquare)][moveEndSquare];
         testedMoves[legalMoves] = move;
         legalMoves++;
         nodes++;
@@ -610,13 +610,13 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     // adds to the move's history and adjusts the killer move accordingly
                     int start = moveStartSquare;
                     int end = moveEndSquare;
-                    int piece = board.pieceAtIndex(start));
+                    int piece = board.pieceAtIndex(start);
                     updateHistory(colorToMove, start, end, piece, bonus, ply);
                     stack[ply].killer = move;
                 } else if (move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
                     const int end = move.getEndSquare();
-                    const int piece = board.pieceAtIndex(move.getStartSquare()));
-                    const int victim = board.pieceAtIndex(end));
+                    const int piece = board.pieceAtIndex(move.getStartSquare());
+                    const int victim = board.pieceAtIndex(end);
                     updateNoisyHistory(board.getColorToMove(), piece, end, victim, bonus);
                 }
                 bonus = -bonus;
@@ -626,13 +626,13 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     const int start = maluMove.getStartSquare();
                     const int end = maluMove.getEndSquare();
                     const int flag = maluMove.getFlag();
-                    const int piece = board.pieceAtIndex(start));
+                    const int piece = board.pieceAtIndex(start);
                     bool maluIsCapture = ((capturable & (1ULL << end)) != 0) || flag == EnPassant;
                     bool maluIsQuiet = (!maluIsCapture && (flag <= DoublePawnPush));
                     if(maluIsQuiet) {
                         updateHistory(colorToMove, start, end, piece, bonus, ply);
                     } else if(maluMove.getFlag() < promotions[0] || maluMove.getFlag() == promotions[3]) {
-                        const int victim = board.pieceAtIndex(end));
+                        const int victim = board.pieceAtIndex(end);
                         updateNoisyHistory(colorToMove, piece, end, victim, bonus);
                     }
                 }
