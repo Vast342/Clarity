@@ -635,7 +635,9 @@ bool Board::makeMove(Move move) {
     }
 
     // actually make the move
-    movePiece(start, movedPiece, end, victim);
+    if(isCapture) removePiece(end, victim);
+    removePiece(start, movedPiece);
+    if(flag < promotions[0]) addPiece(end, movedPiece);
 
     // En Passant
     state.enPassantIndex = 64;
@@ -707,19 +709,15 @@ bool Board::makeMove(Move move) {
             break;
         // promotion cases
         case promotions[0]:
-            removePiece(end, movedPiece);
             addPiece(end, Knight | (colorToMove == 1 ? White : Black));
             break;
         case promotions[1]:
-            removePiece(end, movedPiece);
             addPiece(end, Bishop | (colorToMove == 1 ? White : Black));
             break;
         case promotions[2]:
-            removePiece(end, movedPiece);
             addPiece(end, Rook | (colorToMove == 1 ? White : Black));
             break;
         case promotions[3]:
-            removePiece(end, movedPiece);
             addPiece(end, Queen | (colorToMove == 1 ? White : Black));
             break;
         default:
