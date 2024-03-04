@@ -33,6 +33,6 @@ struct PerftTest {
 };
 
 void runPerftSuite(int number);
-int perft(Board board, int depth);
+int perft(Board &board, int depth);
 void splitPerft(Board board, int depth);
 void individualPerft(Board board, int depth);

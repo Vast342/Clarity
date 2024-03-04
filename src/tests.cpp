@@ -19,7 +19,7 @@
 #include "testsuites.h"
 
 // runs a single perft test
-int perft(Board board, int depth) {
+int perft(Board &board, int depth) {
     // tests to make sure incremental updates were working
     //std::cout << "incremental says: "<< std::to_string(board.getEvaluation()) << ", full regen says " << std::to_string(board.fullEvalRegen()) << " at position " << board.getFenString() << '\n';
     //assert(board.getEvaluation() == board.fullEvalRegen());
@@ -51,7 +51,8 @@ void runPerftSuite(int number) {
         for(PerftTest test : etherealSuite) {
             i++;
             if(test.expectedOutput <= 5000000) {
-                int result = perft(Board(test.fen), test.depth);
+                Board board(test.fen);
+                int result = perft(board, test.depth);
                 total += result;
                 if(result == test.expectedOutput) {
                     std::cout << "Test " << std::to_string(i) << " Passed\n";
