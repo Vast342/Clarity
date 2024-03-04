@@ -44,7 +44,7 @@ std::array<int, 8> directionalOffsets = {8, -8, 1, -1, 7, -7, 9, -9};
 void Board::toString() {
     for(int rank = 7; rank >= 0; rank--) {
         for(int file = 0; file < 8; file++) {
-            int piece = pieceAndColorAtIndex(rank * 8 + file);
+            int piece = pieceAtIndex(rank * 8 + file);
             bool isBlack = getColor(piece) == 0;
             int pieceType = getType(piece);
             char pieceChar = ' ';
@@ -207,7 +207,7 @@ std::string Board::getFenString() {
     for(int rank = 7; rank >= 0; rank--) {
         int numEmptyFiles = 0;
         for(int file = 0; file < 8; file++) {
-            int piece = pieceAndColorAtIndex(8*rank+file);
+            int piece = pieceAtIndex(8*rank+file);
             if(piece != None) {
                 if(numEmptyFiles != 0) {
                     fen += std::to_string(numEmptyFiles);
@@ -328,11 +328,13 @@ void Board::movePiece(int square1, int type1, int square2, int type2) {
 
 int Board::pieceAtIndex(int index) const {
     uint64_t indexBitboard = squareToBitboard[index];
-    uint64_t occupiedBitboard = getOccupiedBitboard();
-    if((occupiedBitboard & indexBitboard) != 0) {
+    if((getOccupiedBitboard() & indexBitboard) != 0) {
         for(int i = Pawn; i < None; i++) {
-            if((getPieceBitboard(i) & indexBitboard) != 0) {
+            if((getColoredPieceBitboard(0, i) & indexBitboard) != 0) {
                 return i | Black;
+            }
+            if((getColoredPieceBitboard(1, i) & indexBitboard) != 0) {
+                return i | White;
             }
         }
     }
@@ -347,21 +349,6 @@ int Board::colorAtIndex(int index) const {
     }
     // invalid result, bad
     return 2;
-}
-int Board::pieceAndColorAtIndex(int index) const {
-    uint64_t indexBitboard = squareToBitboard[index];
-    uint64_t occupiedBitboard = getOccupiedBitboard();
-    if((occupiedBitboard & indexBitboard) != 0) {
-        for(int i = Pawn; i < None; i++) {
-            if((getColoredPieceBitboard(0, i) & indexBitboard) != 0) {
-                return i | Black;
-            }
-            if((getColoredPieceBitboard(1, i) & indexBitboard) != 0) {
-                return i | White;
-            }
-        }
-    }
-    return None;
 }
 
 uint64_t Board::getColoredPieceBitboard(int color, int piece) const {
@@ -404,7 +391,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     // the rest of the pieces
     while(mask != 0) {
         uint8_t startSquare = popLSB(mask);
-        uint8_t currentType = pieceAtIndex(startSquare);
+        uint8_t currentType = getType(pieceAtIndex(startSquare));
         uint64_t total = 0;
         if(currentType == Knight) {
             total = getKnightAttacks(startSquare);
@@ -440,7 +427,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     while(doublePawnPushes != 0) {
         uint8_t index = popLSB(doublePawnPushes);
         uint8_t startSquare = (index + (directionalOffsets[colorToMove] * 2));
-        assert(pieceAtIndex(startSquare) == Pawn);
+        assert(getType(pieceAtIndex(startSquare)) == Pawn);
         moves[totalMoves] = Move(startSquare, index, DoublePawnPush);
         totalMoves++;
     }
@@ -508,7 +495,7 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     // the rest of the pieces
     while(mask != 0) {
         const uint8_t startSquare = popLSB(mask);
-        const uint8_t currentType = pieceAtIndex(startSquare);
+        const uint8_t currentType = getType(pieceAtIndex(startSquare));
         uint64_t total = 0;
         if(currentType == Knight) {
             total = getKnightAttacks(startSquare);
@@ -634,8 +621,8 @@ bool Board::makeMove(Move move) {
     // get information
     int start = move.getStartSquare();
     int end = move.getEndSquare();
-    int movedPiece = pieceAndColorAtIndex(move.getStartSquare());
-    int victim = pieceAndColorAtIndex(move.getEndSquare());
+    int movedPiece = pieceAtIndex(move.getStartSquare());
+    int victim = pieceAtIndex(move.getEndSquare());
     int flag = move.getFlag();
     assert(movedPiece != None);
     bool isCapture = victim != None;
@@ -648,9 +635,7 @@ bool Board::makeMove(Move move) {
     }
 
     // actually make the move
-    if(isCapture) removePiece(end, victim);
-    removePiece(start, movedPiece);
-    if(flag < promotions[0]) addPiece(end, movedPiece);
+    movePiece(start, movedPiece, end, victim);
 
     // En Passant
     state.enPassantIndex = 64;
@@ -718,19 +703,23 @@ bool Board::makeMove(Move move) {
         // en passant
         case EnPassant:
             assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
-            removePiece(end + directionalOffsets[colorToMove], Pawn | (colorToMove == 0 ? White : Black));
+            removePiece(end + directionalOffsets[colorToMove], pieceAtIndex(end + directionalOffsets[colorToMove]));
             break;
         // promotion cases
         case promotions[0]:
+            removePiece(end, movedPiece);
             addPiece(end, Knight | (colorToMove == 1 ? White : Black));
             break;
         case promotions[1]:
+            removePiece(end, movedPiece);
             addPiece(end, Bishop | (colorToMove == 1 ? White : Black));
             break;
         case promotions[2]:
+            removePiece(end, movedPiece);
             addPiece(end, Rook | (colorToMove == 1 ? White : Black));
             break;
         case promotions[3]:
+            removePiece(end, movedPiece);
             addPiece(end, Queen | (colorToMove == 1 ? White : Black));
             break;
         default:
@@ -811,7 +800,7 @@ uint64_t Board::fullZobristRegen() {
     uint64_t result = 0;
     while(mask != 0) {
         int index = popLSB(mask);
-        int piece = pieceAndColorAtIndex(index);
+        int piece = pieceAtIndex(index);
         result ^= zobTable[index][piece];
     }
     if(colorToMove == 1) {
@@ -881,8 +870,8 @@ uint64_t Board::keyAfter(const Move move) const {
     const int startSquare = move.getStartSquare();
     const int endSquare = move.getEndSquare();
     
-    const int moving = pieceAndColorAtIndex(startSquare);
-    const int captured = pieceAndColorAtIndex(endSquare);
+    const int moving = pieceAtIndex(startSquare);
+    const int captured = pieceAtIndex(endSquare);
 
     uint64_t key = state.zobristHash;
 
