@@ -109,6 +109,7 @@ struct Board {
         uint64_t getColoredPieceBitboard(int color, int piece) const;
         int pieceAtIndex(int index) const;
         int colorAtIndex(int index) const;
+        int pieceAndColorAtIndex(int index) const;
         void changeColor();
         void undoChangeColor();
         int getEvaluation();
