@@ -87,7 +87,7 @@ Move::Move(std::string longAlgebraic, const Board& board) {
     } else {
         // other flags, 0 is normal so if it's a normal move leave it at zero
         int castlingRights = board.getCastlingRights();
-        if(endSquare == board.getEnPassantIndex() && board.pieceAtIndex(startSquare) == Pawn) {
+        if(endSquare == board.getEnPassantIndex() && getType(board.pieceAtIndex(startSquare)) == Pawn) {
             flag = EnPassant;
         } else if((castlingRights & 1) != 0 && longAlgebraic == "e1g1") {
             flag = castling[0];
@@ -97,7 +97,7 @@ Move::Move(std::string longAlgebraic, const Board& board) {
             flag = castling[2];
         } else if((castlingRights & 8) != 0 && longAlgebraic == "e8c8") {
             flag = castling[3];
-        } else if(board.pieceAtIndex(startSquare) == Pawn && abs(startSquare - endSquare) == 16) {
+        } else if(getType(board.pieceAtIndex(startSquare)) == Pawn && abs(startSquare - endSquare) == 16) {
             flag = DoublePawnPush;
         }
     }
