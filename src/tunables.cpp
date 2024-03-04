@@ -75,6 +75,8 @@ Tunable dexLimit("DEX_Limit", 20, 1);
 
 Tunable deiDepth("DEI_Depth", 10, 1);
 
+Tunable lmrDepth("LMR_Depth", 1, 1);
+
 // Declaration of pointers to tunables
 
 std::vector<Tunable *> tunables = {
@@ -118,7 +120,8 @@ std::vector<Tunable *> tunables = {
     &qhsSubtractor,
     &dexMargin,
     &dexLimit,
-    &deiDepth
+    &deiDepth,
+    &lmrDepth
 };
 
 
