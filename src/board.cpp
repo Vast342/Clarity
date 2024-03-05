@@ -297,6 +297,7 @@ void Board::addPiece(int square, int type) {
     assert(pieceAtIndex(square) == None);
     assert(square >= 0);
     const uint64_t bitboardSquare = squareToBitboard[square];
+    //std::cout << "Adding piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
     state.coloredBitboards[getColor(type)] ^= bitboardSquare;
     state.pieceBitboards[getType(type)] ^= bitboardSquare;
     assert(pieceAtIndex(square) == type);
@@ -616,7 +617,9 @@ bool Board::squareIsUnderAttack(int square) {
 }
 
 bool Board::makeMove(Move move) {
-    BoardState startingState = state;
+    //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
+    // push to vectors
+    stateHistory.push_back(state);
 
     // get information
     int start = move.getStartSquare();
@@ -723,18 +726,18 @@ bool Board::makeMove(Move move) {
         default:
             break;
     }
+    plyCount++;
     // if in check, move was illegal
     if(isInCheck()) {
         // so you must undo it and return false
-        state = startingState;
+        undoMove();
+        colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was illegal\n";
         return false;
     } else {
         // otherwise it's good, move on
-        // push to vectors
-        stateHistory.push_back(startingState);
         colorToMove = 1 - colorToMove;
-        plyCount++;
+        //std::cout << "Changing Color To Move, move was legal\n";
         state.zobristHash ^= zobColorToMove;
         return true;
     }
@@ -745,6 +748,7 @@ void Board::undoMove() {
     plyCount--;
     stateHistory.pop_back();
     colorToMove = 1 - colorToMove;
+    //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
 }
 
@@ -754,10 +758,12 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     stateHistory.push_back(state);
+    plyCount++;
     state.enPassantIndex = 64;
     state.hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
     state.zobristHash ^= zobColorToMove;
+    plyCount--;
 }
 
 void Board::undoChangeColor() {
@@ -794,16 +800,20 @@ void initializeZobrist() {
 }
 
 uint64_t Board::fullZobristRegen() {
+    //std::cout << "Beginning Full Regen\n";
     uint64_t mask = getOccupiedBitboard();
     uint64_t result = 0;
     while(mask != 0) {
         int index = popLSB(mask);
         int piece = pieceAtIndex(index);
+        //std::cout << "Adding piece of type " << std::to_string(piece) << " at index " << std::to_string(index) << '\n';
         result ^= zobTable[index][piece];
     }
     if(colorToMove == 1) {
+        //std::cout << "Changing Color To Move in full regen\n";
         result ^= zobColorToMove;
     }
+    //std::cout << "Result: " << std::to_string(result) << '\n';
     return result;
 }
 
