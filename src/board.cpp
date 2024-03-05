@@ -708,20 +708,20 @@ bool Board::makeMove(Move move) {
         // en passant
         case EnPassant:
             assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
-            removePiece(end + directionalOffsets[colorToMove], pieceAtIndex(end + directionalOffsets[colorToMove]));
+            removePiece(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
             break;
         // promotion cases
         case promotions[0]:
-            addPiece(end, Knight | (colorToMove == 1 ? White : Black));
+            addPiece(end, Knight | (8 * colorToMove));
             break;
         case promotions[1]:
-            addPiece(end, Bishop | (colorToMove == 1 ? White : Black));
+            addPiece(end, Bishop | (8 * colorToMove));
             break;
         case promotions[2]:
-            addPiece(end, Rook | (colorToMove == 1 ? White : Black));
+            addPiece(end, Rook | (8 * colorToMove));
             break;
         case promotions[3]:
-            addPiece(end, Queen | (colorToMove == 1 ? White : Black));
+            addPiece(end, Queen | (8 * colorToMove));
             break;
         default:
             break;
@@ -758,12 +758,10 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     stateHistory.push_back(state);
-    plyCount++;
     state.enPassantIndex = 64;
     state.hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
     state.zobristHash ^= zobColorToMove;
-    plyCount--;
 }
 
 void Board::undoChangeColor() {
