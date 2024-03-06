@@ -389,12 +389,12 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         }
     }
     
-    // activate q search if at the end of a branch
-    if(depth <= 0) return qSearch(board, alpha, beta, ply);
-    const bool inSingularSearch = stack[ply].excluded != Move();
-    const bool isPV = beta > alpha + 1;
     const bool inCheck = board.isInCheck();
     stack[ply].inCheck = inCheck;
+    // activate q search if at the end of a branch
+    if(depth <= 0 && !inCheck) return qSearch(board, alpha, beta, ply);
+    const bool inSingularSearch = stack[ply].excluded != Move();
+    const bool isPV = beta > alpha + 1;
     const uint64_t hash = board.getZobristHash();
 
     // TT check
