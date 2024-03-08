@@ -503,7 +503,6 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
         bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
-        bool isBadCapture = isQuietOrBadCapture && isCapture;
 
         // move loop prunings:
         // futility pruning
@@ -618,8 +617,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     const int end = move.getEndSquare();
                     const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
                     const int victim = getType(board.pieceAtIndex(end));
-                    updateNoisyHistory(colorToMove, piece, end, victim, bonus);
-                    if(isBadCapture) stack[ply].killer = move;
+                    updateNoisyHistory(board.getColorToMove(), piece, end, victim, bonus);
                 }
                 bonus = -bonus;
                 // malus!
