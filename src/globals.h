@@ -125,6 +125,7 @@ struct Board {
         BoardState getBoardState() const;
         uint64_t keyAfter(const Move move) const;
         int getPlyCount() const;
+        bool isPKEndgame() const;
     private:
         BoardState state;
         int plyCount;
