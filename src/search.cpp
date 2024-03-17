@@ -445,7 +445,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // Null Move Pruning (NMP)
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    if(!inSingularSearch && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
+    if(!inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0];
         board.changeColor();
         const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false);

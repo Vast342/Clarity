@@ -896,3 +896,9 @@ uint64_t Board::keyAfter(const Move move) const {
 int Board::getPlyCount() const {
     return plyCount;
 }
+
+bool Board::isPKEndgame() const {
+    uint64_t occupied = getOccupiedBitboard();
+    uint64_t pk = getPieceBitboard(Pawn) | getPieceBitboard(King);
+    return ((getColoredBitboard(colorToMove) & (occupied ^ pk)) == 0);
+}
