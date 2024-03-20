@@ -39,6 +39,8 @@
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
 
+extern bool useSyzygy;
+
 // declaring things i guess
 enum flags {
     Undefined, FailLow, BetaCutoff, Exact
@@ -85,6 +87,7 @@ struct Move {
         Move(int startSquare, int endSquare, int flag);
         Move();
         Move(std::string longAlgebraic, const Board& board);
+        Move(int startSquare, int endSquare, int promote, int ep, const Board &board);
         [[nodiscard]] constexpr auto operator==(const Move &other) const -> bool = default;
     private: 
         uint16_t value;

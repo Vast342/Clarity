@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "globals.h"
+#include "external/fathom/tbprobe.h"
 
 /*
     Moves are stored internally using 16 bits, with the following format:
@@ -51,6 +52,38 @@ Move::Move(int startSquare, int endSquare, int flag) {
 // null move, a1a1
 Move::Move() {
     value = 0;
+}
+
+Move::Move(int startSquare, int endSquare, int promote, int ep, const Board &board) {
+    // flags
+    int flag = 0;
+    if(promote != TB_PROMOTES_NONE) {
+        // promotions
+        switch(promote) {
+            case TB_PROMOTES_KNIGHT:
+                flag = promotions[0];
+                break;
+            case TB_PROMOTES_BISHOP:
+                flag = promotions[1];
+                break;
+            case TB_PROMOTES_ROOK:
+                flag = promotions[2];
+                break;
+            case TB_PROMOTES_QUEEN:
+                flag = promotions[3];
+                break;
+            default:
+                std::cout << "invalid promotion type\n";
+                assert(false);
+        }
+    } else {
+        if(ep) {
+            flag = EnPassant;
+        } else if(getType(board.pieceAtIndex(startSquare)) == Pawn && abs(startSquare - endSquare) == 16) {
+            flag = DoublePawnPush;
+        }
+    }
+    value = ((flag << 12) | (endSquare << 6) | startSquare);
 }
 
 // long algebraic form constructor for uci shenanigans.

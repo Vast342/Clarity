@@ -22,6 +22,8 @@
 #include "bench.h"
 #include "external/fathom/tbprobe.h"
 
+bool useSyzygy = false;
+
 /*
     The entirety of my implementation of UCI, read the standard for that if you want more information
     There are things not supported here though, such as go nodes, and quite a few options
@@ -83,6 +85,7 @@ void setOption(const std::vector<std::string>& bits) {
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
         std::cout <<  initSuccess << std::endl;
+        useSyzygy = true;
     } else {
         adjustTunable(name, std::stod(bits[4]));
     }
@@ -113,16 +116,57 @@ void loadPosition(const std::vector<std::string>& bits) {
 
 // has the engine identify itself when the GUI says uci
 void identify() {
-    std::cout << "id name Clarity V5.1.0\n";
-    std::cout << "id author Vast\n";
-    std::cout << "option name Hash type spin default 64 min 1 max 2048\n";
-    std::cout << "option name Threads type spin default 1 min 1 max 64\n";
+    std::cout << "id name Clarity V5.1.0" << std::endl;
+    std::cout << "id author Vast" << std::endl;
+    std::cout << "option name Hash type spin default 64 min 1 max 2048" << std::endl;
+    std::cout << "option name Threads type spin default 1 min 1 max 64" << std::endl;
+    std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     //outputTunables();
-    std::cout << "uciok\n";
+    std::cout << "uciok" << std::endl;
 }
 
 // tells the engine to search, with support for a few different types
 void go(std::vector<std::string> bits) {
+    if(useSyzygy) {
+        // probe endgame tt at root
+        unsigned probeResult = tb_probe_root(board.getColoredBitboard(1), 
+                                             board.getColoredBitboard(0),
+                                             board.getPieceBitboard(King),
+                                             board.getPieceBitboard(Queen),
+                                             board.getPieceBitboard(Rook),
+                                             board.getPieceBitboard(Bishop),
+                                             board.getPieceBitboard(Knight),
+                                             board.getPieceBitboard(Pawn),
+                                             board.getFiftyMoveCount() * 2,
+                                             0,
+                                             board.getEnPassantIndex() == 64 ? 0 : board.getEnPassantIndex(),
+                                             board.getColorToMove(),
+                                             NULL);
+        /* outputting all parameters for testing
+        std::cout << board.getColoredBitboard(1)  << std::endl;
+        std::cout << board.getColoredBitboard(0) << std::endl;
+        std::cout << board.getPieceBitboard(King) << std::endl;
+        std::cout << board.getPieceBitboard(Queen) << std::endl;
+        std::cout << board.getPieceBitboard(Rook) << std::endl;
+        std::cout << board.getPieceBitboard(Bishop) << std::endl;
+        std::cout << board.getPieceBitboard(Knight) << std::endl;
+        std::cout << board.getPieceBitboard(Pawn) << std::endl;
+        std::cout << board.getFiftyMoveCount() << std::endl;
+        std::cout << 0 << std::endl;
+        std::cout << (board.getEnPassantIndex() == 64 ? 0 : board.getEnPassantIndex()) << std::endl;
+        std::cout << board.getColorToMove() << std::endl; */
+        if(probeResult != TB_RESULT_FAILED) {
+            int start = TB_GET_FROM(probeResult);
+            int end = TB_GET_TO(probeResult);
+            int promotion = TB_GET_PROMOTES(probeResult);
+            int ep = TB_GET_EP(probeResult);
+            Move tbBest = Move(start, end, promotion, ep, board);
+            std::cout << "bestmove " << toLongAlgebraic(tbBest) << std::endl;
+            return;
+        } else {
+            std::cout << "probe failed";
+        }
+    }
     int time = 0;
     int depth = 0;
     int inc = 0;
