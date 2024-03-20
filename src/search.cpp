@@ -24,6 +24,7 @@ int nodes = 0;
 #include "tt.h"
 #include <cstring>
 #include "normalize.h"
+#include "external/fathom/tbprobe.h"
 
 int hardNodeCap = 400000;
 

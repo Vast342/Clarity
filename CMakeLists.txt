@@ -15,7 +15,9 @@ src/eval.cpp
 src/search.cpp
 src/tests.cpp
 src/tt.cpp
-src/tunables.cpp)
+src/tunables.cpp
+src/external/fathom/tbchess.c
+src/external/fathom/tbprobe.c)
 
 # Builds for V1 through V4, each with different featuresets.
 add_executable(Clarity_x86-64-v1 ${Common_SRC_Files} src/magic.cpp src/uci.cpp)

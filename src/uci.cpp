@@ -20,6 +20,7 @@
 #include "search.h"
 #include "tt.h"
 #include "bench.h"
+#include "external/fathom/tbprobe.h"
 
 /*
     The entirety of my implementation of UCI, read the standard for that if you want more information
@@ -79,6 +80,9 @@ void setOption(const std::vector<std::string>& bits) {
     } else if(name == "Threads") {
         threadCount = std::stoi(bits[4]);
         newGame();
+    } else if(name == "SyzygyPath") {
+        bool initSuccess = tb_init(bits[4].c_str());
+        std::cout <<  initSuccess << std::endl;
     } else {
         adjustTunable(name, std::stod(bits[4]));
     }
