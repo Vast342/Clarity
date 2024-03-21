@@ -152,7 +152,7 @@ void go(std::vector<std::string> bits) {
                 std::cout << "bestmove " << toLongAlgebraic(tbBest) << std::endl;
                 return;
             } else {
-                std::cout << "probe failed";
+                std::cout << "probe failed" << std::endl;
             }
         }
     }
