@@ -128,43 +128,32 @@ void identify() {
 // tells the engine to search, with support for a few different types
 void go(std::vector<std::string> bits) {
     if(useSyzygy) {
-        // probe endgame tt at root
-        unsigned probeResult = tb_probe_root(board.getColoredBitboard(1), 
-                                             board.getColoredBitboard(0),
-                                             board.getPieceBitboard(King),
-                                             board.getPieceBitboard(Queen),
-                                             board.getPieceBitboard(Rook),
-                                             board.getPieceBitboard(Bishop),
-                                             board.getPieceBitboard(Knight),
-                                             board.getPieceBitboard(Pawn),
-                                             board.getFiftyMoveCount() * 2,
-                                             0,
-                                             board.getEnPassantIndex() == 64 ? 0 : board.getEnPassantIndex(),
-                                             board.getColorToMove(),
-                                             NULL);
-        /* outputting all parameters for testing
-        std::cout << board.getColoredBitboard(1)  << std::endl;
-        std::cout << board.getColoredBitboard(0) << std::endl;
-        std::cout << board.getPieceBitboard(King) << std::endl;
-        std::cout << board.getPieceBitboard(Queen) << std::endl;
-        std::cout << board.getPieceBitboard(Rook) << std::endl;
-        std::cout << board.getPieceBitboard(Bishop) << std::endl;
-        std::cout << board.getPieceBitboard(Knight) << std::endl;
-        std::cout << board.getPieceBitboard(Pawn) << std::endl;
-        std::cout << board.getFiftyMoveCount() << std::endl;
-        std::cout << 0 << std::endl;
-        std::cout << (board.getEnPassantIndex() == 64 ? 0 : board.getEnPassantIndex()) << std::endl;
-        std::cout << board.getColorToMove() << std::endl; */
-        if(probeResult != TB_RESULT_FAILED) {
-            int start = TB_GET_FROM(probeResult);
-            int end = TB_GET_TO(probeResult);
-            int promotion = TB_GET_PROMOTES(probeResult);
-            int ep = TB_GET_EP(probeResult);
-            Move tbBest = Move(start, end, promotion, ep, board);
-            std::cout << "bestmove " << toLongAlgebraic(tbBest) << std::endl;
-            return;
-        } else {
-            std::cout << "probe failed";
+        if(__builtin_popcountll(board.getOccupiedBitboard()) <= 7) {
+            // probe endgame tt at root
+            unsigned probeResult = tb_probe_root(board.getColoredBitboard(1), 
+                                                board.getColoredBitboard(0),
+                                                board.getPieceBitboard(King),
+                                                board.getPieceBitboard(Queen),
+                                                board.getPieceBitboard(Rook),
+                                                board.getPieceBitboard(Bishop),
+                                                board.getPieceBitboard(Knight),
+                                                board.getPieceBitboard(Pawn),
+                                                board.getFiftyMoveCount() * 2,
+                                                0,
+                                                board.getEnPassantIndex() == 64 ? 0 : board.getEnPassantIndex(),
+                                                board.getColorToMove(),
+                                                NULL);
+            if(probeResult != TB_RESULT_FAILED) {
+                int start = TB_GET_FROM(probeResult);
+                int end = TB_GET_TO(probeResult);
+                int promotion = TB_GET_PROMOTES(probeResult);
+                int ep = TB_GET_EP(probeResult);
+                Move tbBest = Move(start, end, promotion, ep, board);
+                std::cout << "bestmove " << toLongAlgebraic(tbBest) << std::endl;
+                return;
+            } else {
+                std::cout << "probe failed";
+            }
         }
     }
     int time = 0;
