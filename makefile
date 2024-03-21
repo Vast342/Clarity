@@ -20,7 +20,9 @@ BUILD_DIR := build
 
 # Source files
 SRCS := $(filter-out src/magic.cpp src/datagen.cpp src/wdldatagen.cpp, $(wildcard src/*.cpp))
-OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRCS))
+SRCS += $(filter-out src/external/fathom/tbchess.cpp, $(wildcard src/external/fathom/*.cpp))
+OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.cpp=.o)))
+
 
 # Binary name (set to Clarity)
 EXE := Clarity
@@ -42,6 +44,9 @@ $(EXE): $(OBJS)
 # Rule to build object files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+$(BUILD_DIR)/%.o: src/external/fathom/%.cpp | $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	
 
 # Create directories if they don't exist
 $(BUILD_DIR):
