@@ -6,7 +6,7 @@
 
 A UCI-compatible chess engine. The engine uses an alpha-beta search with many enhancements, and evaluation is handled by a small-size, efficiently updatable neural network (NNUE) trained on data from simulated games against itself.
 
-The last major release (4.0.0 as of the time of typing this) has been rated 3448 Elo in CCRL Blitz and is yet to be fully tested for CCRL 40/15. The blitz elo of 3438 puts it as the 52nd highest-ranked engine based on their testing.
+The last major release (5.1.0 as of the time of typing this) has been rated 3493 Elo in CCRL Blitz and 3410 for CCRL 40/15.
 
 ## Feature List:
 
@@ -36,7 +36,7 @@ Board Representation:
   4. Repetition detection
   5. Incremental Zobrist hashing
   6. Incremental NNUE Updates
-  7. Rudimentary (but sufficient) board visualization
+  7. Rudimentary board visualization
 
 Search: 
   1. Fail-Soft PVS search with alpha-beta pruning
@@ -55,7 +55,11 @@ Search:
   14. Late Move Reductions
   15. Static Exchange Evaluation (SEE) Pruning
   16. History Pruning
-  17. Quiescence Search
+  17. Singular Extensions
+      1. Multicut
+      2. Double Extensions
+      3. Negative Extensions
+  18. Quiescence Search
       1. TT cutoffs
       2. Stand Pat Shenanigans
       3. Move Ordering
@@ -64,7 +68,7 @@ Search:
       6. Dedicated capthist for Q search
 
 Evaluation:
-  1. (768->256)x2->1 NNUE trained from over 400 million positions of self play data
+  1. (768->768)x2->1x8 NNUE trained using Bullet and self-play data
 
 Move Ordering:
   1. Transposition Table Best Move
