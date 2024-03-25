@@ -10,7 +10,7 @@ CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\"
 LDFLAGS :=
 
 # Debug compiler flags
-DEBUG_CXXFLAGS := -g3 -O1 -DDEBUG -fsanitize=address -fsanitize=undefined 
+DEBUG_CXXFLAGS := -g3 -O1 -DDEBUG
 
 BUILD_CXXFLAGS := -DNDEBUG -O3
 
