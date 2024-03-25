@@ -22,6 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+// i don't like warnings, so warnings begone
+#define _CRT_SECURE_NO_WARNINGS
+#define _SILENCE_ALL_CXX20_DEPRECATION_WARNINGS
+
 #include <assert.h>
 #ifdef __cplusplus
 #include <atomic>

@@ -130,7 +130,6 @@ struct Board {
         int getPlyCount() const;
         bool isPKEndgame() const;
     private:
-        BoardState state;
         int plyCount;
         uint8_t colorToMove;
         std::vector<BoardState> stateHistory;
