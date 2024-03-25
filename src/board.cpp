@@ -77,12 +77,12 @@ void Board::toString() {
         std::cout << '\n';
     }
     std::cout << "Ply count: " << std::to_string(plyCount) << '\n';
-    std::cout << "Hash: " << std::to_string(state.zobristHash) << '\n';
-    std::cout << "Castling rights: " << std::to_string(state.castlingRights & 1) << std::to_string((state.castlingRights >> 1) & 1) << std::to_string((state.castlingRights >> 2) & 1) << std::to_string((state.castlingRights >> 3) & 1) << '\n';
-    if(state.enPassantIndex == 64) {
+    std::cout << "Hash: " << std::to_string(state->zobristHash) << '\n';
+    std::cout << "Castling rights: " << std::to_string(state->castlingRights & 1) << std::to_string((state->castlingRights >> 1) & 1) << std::to_string((state->castlingRights >> 2) & 1) << std::to_string((state->castlingRights >> 3) & 1) << '\n';
+    if(state->enPassantIndex == 64) {
         std::cout << "En passant square: none\n";
     } else {
-        std::cout << "En passant square: " << squareNames[state.enPassantIndex] << '\n';
+        std::cout << "En passant square: " << squareNames[state->enPassantIndex] << '\n';
     }
     std::cout << "Color to move: " << (colorToMove == 0 ? "black" : "white") << '\n';
     std::cout << "Evaluation: " << std::to_string(getEvaluation()) << '\n';
@@ -91,13 +91,15 @@ void Board::toString() {
 Board::Board(std::string fen) {
     stateHistory.clear();
     stateHistory.reserve(256);
-    state.nnueState.reset();
-    state.zobristHash = 0;
+    stateHistory.push_back(BoardState());
+    state = &stateHistory.back();
+    state->nnueState.reset();
+    state->zobristHash = 0;
     for(int i = 0; i < 6; i++) {
-        state.pieceBitboards[i] = 0ULL;
+        state->pieceBitboards[i] = 0ULL;
     }
     for(int i = 0; i < 2; i++) {
-        state.coloredBitboards[i] = 0ULL;
+        state->coloredBitboards[i] = 0ULL;
     }
     // main board state, segment 1
     std::vector<std::string> segments = split(fen, ' ');
@@ -149,12 +151,12 @@ Board::Board(std::string fen) {
                     break;
                 case 'k':
                     addPiece(i, King | Black);
-                    state.kingSquares[0] = i;
+                    state->kingSquares[0] = i;
                     i++;
                     break;
                 case 'K':
                     addPiece(i, King | White);
-                    state.kingSquares[1] = i;
+                    state->kingSquares[1] = i;
                     i++;
                     break;
                 default:
@@ -165,18 +167,18 @@ Board::Board(std::string fen) {
     }
     // convert color to move into 0 or 1, segment 2
     colorToMove = (segments[1] == "w" ? 1 : 0);
-    if(colorToMove == 1) state.zobristHash ^= zobColorToMove;
+    if(colorToMove == 1) state->zobristHash ^= zobColorToMove;
     // decode the castling rights into the 4 bit number, segment 3
-    state.castlingRights = 0;
+    state->castlingRights = 0;
     for(char c : segments[2]) {
         if(c == 'K') {
-            state.castlingRights |= 1;
+            state->castlingRights |= 1;
         } else if(c == 'Q') {
-            state.castlingRights |= 2;
+            state->castlingRights |= 2;
         } else if(c == 'k') {
-            state.castlingRights |= 4;
+            state->castlingRights |= 4;
         } else if(c == 'q') {
-            state.castlingRights |= 8;
+            state->castlingRights |= 8;
         }
     }
     // decode the en passant index, segment 4
@@ -191,12 +193,12 @@ Board::Board(std::string fen) {
             }
             i++;
         }
-        state.enPassantIndex = num;
+        state->enPassantIndex = num;
     } else {
-        state.enPassantIndex = 64;
+        state->enPassantIndex = 64;
     }
     // 50 move counter, segment 5
-    state.hundredPlyCounter = 0;
+    state->hundredPlyCounter = 0;
     // ply count, segment 6
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
 }
@@ -258,33 +260,33 @@ std::string Board::getFenString() {
     // castling rights
     fen += ' ';
     bool thingAdded = false;
-    if((state.castlingRights & 1) != 0) {
+    if((state->castlingRights & 1) != 0) {
         fen += 'K'; 
         thingAdded = true;
     }
-    if((state.castlingRights & 2) != 0) {
+    if((state->castlingRights & 2) != 0) {
         fen += 'Q'; 
         thingAdded = true;
     }
-    if((state.castlingRights & 4) != 0) {
+    if((state->castlingRights & 4) != 0) {
         fen += 'k'; 
         thingAdded = true;
     }
-    if((state.castlingRights & 8) != 0) {
+    if((state->castlingRights & 8) != 0) {
         fen += 'q'; 
         thingAdded = true;
     }
     if(thingAdded == false) fen += '-';
     // en passant square
     fen += ' ';
-    if(state.enPassantIndex == 64) {
+    if(state->enPassantIndex == 64) {
         fen += '-';
     } else {
-        fen += squareNames[state.enPassantIndex];
+        fen += squareNames[state->enPassantIndex];
     }
     // 50 move counter
     fen += ' ';
-    fen += std::to_string(state.hundredPlyCounter / 2);
+    fen += std::to_string(state->hundredPlyCounter / 2);
     // ply count
     fen += ' ';
     fen += std::to_string(plyCount / 2 + colorToMove);
@@ -298,11 +300,11 @@ void Board::addPiece(int square, int type) {
     assert(square >= 0);
     const uint64_t bitboardSquare = squareToBitboard[square];
     //std::cout << "Adding piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
-    state.coloredBitboards[getColor(type)] ^= bitboardSquare;
-    state.pieceBitboards[getType(type)] ^= bitboardSquare;
+    state->coloredBitboards[getColor(type)] ^= bitboardSquare;
+    state->pieceBitboards[getType(type)] ^= bitboardSquare;
     assert(pieceAtIndex(square) == type);
-    state.nnueState.activateFeature(square, type);
-    state.zobristHash ^= zobTable[square][type];
+    state->nnueState.activateFeature(square, type);
+    state->zobristHash ^= zobTable[square][type];
 }
 
 void Board::removePiece(int square, int type) {
@@ -311,10 +313,10 @@ void Board::removePiece(int square, int type) {
     assert(pieceAtIndex(square) == type);
     assert(square >= 0);
     const uint64_t bitboardSquare = squareToBitboard[square];
-    state.coloredBitboards[getColor(type)] ^= bitboardSquare;
-    state.pieceBitboards[getType(type)] ^= bitboardSquare;
-    state.nnueState.disableFeature(square, type);
-    state.zobristHash ^= zobTable[square][type];
+    state->coloredBitboards[getColor(type)] ^= bitboardSquare;
+    state->pieceBitboards[getType(type)] ^= bitboardSquare;
+    state->nnueState.disableFeature(square, type);
+    state->zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
 
@@ -343,9 +345,9 @@ int Board::pieceAtIndex(int index) const {
 }
 int Board::colorAtIndex(int index) const {
     uint64_t indexBitboard = squareToBitboard[index];
-    if((state.coloredBitboards[0] & indexBitboard) != 0) {
+    if((state->coloredBitboards[0] & indexBitboard) != 0) {
         return 0;
-    } else if((state.coloredBitboards[1] & indexBitboard) != 0) {
+    } else if((state->coloredBitboards[1] & indexBitboard) != 0) {
         return 1;
     }
     // invalid result, bad
@@ -353,11 +355,11 @@ int Board::colorAtIndex(int index) const {
 }
 
 uint64_t Board::getColoredPieceBitboard(int color, int piece) const {
-    return state.pieceBitboards[piece] & state.coloredBitboards[color];
+    return state->pieceBitboards[piece] & state->coloredBitboards[color];
 }
 
 uint64_t Board::getOccupiedBitboard() const {
-    return state.coloredBitboards[0] | state.coloredBitboards[1];
+    return state->coloredBitboards[0] | state->coloredBitboards[1];
 }
 
 // fills up the array and then returns the number of moves to be looped through later.
@@ -365,30 +367,30 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     // castling
-    if((state.castlingRights & kingRightMasks[1 - colorToMove]) != 0) {
+    if((state->castlingRights & kingRightMasks[1 - colorToMove]) != 0) {
         if(!isInCheck()) {
             if(colorToMove == 1) {
-                if((state.castlingRights & 1) != 0 && (occupiedBitboard & 0x60) == 0 && !squareIsUnderAttack(5)) {
+                if((state->castlingRights & 1) != 0 && (occupiedBitboard & 0x60) == 0 && !squareIsUnderAttack(5)) {
                     moves[totalMoves] = Move(4, 6, castling[0]);
                     totalMoves++;
                 }
-                if((state.castlingRights & 2) != 0 && (occupiedBitboard & 0xE) == 0 && !squareIsUnderAttack(3)) {
+                if((state->castlingRights & 2) != 0 && (occupiedBitboard & 0xE) == 0 && !squareIsUnderAttack(3)) {
                     moves[totalMoves] = Move(4, 2, castling[1]);
                     totalMoves++;
                 }
             } else {
-                if((state.castlingRights & 4) != 0 && (occupiedBitboard & 0x6000000000000000) == 0 && !squareIsUnderAttack(61)) {
+                if((state->castlingRights & 4) != 0 && (occupiedBitboard & 0x6000000000000000) == 0 && !squareIsUnderAttack(61)) {
                     moves[totalMoves] = Move(60, 62, castling[2]);
                     totalMoves++;
                 }
-                if((state.castlingRights & 8) != 0 && (occupiedBitboard & 0xE00000000000000) == 0 && !squareIsUnderAttack(59)) {
+                if((state->castlingRights & 8) != 0 && (occupiedBitboard & 0xE00000000000000) == 0 && !squareIsUnderAttack(59)) {
                     moves[totalMoves] = Move(60, 58, castling[3]);
                     totalMoves++; 
                 }
             }
         }
     }
-    uint64_t mask = state.coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
+    uint64_t mask = state->coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
     // the rest of the pieces
     while(mask != 0) {
         uint8_t startSquare = popLSB(mask);
@@ -406,7 +408,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
             total = getKingAttacks(startSquare);
         }
         // get rid of capturing your own pieces
-        total ^= (total & state.coloredBitboards[colorToMove]); 
+        total ^= (total & state->coloredBitboards[colorToMove]); 
         while(total != 0) {
             moves[totalMoves] = Move(startSquare, popLSB(total), Normal);
             totalMoves++;
@@ -441,9 +443,9 @@ int Board::getMoves(std::array<Move, 256> &moves) {
         }
     }
     // pawn captures
-    uint64_t capturable = state.coloredBitboards[1 - colorToMove];
-    if(state.enPassantIndex != 64) {
-        capturable |= squareToBitboard[state.enPassantIndex];
+    uint64_t capturable = state->coloredBitboards[1 - colorToMove];
+    if(state->enPassantIndex != 64) {
+        capturable |= squareToBitboard[state->enPassantIndex];
     }
 
     uint64_t leftCaptures = (colorToMove == 0 ? pawnBitboard >> 9 : pawnBitboard << 7);
@@ -461,13 +463,13 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     while(leftCaptures != 0) {
         int index = popLSB(leftCaptures);
         int startSquare = index + (colorToMove == 0 ? 9 : -7);
-        moves[totalMoves] = Move(startSquare, index, (index == state.enPassantIndex ? EnPassant : Normal));
+        moves[totalMoves] = Move(startSquare, index, (index == state->enPassantIndex ? EnPassant : Normal));
         totalMoves++;
     }
     while(rightCaptures != 0) {
         int index = popLSB(rightCaptures);
         int startSquare = index + (colorToMove == 0 ? 7 : -9);
-        moves[totalMoves] = Move(startSquare, index, (index == state.enPassantIndex ? EnPassant : Normal));
+        moves[totalMoves] = Move(startSquare, index, (index == state->enPassantIndex ? EnPassant : Normal));
         totalMoves++;
     }
     while(leftCapturePromotions != 0) {
@@ -492,7 +494,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
 int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     const uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
-    uint64_t mask = state.coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
+    uint64_t mask = state->coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
     // the rest of the pieces
     while(mask != 0) {
         const uint8_t startSquare = popLSB(mask);
@@ -510,7 +512,7 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
             total = getKingAttacks(startSquare);
         }
         // Only captures or (not done yet) checks
-        total &= state.coloredBitboards[1 - colorToMove]; 
+        total &= state->coloredBitboards[1 - colorToMove]; 
         while(total != 0) {
             moves[totalMoves] = Move(startSquare, popLSB(total), Normal);
             totalMoves++;
@@ -531,9 +533,9 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     }
 
     // captures
-    uint64_t capturable = state.coloredBitboards[1 - colorToMove];
-    if(state.enPassantIndex != 64) {
-        capturable |= squareToBitboard[state.enPassantIndex];
+    uint64_t capturable = state->coloredBitboards[1 - colorToMove];
+    if(state->enPassantIndex != 64) {
+        capturable |= squareToBitboard[state->enPassantIndex];
     }
 
     uint64_t leftCaptures = (colorToMove == 0 ? pawnBitboard >> 9 : pawnBitboard << 7);
@@ -551,13 +553,13 @@ int Board::getMovesQSearch(std::array<Move, 256> &moves) {
     while(leftCaptures != 0) {
         int index = popLSB(leftCaptures);
         int startSquare = index + (colorToMove == 0 ? 9 : -7);
-        moves[totalMoves] = Move(startSquare, index, (index == state.enPassantIndex ? EnPassant : Normal));
+        moves[totalMoves] = Move(startSquare, index, (index == state->enPassantIndex ? EnPassant : Normal));
         totalMoves++;
     }
     while(rightCaptures != 0) {
         int index = popLSB(rightCaptures);
         int startSquare = index + (colorToMove == 0 ? 7 : -9);
-        moves[totalMoves] = Move(startSquare, index, (index == state.enPassantIndex ? EnPassant : Normal));
+        moves[totalMoves] = Move(startSquare, index, (index == state->enPassantIndex ? EnPassant : Normal));
         totalMoves++;
     }
     while(leftCapturePromotions != 0) {
@@ -584,7 +586,7 @@ uint8_t Board::getColorToMove() const {
 }
 
 bool Board::isInCheck() {
-    return squareIsUnderAttack(state.kingSquares[colorToMove]);
+    return squareIsUnderAttack(state->kingSquares[colorToMove]);
 }
 
 // thanks ciekce, shoutout stormphrax
@@ -619,7 +621,8 @@ bool Board::squareIsUnderAttack(int square) {
 bool Board::makeMove(Move move) {
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     // push to vectors
-    stateHistory.push_back(state);
+    stateHistory.push_back(*state);
+    state = &stateHistory.back();
 
     // get information
     int start = move.getStartSquare();
@@ -632,9 +635,9 @@ bool Board::makeMove(Move move) {
     int movedPieceType = getType(movedPiece);
     
     // hundred Ply (fifty move) counter
-    state.hundredPlyCounter++;
+    state->hundredPlyCounter++;
     if(isCapture || movedPieceType == Pawn) {
-        state.hundredPlyCounter = 0;
+        state->hundredPlyCounter = 0;
     }
 
     // actually make the move
@@ -643,21 +646,21 @@ bool Board::makeMove(Move move) {
     if(flag < promotions[0]) addPiece(end, movedPiece);
 
     // En Passant
-    state.enPassantIndex = 64;
+    state->enPassantIndex = 64;
 
     // king square updates
     if(movedPieceType == King) {
-        state.kingSquares[colorToMove] = end;
+        state->kingSquares[colorToMove] = end;
     }
     
     // castling rights updates!
-    if((state.castlingRights & kingRightMasks[1 - colorToMove]) != 0) {
+    if((state->castlingRights & kingRightMasks[1 - colorToMove]) != 0) {
         switch(movedPieceType) {
             case Rook:
-                state.castlingRights &= rookRightMasks[start];
+                state->castlingRights &= rookRightMasks[start];
                 break;
             case King:
-                state.castlingRights &= kingRightMasks[colorToMove];
+                state->castlingRights &= kingRightMasks[colorToMove];
                 break;
             default:
                 break;
@@ -666,16 +669,16 @@ bool Board::makeMove(Move move) {
     if(getType(victim) == Rook) {
         switch(end) {
             case 7:
-                state.castlingRights &= rookRightMasks[end];
+                state->castlingRights &= rookRightMasks[end];
                 break;
             case 0:
-                state.castlingRights &= rookRightMasks[end];
+                state->castlingRights &= rookRightMasks[end];
                 break;
             case 63:
-                state.castlingRights &= rookRightMasks[end];
+                state->castlingRights &= rookRightMasks[end];
                 break;
             case 56:
-                state.castlingRights &= rookRightMasks[end];
+                state->castlingRights &= rookRightMasks[end];
                 break;
             default:
                 break;
@@ -703,7 +706,7 @@ bool Board::makeMove(Move move) {
             break;
         // double pawn push
         case DoublePawnPush:
-            state.enPassantIndex = end + directionalOffsets[colorToMove];
+            state->enPassantIndex = end + directionalOffsets[colorToMove];
             break;
         // en passant
         case EnPassant:
@@ -738,48 +741,49 @@ bool Board::makeMove(Move move) {
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was legal\n";
-        state.zobristHash ^= zobColorToMove;
+        state->zobristHash ^= zobColorToMove;
         return true;
     }
 }
 
 void Board::undoMove() {
-    state = stateHistory.back();
-    plyCount--;
+    state = &stateHistory.back();
     stateHistory.pop_back();
+    plyCount--;
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
 }
 
 uint64_t Board::getCurrentPlayerBitboard() const {
-    return state.coloredBitboards[colorToMove];
+    return state->coloredBitboards[colorToMove];
 }
 
 void Board::changeColor() {
-    stateHistory.push_back(state);
-    state.enPassantIndex = 64;
-    state.hundredPlyCounter++;
+    stateHistory.push_back(*state);
+    state = &stateHistory.back();
+    state->enPassantIndex = 64;
+    state->hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
-    state.zobristHash ^= zobColorToMove;
+    state->zobristHash ^= zobColorToMove;
 }
 
 void Board::undoChangeColor() {
-    state = stateHistory.back();
+    state = &stateHistory.back();
     stateHistory.pop_back();
     colorToMove = 1 - colorToMove;
 }
 
 int Board::getEvaluation() {   
-    return state.nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
+    return state->nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
 }
 
 int Board::getCastlingRights() const {
-    return state.castlingRights;
+    return state->castlingRights;
 }
 
 int Board::getEnPassantIndex() const {
-    return state.enPassantIndex;
+    return state->enPassantIndex;
 }
 
 void initializeZobrist() {
@@ -817,8 +821,8 @@ uint64_t Board::fullZobristRegen() {
 
 bool Board::isRepeatedPosition() {
     int size = std::ssize(stateHistory);
-    for(int i = size - 4; i >= size - state.hundredPlyCounter; i -= 2) {
-        if(stateHistory[i].zobristHash == state.zobristHash) {
+    for(int i = size - 4; i >= size - state->hundredPlyCounter; i -= 2) {
+        if(stateHistory[i].zobristHash == state->zobristHash) {
             return true;
         }
     }
@@ -838,35 +842,35 @@ uint64_t Board::getAttackers(int square) const {
     uint64_t occupied = getOccupiedBitboard();
     return (getPawnAttacks(square, 0) & getColoredPieceBitboard(1, Pawn))
         | (getPawnAttacks(square, 1) & getColoredPieceBitboard(0, Pawn))
-        | (getKnightAttacks(square) & state.pieceBitboards[Knight])
-        | (getRookAttacks(square, occupied) & (state.pieceBitboards[Rook] | state.pieceBitboards[Queen]))
-        | (getBishopAttacks(square, occupied) & (state.pieceBitboards[Bishop] | state.pieceBitboards[Queen]))
-        | (getKingAttacks(square) & state.pieceBitboards[King]);
+        | (getKnightAttacks(square) & state->pieceBitboards[Knight])
+        | (getRookAttacks(square, occupied) & (state->pieceBitboards[Rook] | state->pieceBitboards[Queen]))
+        | (getBishopAttacks(square, occupied) & (state->pieceBitboards[Bishop] | state->pieceBitboards[Queen]))
+        | (getKingAttacks(square) & state->pieceBitboards[King]);
 }
 
 uint64_t Board::getColoredBitboard(int color) const {
-    return state.coloredBitboards[color];
+    return state->coloredBitboards[color];
 }
 uint64_t Board::getPieceBitboard(int piece) const {
-    return state.pieceBitboards[piece];
+    return state->pieceBitboards[piece];
 }
 
 int Board::getFiftyMoveCount() const {
-    return state.hundredPlyCounter / 2;
+    return state->hundredPlyCounter / 2;
 }
 
 uint64_t Board::getZobristHash() const {
-    return state.zobristHash;
+    return state->zobristHash;
 }
 
 BoardState Board::getBoardState() const {
-    return state;
+    return *state;
 }
 
 Board::Board(BoardState s, int ctm) {
-    state = s;
+    state = &s;
     colorToMove = ctm;
-    state.hundredPlyCounter = 0;
+    state->hundredPlyCounter = 0;
     plyCount = 0;
     stateHistory.reserve(256);
 }
@@ -879,7 +883,7 @@ uint64_t Board::keyAfter(const Move move) const {
     const int moving = pieceAtIndex(startSquare);
     const int captured = pieceAtIndex(endSquare);
 
-    uint64_t key = state.zobristHash;
+    uint64_t key = state->zobristHash;
 
     key ^= zobTable[startSquare][moving];
     key ^= zobTable[endSquare][moving];
