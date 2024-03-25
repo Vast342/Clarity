@@ -509,7 +509,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         // futility pruning
         if(bestScore > matedScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) break;
         // Late Move Pruning
-        if(!isPV && isQuiet && bestScore > matedScore + 256 && quietCount > lmpBase.value + depth * depth / (2 - improving)) continue;
+        if(!isPV && isQuiet && bestScore > matedScore + 256 && quietCount > lmpBase.value + depth * depth / (2 - improving)) break;
         // see pruning
         if(depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > matedScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
