@@ -34,7 +34,7 @@ int MVV_value[7] = {112, 351, 361, 627, 1187, 0, 0};
 int SEE_value[7] = {112, 351, 361, 627, 1187, 0, 0};
 
 // Tunable Values
-int killerScore = 54000;
+int killerScore = 70000;
 
 int goodCaptureBonus= 500000;
 // The main search functions
@@ -186,7 +186,8 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                 // read from history
                 values[i] = historyTable[colorToMove][start][end]
                     + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0);
+                    + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0);
             }
         }
     }
@@ -359,6 +360,11 @@ void Engine::updateHistory(const int colorToMove, const int start, const int end
         thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
+
+    if(ply > 3) {
+        thingToAdd = bonus - (*stack[ply - 4].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        (*stack[ply - 4].ch_entry)[colorToMove][piece][end] += thingToAdd;
+    }
 }
 
 void Engine::updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
@@ -503,7 +509,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         int moveFlag = move.getFlag();
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
-        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 3);
+        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 4);
 
         // move loop prunings:
         // futility pruning

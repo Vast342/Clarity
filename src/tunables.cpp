@@ -40,7 +40,7 @@ Tunable nmpDivisor("NMP_Divisor", 157, 1);
 Tunable nmpSubtractor("NMP_Subtractor", 5, 1);
 Tunable nmpDepthCondition("NMP_DepthCondition", 1, 1);
 
-Tunable hmrDivisor("HMR_Divisor", 6823, 1); 
+Tunable hmrDivisor("HMR_Divisor", 8000, 1); 
 Tunable cmrDivisor("CMR_Divisor", 2926, 1);
 
 Tunable lmrBase("LMR_Base", 0.81, 100);// Adjusted divisor for lmrBase
