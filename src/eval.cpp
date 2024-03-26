@@ -38,10 +38,10 @@ namespace {
 }
 
 void NetworkState::reset() {
-    memcpy(stack.data(), 0, sizeof(stack));
-    current = 0;
+    stack.clear();
+    current = &stack.emplace_back();
 
-    stack[current].initialize(network->featureBiases);
+    current->initialize(network->featureBiases);
 }
 void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
@@ -190,8 +190,8 @@ void NetworkState::activateFeature(int square, int type){
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        stack[current].black[i] += network->featureWeights[blackIdx * layer1Size + i];
-        stack[current].white[i] += network->featureWeights[whiteIdx * layer1Size + i];
+        current->black[i] += network->featureWeights[blackIdx * layer1Size + i];
+        current->white[i] += network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
@@ -200,13 +200,13 @@ void NetworkState::disableFeature(int square, int type) {
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        stack[current].black[i] -= network->featureWeights[blackIdx * layer1Size + i];
-        stack[current].white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
+        current->black[i] -= network->featureWeights[blackIdx * layer1Size + i];
+        current->white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
-    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network->outputWeights) : forward(bucket, stack[current].white, stack[current].black, network->outputWeights);
+    const auto output = colorToMove == 0 ? forward(bucket, current->black, current->white, network->outputWeights) : forward(bucket, current->white, current->black, network->outputWeights);
     return (output / Qa + network->outputBiases[bucket]) * Scale / Qab;
 }
