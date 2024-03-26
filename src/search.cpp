@@ -372,7 +372,7 @@ void Engine::updateQSHistory(const int colorToMove, const int piece, const int e
 }
 
 // The main search function
-int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed) {
+int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, bool isCutNode) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time check every 4096 nodes
@@ -449,7 +449,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     if(!inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0];
         board.changeColor();
-        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false);
+        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, !isCutNode);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
@@ -526,7 +526,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             const auto sDepth = (depth - 1) / 2;
 
             stack[ply].excluded = entry->bestMove;
-            const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true);
+            const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true, isCutNode);
             stack[ply].excluded = Move();
             if(score < sBeta) {
                 if (!isPV && score < sBeta - dexMargin.value && stack[ply].doubleExtensions <= dexLimit.value) {
@@ -559,7 +559,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         int presearchNodeCount = nodes;
         if(legalMoves == 1) {
             // searches the first move at full depth
-            score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true);
+            score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true, false);
         } else {
             // Late Move Reductions (LMR)
             int depthReduction = 0;
@@ -571,14 +571,15 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 } else {
                     depthReduction -= moveValues[i] / int(cmrDivisor.value);
                 }
+                depthReduction += isCutNode;
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
             // this is more PVS stuff, searching with a reduced margin
-            score = -negamax(board, depth - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true);
+            score = -negamax(board, depth - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true, true);
             // and then if it fails high or low we search again with the original bounds
             if(score > alpha && (score < beta || depthReduction > 0)) {
-                score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true);
+                score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, false);
             }
         }
         board.undoMove();
@@ -733,7 +734,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true);
+                score = negamax(board, depth, alpha, beta, 0, true, false);
                 if(timesUp) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
@@ -745,7 +746,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true);
+            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
         if(timesUp) rootBestMove = previousBest;
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
@@ -806,7 +807,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
         int beta = std::min(-matedScore, score + delta);
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true);
+                score = negamax(board, depth, alpha, beta, 0, true, false);
                 
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
@@ -818,7 +819,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true);
+            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
         //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
@@ -851,7 +852,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         int beta = std::min(-matedScore, score + delta);
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true);
+                score = negamax(board, depth, alpha, beta, 0, true, false);
                 
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
@@ -863,7 +864,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true);
+            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
         if(timesUp) {
             rootBestMove = previousBest;
@@ -922,7 +923,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
         int beta = std::min(-matedScore, score + delta);
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true);
+                score = negamax(board, depth, alpha, beta, 0, true, false);
                 
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
@@ -934,7 +935,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true);
+            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
         //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
@@ -967,7 +968,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true);
+                score = negamax(board, depth, alpha, beta, 0, true, false);
                 if(timesUp) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
@@ -979,7 +980,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true);
+            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
         if(timesUp) {
             rootBestMove = previousBest;
