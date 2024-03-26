@@ -68,7 +68,6 @@ struct Board;
 
 // holds the state of the board, specifically the factors that can't be brought back after a move is made
 struct BoardState {
-    NetworkState nnueState;
     std::array<uint64_t, 2> coloredBitboards;
     std::array<uint64_t, 6> pieceBitboards;
     uint8_t enPassantIndex;
@@ -133,6 +132,7 @@ struct Board {
         int plyCount;
         uint8_t colorToMove;
         std::vector<BoardState> stateHistory;
+        NetworkState nnueState;
         void addPiece(int square, int type);
         void removePiece(int square, int type);
         void movePiece(int square1, int type1, int square2, int type2);

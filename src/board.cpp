@@ -92,7 +92,7 @@ Board::Board(std::string fen) {
     stateHistory.clear();
     stateHistory.reserve(256);
     stateHistory.push_back(BoardState());
-    stateHistory.back().nnueState.reset();
+    nnueState.reset();
     stateHistory.back().zobristHash = 0;
     for(int i = 0; i < 6; i++) {
         stateHistory.back().pieceBitboards[i] = 0ULL;
@@ -302,7 +302,7 @@ void Board::addPiece(int square, int type) {
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     assert(pieceAtIndex(square) == type);
-    stateHistory.back().nnueState.activateFeature(square, type);
+    nnueState.activateFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
 }
 
@@ -314,7 +314,7 @@ void Board::removePiece(int square, int type) {
     const uint64_t bitboardSquare = squareToBitboard[square];
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
-    stateHistory.back().nnueState.disableFeature(square, type);
+    nnueState.disableFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
@@ -621,6 +621,7 @@ bool Board::makeMove(Move move) {
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     // push to vectors
     stateHistory.push_back(stateHistory.back());
+    nnueState.push();
 
     // get information
     int start = move.getStartSquare();
@@ -746,6 +747,7 @@ bool Board::makeMove(Move move) {
 
 void Board::undoMove() {
     stateHistory.pop_back();
+    nnueState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
@@ -758,6 +760,7 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     stateHistory.push_back(stateHistory.back());
+    nnueState.push();
     stateHistory.back().enPassantIndex = 64;
     stateHistory.back().hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
@@ -766,11 +769,12 @@ void Board::changeColor() {
 
 void Board::undoChangeColor() {
     stateHistory.pop_back();
+    nnueState.pop();
     colorToMove = 1 - colorToMove;
 }
 
 int Board::getEvaluation() {   
-    return stateHistory.back().nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
+    return nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
 }
 
 int Board::getCastlingRights() const {

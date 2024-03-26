@@ -38,9 +38,11 @@ namespace {
 }
 
 void NetworkState::reset() {
-    currentAccumulator.initialize(network->featureBiases);
-}
+    memcpy(stack.data(), 0, sizeof(stack));
+    current = 0;
 
+    stack[current].initialize(network->featureBiases);
+}
 void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());
@@ -188,8 +190,8 @@ void NetworkState::activateFeature(int square, int type){
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        currentAccumulator.black[i] += network->featureWeights[blackIdx * layer1Size + i];
-        currentAccumulator.white[i] += network->featureWeights[whiteIdx * layer1Size + i];
+        stack[current].black[i] += network->featureWeights[blackIdx * layer1Size + i];
+        stack[current].white[i] += network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
@@ -198,13 +200,13 @@ void NetworkState::disableFeature(int square, int type) {
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        currentAccumulator.black[i] -= network->featureWeights[blackIdx * layer1Size + i];
-        currentAccumulator.white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
+        stack[current].black[i] -= network->featureWeights[blackIdx * layer1Size + i];
+        stack[current].white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
-    const auto output = colorToMove == 0 ? forward(bucket, currentAccumulator.black, currentAccumulator.white, network->outputWeights) : forward(bucket, currentAccumulator.white, currentAccumulator.black, network->outputWeights);
+    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network->outputWeights) : forward(bucket, stack[current].white, stack[current].black, network->outputWeights);
     return (output / Qa + network->outputBiases[bucket]) * Scale / Qab;
 }
