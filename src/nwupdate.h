@@ -21,6 +21,10 @@ struct NetworkUpdate {
 };
 
 struct NetworkUpdates {
+    NetworkUpdates() {
+        numAdds = 0;
+        numSubs = 0;
+    }
     void addAdd(int square, int piece) {
         adds[numAdds] = NetworkUpdate(Add, square, piece);
         numAdds++;
@@ -29,8 +33,8 @@ struct NetworkUpdates {
         subs[numSubs] = NetworkUpdate(Subtract, square, piece);
         numSubs++;
     }
-    std::array<NetworkUpdate, 2> adds;
+    std::array<NetworkUpdate, 3> adds;
     int numAdds;
-    std::array<NetworkUpdate, 2> subs;
+    std::array<NetworkUpdate, 3> subs;
     int numSubs;
 };

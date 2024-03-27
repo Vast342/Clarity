@@ -126,7 +126,7 @@ using namespace std;
 #define popcount(x)             (int)_mm_popcnt_u64((x))
 #elif defined(_MSC_VER) && (_MSC_VER >= 1500) && defined(_M_AMD64)
 #include <nmmintrin.h>
-#define popcount(x)             (int)_mm_popcnt_u64((x))
+#define popcount(x)             (int)__builtin_popcountll((x))
 #else
 // try to use a builtin
 #if defined (__has_builtin)
