@@ -57,6 +57,7 @@ class NetworkState {
         }
         void reset();
         void activateFeature(int square, int type);
+        void activateFeatureAndPush(int square, int type);
         void disableFeature(int square, int type);
         int evaluate(int colorToMove, int materialCount);
     private:

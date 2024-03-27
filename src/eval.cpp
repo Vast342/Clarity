@@ -56,11 +56,11 @@ void NetworkState::performUpdates(NetworkUpdates updates) {
     }
 }
 void NetworkState::performUpdatesAndPush(NetworkUpdates updates) {
-    push();
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
+    activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece);
 
-    for(int i = 0; i < updates.numAdds; i++) {
+    for(int i = 1; i < updates.numAdds; i++) {
         activateFeature(updates.adds[i].square, updates.adds[i].piece);
     }
     for(int i = 0; i < updates.numSubs; i++) {
@@ -218,6 +218,17 @@ void NetworkState::activateFeature(int square, int type){
         stack[current].black[i] += network->featureWeights[blackIdx * layer1Size + i];
         stack[current].white[i] += network->featureWeights[whiteIdx * layer1Size + i];
     }
+}
+
+void NetworkState::activateFeatureAndPush(int square, int type){ 
+    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
+
+    // change values for all of them
+    for(int i = 0; i < layer1Size; ++i) {
+        stack[current + 1].black[i] = stack[current].black[i] + network->featureWeights[blackIdx * layer1Size + i];
+        stack[current + 1].white[i] = stack[current].white[i] + network->featureWeights[whiteIdx * layer1Size + i];
+    }
+    current++;
 }
 
 void NetworkState::disableFeature(int square, int type) {
