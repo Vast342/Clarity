@@ -38,7 +38,7 @@ namespace {
 }
 
 void NetworkState::reset() {
-    memset(stack.data(), 0, sizeof(Accumulator) * stack.size());
+    std::memset(stack.data(), 0, sizeof(Accumulator) * stack.size());
     current = 0;
 
     stack[current].initialize(network->featureBiases);

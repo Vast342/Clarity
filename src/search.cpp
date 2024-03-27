@@ -22,7 +22,6 @@ int nodes = 0;
 
 #include "search.h"
 #include "tt.h"
-#include <cstring>
 #include "normalize.h"
 #include "external/fathom/tbprobe.h"
 
