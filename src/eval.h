@@ -51,6 +51,7 @@ class NetworkState {
             current++;
         }
         void performUpdates(NetworkUpdates updates);
+        void performUpdatesAndPush(NetworkUpdates updates);
         inline void pop() {
             current--;
         }

@@ -134,9 +134,9 @@ struct Board {
         uint8_t colorToMove;
         std::vector<BoardState> stateHistory;
         NetworkState nnueState;
-        void addPiece(int square, int type);
-        void removePiece(int square, int type);
-        void movePiece(int square1, int type1, int square2, int type2);
+        template <bool UpdateNNUE> void addPiece(int square, int type);
+        template <bool UpdateNNUE> void removePiece(int square, int type);
+        template <bool UpdateNNUE> void movePiece(int square1, int type1, int square2, int type2);
 };
 
 // the eternal functions, can be used everywhere

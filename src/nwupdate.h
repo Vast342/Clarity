@@ -5,17 +5,14 @@ enum UpdateType {
 };
 
 struct NetworkUpdate {
-    NetworkUpdate(int t, int s, int p) {
-        type = t;
+    NetworkUpdate(int s, int p) {
         square = s;
         piece = p;
     }
     NetworkUpdate() {
-        type = NoUpdate;
         square = 0;
         piece = 0;
     }
-    int type;
     int square;
     int piece;  
 };
@@ -26,11 +23,11 @@ struct NetworkUpdates {
         numSubs = 0;
     }
     void pushAdd(int square, int piece) {
-        adds[numAdds] = NetworkUpdate(Add, square, piece);
+        adds[numAdds] = NetworkUpdate(square, piece);
         numAdds++;
     }
     void pushSub(int square, int piece) {
-        subs[numSubs] = NetworkUpdate(Subtract, square, piece);
+        subs[numSubs] = NetworkUpdate(square, piece);
         numSubs++;
     }
     std::array<NetworkUpdate, 2> adds;
