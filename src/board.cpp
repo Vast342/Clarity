@@ -760,19 +760,19 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
             break;
     }
     plyCount++;
-    if constexpr(PushNNUE) {
-        nnueState.performUpdatesAndPush(updates);
-    } else {
-        nnueState.performUpdates(updates);
-    }
     // if in check, move was illegal
     if(isInCheck()) {
         // so you must undo it and return false
-        undoMove<PushNNUE>();
+        undoMove<false>();
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was illegal\n";
         return false;
     } else {
+        if constexpr(PushNNUE) {
+            nnueState.performUpdatesAndPush(updates);
+        } else {
+            nnueState.performUpdates(updates);
+        }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was legal\n";
