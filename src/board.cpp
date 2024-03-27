@@ -647,13 +647,13 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     // actually make the move
     if(isCapture) {
         removePiece(end, victim);
-        if constexpr(PushNNUE) updates.addSub(end, victim);
+        if constexpr(PushNNUE) updates.pushSub(end, victim);
     }
     removePiece(start, movedPiece);
-    if constexpr(PushNNUE) updates.addSub(start, movedPiece);
+    if constexpr(PushNNUE) updates.pushSub(start, movedPiece);
     if(flag < promotions[0]) {
         addPiece(end, movedPiece);
-        if constexpr(PushNNUE) updates.addAdd(end, movedPiece);
+        if constexpr(PushNNUE) updates.pushAdd(end, movedPiece);
     }
 
     // En Passant
@@ -702,26 +702,26 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         case castling[0]:
             assert(pieceAtIndex(7) != None);
             movePiece(7, Rook | White, 5, None);
-            if constexpr(PushNNUE) updates.addSub(7, Rook | White);
-            if constexpr(PushNNUE) updates.addAdd(5, Rook | White);
+            if constexpr(PushNNUE) updates.pushSub(7, Rook | White);
+            if constexpr(PushNNUE) updates.pushAdd(5, Rook | White);
             break;
         case castling[1]:
             assert(pieceAtIndex(0) != None);
             movePiece(0, Rook | White, 3, None);
-            if constexpr(PushNNUE) updates.addSub(0, Rook | White);
-            if constexpr(PushNNUE) updates.addAdd(3, Rook | White);
+            if constexpr(PushNNUE) updates.pushSub(0, Rook | White);
+            if constexpr(PushNNUE) updates.pushAdd(3, Rook | White);
             break;
         case castling[2]:
             assert(pieceAtIndex(63) != None);
             movePiece(63, Rook | Black, 61, None);
-            if constexpr(PushNNUE) updates.addSub(63, Rook | Black);
-            if constexpr(PushNNUE) updates.addAdd(61, Rook | Black);
+            if constexpr(PushNNUE) updates.pushSub(63, Rook | Black);
+            if constexpr(PushNNUE) updates.pushAdd(61, Rook | Black);
             break;
         case castling[3]:
             assert(pieceAtIndex(56) != None);
             movePiece(56, Rook | Black, 59, None);
-            if constexpr(PushNNUE) updates.addSub(56, Rook | Black);
-            if constexpr(PushNNUE) updates.addAdd(59, Rook | Black);
+            if constexpr(PushNNUE) updates.pushSub(56, Rook | Black);
+            if constexpr(PushNNUE) updates.pushAdd(59, Rook | Black);
             break;
         // double pawn push
         case DoublePawnPush:
@@ -731,24 +731,24 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         case EnPassant:
             assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
             removePiece(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
-            if constexpr(PushNNUE) updates.addSub(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
+            if constexpr(PushNNUE) updates.pushSub(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
             break;
         // promotion cases
         case promotions[0]:
             addPiece(end, Knight | (8 * colorToMove));
-            if constexpr(PushNNUE) updates.addAdd(end, Knight | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.pushAdd(end, Knight | (8 * colorToMove));
             break;
         case promotions[1]:
             addPiece(end, Bishop | (8 * colorToMove));
-            if constexpr(PushNNUE) updates.addAdd(end, Bishop | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.pushAdd(end, Bishop | (8 * colorToMove));
             break;
         case promotions[2]:
             addPiece(end, Rook | (8 * colorToMove));
-            if constexpr(PushNNUE) updates.addAdd(end, Rook | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.pushAdd(end, Rook | (8 * colorToMove));
             break;
         case promotions[3]:
             addPiece(end, Queen | (8 * colorToMove));
-            if constexpr(PushNNUE) updates.addAdd(end, Queen | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.pushAdd(end, Queen | (8 * colorToMove));
             break;
         default:
             break;

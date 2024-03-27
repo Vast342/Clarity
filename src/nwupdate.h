@@ -25,11 +25,11 @@ struct NetworkUpdates {
         numAdds = 0;
         numSubs = 0;
     }
-    void addAdd(int square, int piece) {
+    void pushAdd(int square, int piece) {
         adds[numAdds] = NetworkUpdate(Add, square, piece);
         numAdds++;
     }
-    void addSub(int square, int piece) {
+    void pushSub(int square, int piece) {
         subs[numSubs] = NetworkUpdate(Subtract, square, piece);
         numSubs++;
     }
