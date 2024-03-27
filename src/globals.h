@@ -33,8 +33,10 @@
 #include <chrono>
 #include <fstream>
 #include <thread>
+#include "nwupdate.h"
 #include "eval.h"
 #include <memory>
+#include <cstring>
 
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
@@ -68,7 +70,6 @@ struct Board;
 
 // holds the state of the board, specifically the factors that can't be brought back after a move is made
 struct BoardState {
-    NetworkState nnueState;
     std::array<uint64_t, 2> coloredBitboards;
     std::array<uint64_t, 6> pieceBitboards;
     uint8_t enPassantIndex;
@@ -98,8 +99,8 @@ struct Board {
     public:
         Board(std::string fen);
         Board(BoardState s, int ctm);
-        bool makeMove(Move move);
-        void undoMove();
+        template <bool PushNNUE> bool makeMove(Move move);
+        template <bool PushNNUE> void undoMove();
         int getMoves(std::array<Move, 256> &moves);
         int getMovesQSearch(std::array<Move, 256> &moves);
         std::string getFenString();
@@ -133,9 +134,10 @@ struct Board {
         int plyCount;
         uint8_t colorToMove;
         std::vector<BoardState> stateHistory;
-        void addPiece(int square, int type);
-        void removePiece(int square, int type);
-        void movePiece(int square1, int type1, int square2, int type2);
+        NetworkState nnueState;
+        template <bool UpdateNNUE> void addPiece(int square, int type);
+        template <bool UpdateNNUE> void removePiece(int square, int type);
+        template <bool UpdateNNUE> void movePiece(int square1, int type1, int square2, int type2);
 };
 
 // the eternal functions, can be used everywhere

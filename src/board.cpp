@@ -18,6 +18,17 @@
 #include "globals.h"
 #include <cstdlib>
 
+template bool Board::makeMove<false>(Move move);
+template void Board::undoMove<false>();
+template bool Board::makeMove<true>(Move move);
+template void Board::undoMove<true>();
+template void Board::addPiece<false>(int square, int type);
+template void Board::removePiece<false>(int square, int type);
+template void Board::movePiece<false>(int square1, int type1, int square2, int type2);
+template void Board::addPiece<true>(int square, int type);
+template void Board::removePiece<true>(int square, int type);
+template void Board::movePiece<true>(int square1, int type1, int square2, int type2);
+
 // zobrist hashing values 
 std::array<std::array<uint64_t, 14>, 64> zobTable;
 // if black is to move this value is xor'ed
@@ -92,7 +103,7 @@ Board::Board(std::string fen) {
     stateHistory.clear();
     stateHistory.reserve(256);
     stateHistory.push_back(BoardState());
-    stateHistory.back().nnueState.reset();
+    nnueState.reset();
     stateHistory.back().zobristHash = 0;
     for(int i = 0; i < 6; i++) {
         stateHistory.back().pieceBitboards[i] = 0ULL;
@@ -109,52 +120,52 @@ Board::Board(std::string fen) {
         for(char c : rank) {
             switch(c) {
                 case 'p':
-                    addPiece(i, Pawn | Black);
+                    addPiece<true>(i, Pawn | Black);
                     i++;
                     break;
                 case 'P':
-                    addPiece(i, Pawn | White);
+                    addPiece<true>(i, Pawn | White);
                     i++;
                     break;
                 case 'n':
-                    addPiece(i, Knight | Black);
+                    addPiece<true>(i, Knight | Black);
                     i++;
                     break;
                 case 'N':
-                    addPiece(i, Knight | White);
+                    addPiece<true>(i, Knight | White);
                     i++;
                     break;
                 case 'b':
-                    addPiece(i, Bishop | Black);
+                    addPiece<true>(i, Bishop | Black);
                     i++;
                     break;
                 case 'B':
-                    addPiece(i, Bishop | White);
+                    addPiece<true>(i, Bishop | White);
                     i++;
                     break;
                 case 'r':
-                    addPiece(i, Rook | Black);
+                    addPiece<true>(i, Rook | Black);
                     i++;
                     break;
                 case 'R':
-                    addPiece(i, Rook | White);
+                    addPiece<true>(i, Rook | White);
                     i++;
                     break;
                 case 'q':
-                    addPiece(i, Queen | Black);
+                    addPiece<true>(i, Queen | Black);
                     i++;
                     break;
                 case 'Q':
-                    addPiece(i, Queen | White);
+                    addPiece<true>(i, Queen | White);
                     i++;
                     break;
                 case 'k':
-                    addPiece(i, King | Black);
+                    addPiece<true>(i, King | Black);
                     stateHistory.back().kingSquares[0] = i;
                     i++;
                     break;
                 case 'K':
-                    addPiece(i, King | White);
+                    addPiece<true>(i, King | White);
                     stateHistory.back().kingSquares[1] = i;
                     i++;
                     break;
@@ -292,7 +303,7 @@ std::string Board::getFenString() {
     return fen;
 }
 
-void Board::addPiece(int square, int type) {
+template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     assert(type != None);
     assert(square < 64);
     assert(pieceAtIndex(square) == None);
@@ -302,11 +313,11 @@ void Board::addPiece(int square, int type) {
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     assert(pieceAtIndex(square) == type);
-    stateHistory.back().nnueState.activateFeature(square, type);
+    if constexpr(UpdateNNUE) nnueState.activateFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
 }
 
-void Board::removePiece(int square, int type) {
+template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     assert(type != None);
     assert(square < 64);
     assert(pieceAtIndex(square) == type);
@@ -314,18 +325,18 @@ void Board::removePiece(int square, int type) {
     const uint64_t bitboardSquare = squareToBitboard[square];
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
-    stateHistory.back().nnueState.disableFeature(square, type);
+    if constexpr(UpdateNNUE) nnueState.disableFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
 
-void Board::movePiece(int square1, int type1, int square2, int type2) {
+template <bool UpdateNNUE> void Board::movePiece(int square1, int type1, int square2, int type2) {
     assert(type1 != None);
     assert(square1 < 64);
     assert(square2 < 64);
-    if(type2 != None) removePiece(square2, type2);
-    addPiece(square2, type1);
-    removePiece(square1, type1);
+    if(type2 != None) removePiece<UpdateNNUE>(square2, type2);
+    addPiece<UpdateNNUE>(square2, type1);
+    removePiece<UpdateNNUE>(square1, type1);
 }
 
 int Board::pieceAtIndex(int index) const {
@@ -617,10 +628,11 @@ bool Board::squareIsUnderAttack(int square) {
     return false;
 }
 
-bool Board::makeMove(Move move) {
+template <bool PushNNUE> bool Board::makeMove(Move move) {
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     // push to vectors
     stateHistory.push_back(stateHistory.back());
+    NetworkUpdates updates;
 
     // get information
     int start = move.getStartSquare();
@@ -639,9 +651,16 @@ bool Board::makeMove(Move move) {
     }
 
     // actually make the move
-    if(isCapture) removePiece(end, victim);
-    removePiece(start, movedPiece);
-    if(flag < promotions[0]) addPiece(end, movedPiece);
+    if(isCapture) {
+        removePiece<false>(end, victim);
+        updates.pushSub(end, victim);
+    }
+    removePiece<false>(start, movedPiece);
+    updates.pushSub(start, movedPiece);
+    if(flag < promotions[0]) {
+        addPiece<false>(end, movedPiece);
+        updates.pushAdd(end, movedPiece);
+    }
 
     // En Passant
     stateHistory.back().enPassantIndex = 64;
@@ -688,19 +707,27 @@ bool Board::makeMove(Move move) {
         // castling cases
         case castling[0]:
             assert(pieceAtIndex(7) != None);
-            movePiece(7, Rook | White, 5, None);
+            movePiece<false>(7, Rook | White, 5, None);
+            updates.pushSub(7, Rook | White);
+            updates.pushAdd(5, Rook | White);
             break;
         case castling[1]:
             assert(pieceAtIndex(0) != None);
-            movePiece(0, Rook | White, 3, None);
+            movePiece<false>(0, Rook | White, 3, None);
+            updates.pushSub(0, Rook | White);
+            updates.pushAdd(3, Rook | White);
             break;
         case castling[2]:
             assert(pieceAtIndex(63) != None);
-            movePiece(63, Rook | Black, 61, None);
+            movePiece<false>(63, Rook | Black, 61, None);
+            updates.pushSub(63, Rook | Black);
+            updates.pushAdd(61, Rook | Black);
             break;
         case castling[3]:
             assert(pieceAtIndex(56) != None);
-            movePiece(56, Rook | Black, 59, None);
+            movePiece<false>(56, Rook | Black, 59, None);
+            updates.pushSub(56, Rook | Black);
+            updates.pushAdd(59, Rook | Black);
             break;
         // double pawn push
         case DoublePawnPush:
@@ -709,20 +736,25 @@ bool Board::makeMove(Move move) {
         // en passant
         case EnPassant:
             assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
-            removePiece(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
+            removePiece<false>(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
+            updates.pushSub(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
             break;
         // promotion cases
         case promotions[0]:
-            addPiece(end, Knight | (8 * colorToMove));
+            addPiece<false>(end, Knight | (8 * colorToMove));
+            updates.pushAdd(end, Knight | (8 * colorToMove));
             break;
         case promotions[1]:
-            addPiece(end, Bishop | (8 * colorToMove));
+            addPiece<false>(end, Bishop | (8 * colorToMove));
+            updates.pushAdd(end, Bishop | (8 * colorToMove));
             break;
         case promotions[2]:
-            addPiece(end, Rook | (8 * colorToMove));
+            addPiece<false>(end, Rook | (8 * colorToMove));
+            updates.pushAdd(end, Rook | (8 * colorToMove));
             break;
         case promotions[3]:
-            addPiece(end, Queen | (8 * colorToMove));
+            addPiece<false>(end, Queen | (8 * colorToMove));
+            updates.pushAdd(end, Queen | (8 * colorToMove));
             break;
         default:
             break;
@@ -731,11 +763,16 @@ bool Board::makeMove(Move move) {
     // if in check, move was illegal
     if(isInCheck()) {
         // so you must undo it and return false
-        undoMove();
+        undoMove<false>();
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was illegal\n";
         return false;
     } else {
+        if constexpr(PushNNUE) {
+            nnueState.performUpdatesAndPush(updates);
+        } else {
+            nnueState.performUpdates(updates);
+        }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was legal\n";
@@ -744,8 +781,9 @@ bool Board::makeMove(Move move) {
     }
 }
 
-void Board::undoMove() {
+template <bool PushNNUE> void Board::undoMove() {
     stateHistory.pop_back();
+    if constexpr(PushNNUE) nnueState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";
@@ -758,6 +796,7 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     stateHistory.push_back(stateHistory.back());
+    nnueState.push();
     stateHistory.back().enPassantIndex = 64;
     stateHistory.back().hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
@@ -766,11 +805,12 @@ void Board::changeColor() {
 
 void Board::undoChangeColor() {
     stateHistory.pop_back();
+    nnueState.pop();
     colorToMove = 1 - colorToMove;
 }
 
 int Board::getEvaluation() {   
-    return stateHistory.back().nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
+    return nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
 }
 
 int Board::getCastlingRights() const {

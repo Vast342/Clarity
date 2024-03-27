@@ -26,7 +26,7 @@ bool useSyzygy = false;
 
 /*
     The entirety of my implementation of UCI, read the standard for that if you want more information
-    There are things not supported here though, such as go nodes, and quite a few options
+    There are things not supported here though, such as go infinite, and quite a few options
 */
 
 int hardBoundDivisor = 2;
@@ -96,17 +96,17 @@ void loadPosition(const std::vector<std::string>& bits) {
     if(bits[1] == "startpos") {
         board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         for(int i = 3; i < static_cast<int>(bits.size()); i++) {
-            board.makeMove(Move(bits[i], board));
+            board.makeMove<false>(Move(bits[i], board));
         }
     } else if(bits[1] == "fen") {
         board = Board(bits[2] + " " + bits[3] + " " + bits[4] + " " + bits[5] + " " + bits[6] + " " + bits[7]);
         for(int i = 9; i < static_cast<int>(bits.size()); i++) {
-            board.makeMove(Move(bits[i], board));
+            board.makeMove<false>(Move(bits[i], board));
         }
     } else if(bits[1] == "kiwipete") {
         board = Board("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1");
         for(int i = 3; i < static_cast<int>(bits.size()); i++) {
-            board.makeMove(Move(bits[i], board));
+            board.makeMove<false>(Move(bits[i], board));
         }
     } else {
         std::cout << "invalid position command\n";
@@ -262,9 +262,9 @@ void interpretCommand(std::string command) {
             runBench(std::stoi(bits[1]));
         }
     } else if(bits[0] == "makemove") {
-        board.makeMove(Move(bits[1], board));
+        board.makeMove<true>(Move(bits[1], board));
     } else if(bits[0] == "undomove") {
-        board.undoMove();
+        board.undoMove<true>();
     } else if(bits[0] == "nullmove") {
         board.changeColor();
     } else if(bits[0] == "undonullmove") {

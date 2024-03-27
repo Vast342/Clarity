@@ -38,7 +38,34 @@ namespace {
 }
 
 void NetworkState::reset() {
-    currentAccumulator.initialize(network->featureBiases);
+    std::memset(stack.data(), 0, sizeof(Accumulator) * stack.size());
+    current = 0;
+
+    stack[current].initialize(network->featureBiases);
+}
+
+void NetworkState::performUpdates(NetworkUpdates updates) {
+    assert(updates.numAdds <= 2);
+    assert(updates.numSubs <= 2);
+
+    for(int i = 0; i < updates.numAdds; i++) {
+        activateFeature(updates.adds[i].square, updates.adds[i].piece);
+    }
+    for(int i = 0; i < updates.numSubs; i++) {
+        disableFeature(updates.subs[i].square, updates.subs[i].piece);                
+    }
+}
+void NetworkState::performUpdatesAndPush(NetworkUpdates updates) {
+    assert(updates.numAdds <= 2);
+    assert(updates.numSubs <= 2);
+    activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece);
+
+    for(int i = 1; i < updates.numAdds; i++) {
+        activateFeature(updates.adds[i].square, updates.adds[i].piece);
+    }
+    for(int i = 0; i < updates.numSubs; i++) {
+        disableFeature(updates.subs[i].square, updates.subs[i].piece);                
+    }
 }
 
 void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
@@ -188,9 +215,20 @@ void NetworkState::activateFeature(int square, int type){
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        currentAccumulator.black[i] += network->featureWeights[blackIdx * layer1Size + i];
-        currentAccumulator.white[i] += network->featureWeights[whiteIdx * layer1Size + i];
+        stack[current].black[i] += network->featureWeights[blackIdx * layer1Size + i];
+        stack[current].white[i] += network->featureWeights[whiteIdx * layer1Size + i];
     }
+}
+
+void NetworkState::activateFeatureAndPush(int square, int type){ 
+    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
+
+    // change values for all of them
+    for(int i = 0; i < layer1Size; ++i) {
+        stack[current + 1].black[i] = stack[current].black[i] + network->featureWeights[blackIdx * layer1Size + i];
+        stack[current + 1].white[i] = stack[current].white[i] + network->featureWeights[whiteIdx * layer1Size + i];
+    }
+    current++;
 }
 
 void NetworkState::disableFeature(int square, int type) {
@@ -198,13 +236,13 @@ void NetworkState::disableFeature(int square, int type) {
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        currentAccumulator.black[i] -= network->featureWeights[blackIdx * layer1Size + i];
-        currentAccumulator.white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
+        stack[current].black[i] -= network->featureWeights[blackIdx * layer1Size + i];
+        stack[current].white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
     }
 }
 
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
-    const auto output = colorToMove == 0 ? forward(bucket, currentAccumulator.black, currentAccumulator.white, network->outputWeights) : forward(bucket, currentAccumulator.white, currentAccumulator.black, network->outputWeights);
+    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network->outputWeights) : forward(bucket, stack[current].white, stack[current].black, network->outputWeights);
     return (output / Qa + network->outputBiases[bucket]) * Scale / Qab;
 }

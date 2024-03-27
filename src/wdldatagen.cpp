@@ -106,10 +106,10 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
             int legalMoves = 0;
             // legality check
             for(int j = 0; j < totalMoves; j++) {
-                if(board.makeMove(PLmoves[j])) {
+                if(board.makeMove<true>(PLmoves[j])) {
                     moves[legalMoves] = PLmoves[j];
                     legalMoves++;
-                    board.undoMove();
+                    board.undoMove<true>();
                 }
             }
             // checkmate or stalemate? doesn't matter, restart
@@ -120,7 +120,7 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
             std::uniform_int_distribution distribution{0, legalMoves - 1};
 
             const int index = distribution(gen);
-            board.makeMove(moves[index]);
+            board.makeMove<true>(moves[index]);
             // move has been made now, cool
             //std::cout << board.getFenString() << '\n';
         } else {
@@ -135,10 +135,10 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
             int legalMoves = 0;
             // legality check
             for(int j = 0; j < totalMoves; j++) {
-                if(board.makeMove(PLmoves[j])) {
+                if(board.makeMove<true>(PLmoves[j])) {
                     moves[legalMoves] = PLmoves[j];
                     legalMoves++;
-                    board.undoMove();
+                    board.undoMove<true>();
                 }
             }
             // checkmate or stalemate?
@@ -170,7 +170,7 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
                 break;
             }
             //std::cout << "score is now " << score << '\n';
-            if(!board.makeMove(result.first)) {
+            if(!board.makeMove<true>(result.first)) {
                 std::cout << "Engine made an illegal move\n";
             }
             //std::cout << board.getFenString() << '\n';
