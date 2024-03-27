@@ -46,6 +46,9 @@ void NetworkState::reset() {
 
 void NetworkState::performUpdates(NetworkUpdates updates) {
     push();
+    assert(updates.numAdds <= 2);
+    assert(updates.numSubs <= 2);
+
     for(int i = 0; i < updates.numAdds; i++) {
         activateFeature(updates.adds[i].square, updates.adds[i].piece);
     }

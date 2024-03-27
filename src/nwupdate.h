@@ -33,8 +33,8 @@ struct NetworkUpdates {
         subs[numSubs] = NetworkUpdate(Subtract, square, piece);
         numSubs++;
     }
-    std::array<NetworkUpdate, 3> adds;
+    std::array<NetworkUpdate, 2> adds;
     int numAdds;
-    std::array<NetworkUpdate, 3> subs;
+    std::array<NetworkUpdate, 2> subs;
     int numSubs;
 };
