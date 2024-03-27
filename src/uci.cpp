@@ -26,7 +26,7 @@ bool useSyzygy = false;
 
 /*
     The entirety of my implementation of UCI, read the standard for that if you want more information
-    There are things not supported here though, such as go nodes, and quite a few options
+    There are things not supported here though, such as go infinite, and quite a few options
 */
 
 int hardBoundDivisor = 2;
