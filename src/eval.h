@@ -42,20 +42,24 @@ struct Accumulator {
 
 class NetworkState {
     public:
+        NetworkState() {
+            stack.reserve(256);
+        }
         inline void push() {
-            stack[current + 1] = stack[current];
-            current++;
+            stack.push_back(*current);
+            current = &stack.back();
         }
         inline void pop() {
-            current--;
+            stack.pop_back();
+            current = &stack.back();
         }
         void reset();
         void activateFeature(int square, int type);
         void disableFeature(int square, int type);
         int evaluate(int colorToMove, int materialCount);
     private:
-        int current;
-        std::array<Accumulator, 256> stack;
+        Accumulator *current;
+        std::vector<Accumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
         int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::span<const std::int16_t, layer1Size * 2 * outputBucketCount> weights);
 };
