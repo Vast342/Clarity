@@ -64,7 +64,7 @@ void NetworkState::performUpdatesAndPush(NetworkUpdates updates) {
         activateFeature(updates.adds[i].square, updates.adds[i].piece);
     }
     for(int i = 0; i < updates.numSubs; i++) {
-        disableFeature(updates.adds[i].square, updates.adds[i].piece);                
+        disableFeature(updates.subs[i].square, updates.subs[i].piece);                
     }
 }
 
