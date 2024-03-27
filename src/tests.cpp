@@ -31,9 +31,9 @@ int perft(Board &board, int depth) {
     int numMoves = board.getMoves(moves);
     int result = 0;
     for(int i = 0; i < numMoves; i++) {
-        if(board.makeMove(moves[i])) {
+        if(board.makeMove<false>(moves[i])) {
             result += perft(board, depth-1);
-            board.undoMove();
+            board.undoMove<false>();
         }
     }
     return result;
@@ -81,9 +81,9 @@ void splitPerft(Board board, int depth) {
     int total = 0;
     clock_t start = clock();
     for(int i = 0; i < numMoves; i++) {
-        if(board.makeMove(moves[i])) {
+        if(board.makeMove<false>(moves[i])) {
             int result = perft(board, depth - 1);
-            board.undoMove();
+            board.undoMove<false>();
             total += result;
             std::cout << toLongAlgebraic(moves[i]) << ": " << std::to_string(result) << '\n';
         }

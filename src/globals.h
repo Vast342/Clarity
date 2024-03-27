@@ -97,8 +97,8 @@ struct Board {
     public:
         Board(std::string fen);
         Board(BoardState s, int ctm);
-        bool makeMove(Move move);
-        void undoMove();
+        template <bool PushNNUE> bool makeMove(Move move);
+        template <bool PushNNUE> void undoMove();
         int getMoves(std::array<Move, 256> &moves);
         int getMovesQSearch(std::array<Move, 256> &moves);
         std::string getFenString();

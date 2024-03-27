@@ -18,6 +18,11 @@
 #include "globals.h"
 #include <cstdlib>
 
+template bool Board::makeMove<false>(Move move);
+template void Board::undoMove<false>();
+template bool Board::makeMove<true>(Move move);
+template void Board::undoMove<true>();
+
 // zobrist hashing values 
 std::array<std::array<uint64_t, 14>, 64> zobTable;
 // if black is to move this value is xor'ed
@@ -617,11 +622,11 @@ bool Board::squareIsUnderAttack(int square) {
     return false;
 }
 
-bool Board::makeMove(Move move) {
+template <bool PushNNUE> bool Board::makeMove(Move move) {
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     // push to vectors
     stateHistory.push_back(stateHistory.back());
-    nnueState.push();
+    if constexpr(PushNNUE) nnueState.push();
 
     // get information
     int start = move.getStartSquare();
@@ -732,7 +737,7 @@ bool Board::makeMove(Move move) {
     // if in check, move was illegal
     if(isInCheck()) {
         // so you must undo it and return false
-        undoMove();
+        undoMove<PushNNUE>();
         colorToMove = 1 - colorToMove;
         //std::cout << "Changing Color To Move, move was illegal\n";
         return false;
@@ -745,9 +750,9 @@ bool Board::makeMove(Move move) {
     }
 }
 
-void Board::undoMove() {
+template <bool PushNNUE> void Board::undoMove() {
     stateHistory.pop_back();
-    nnueState.pop();
+    if constexpr(PushNNUE) nnueState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
     //std::cout << "Changing Color To Move in undo move\n";

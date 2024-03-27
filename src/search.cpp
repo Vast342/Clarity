@@ -288,7 +288,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
 
         // History Pruning
         //if(moveValues[i] < qhpDepthMultiplier.value * qDepth) break;
-        if(!board.makeMove(move)) {
+        if(!board.makeMove<true>(move)) {
             continue;
         }
         testedMoves[legalMoves] = move;
@@ -296,7 +296,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
         nodes++;
         // searches from this node
         const int score = -qSearch(board, -beta, -alpha, ply + 1);
-        board.undoMove();
+        board.undoMove<true>();
         // time check
         if(timesUp) return 0;
 
@@ -545,7 +545,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             }
         }
 
-        if(!board.makeMove(move)) {
+        if(!board.makeMove<true>(move)) {
             continue;
         }
 
@@ -582,7 +582,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, false);
             }
         }
-        board.undoMove();
+        board.undoMove<true>();
 
         if(ply == 0) nodeTMTable[moveStartSquare][moveEndSquare] += nodes - presearchNodeCount;
 
@@ -678,7 +678,7 @@ std::string Engine::getPV(Board board, std::vector<uint64_t> &hashVector, int nu
     Transposition* entry = TT->getEntry(hash);
     if(entry->zobristKey == hash && entry->flag == Exact) {
         Move bestMove = entry->bestMove;
-        if(bestMove != Move() && board.makeMove(bestMove)) {
+        if(bestMove != Move() && board.makeMove<true>(bestMove)) {
             std::string restOfPV = getPV(board, hashVector, numEntries);
             pv = toLongAlgebraic(bestMove) + " " + restOfPV;
         }
@@ -772,8 +772,8 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
                     std::swap(moves[j], moves[i]);
                 }
             }
-            if(board.makeMove(moves[i])) {
-                board.undoMove();
+            if(board.makeMove<true>(moves[i])) {
+                board.undoMove<true>();
                 rootBestMove = moves[i];
                 break;
             }
@@ -889,8 +889,8 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
                     std::swap(moves[j], moves[i]);
                 }
             }
-            if(board.makeMove(moves[i])) {
-                board.undoMove();
+            if(board.makeMove<true>(moves[i])) {
+                board.undoMove<true>();
                 rootBestMove = moves[i];
                 break;
             }
@@ -1006,8 +1006,8 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
                     std::swap(moves[j], moves[i]);
                 }
             }
-            if(board.makeMove(moves[i])) {
-                board.undoMove();
+            if(board.makeMove<true>(moves[i])) {
+                board.undoMove<true>();
                 rootBestMove = moves[i];
                 break;
             }
