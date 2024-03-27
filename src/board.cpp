@@ -307,7 +307,7 @@ void Board::addPiece(int square, int type) {
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     assert(pieceAtIndex(square) == type);
-    nnueState.activateFeature(square, type);
+    //nnueState.activateFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
 }
 
@@ -319,7 +319,7 @@ void Board::removePiece(int square, int type) {
     const uint64_t bitboardSquare = squareToBitboard[square];
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
-    nnueState.disableFeature(square, type);
+    //nnueState.disableFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
@@ -626,7 +626,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     // push to vectors
     stateHistory.push_back(stateHistory.back());
-    if constexpr(PushNNUE) nnueState.push();
+    NetworkUpdates updates;
 
     // get information
     int start = move.getStartSquare();
@@ -645,9 +645,16 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     }
 
     // actually make the move
-    if(isCapture) removePiece(end, victim);
+    if(isCapture) {
+        removePiece(end, victim);
+        if constexpr(PushNNUE) updates.addSub(end, victim);
+    }
     removePiece(start, movedPiece);
-    if(flag < promotions[0]) addPiece(end, movedPiece);
+    if constexpr(PushNNUE) updates.addSub(start, movedPiece);
+    if(flag < promotions[0]) {
+        addPiece(end, movedPiece);
+        if constexpr(PushNNUE) updates.addAdd(end, movedPiece);
+    }
 
     // En Passant
     stateHistory.back().enPassantIndex = 64;
@@ -695,18 +702,26 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         case castling[0]:
             assert(pieceAtIndex(7) != None);
             movePiece(7, Rook | White, 5, None);
+            if constexpr(PushNNUE) updates.addSub(7, Rook | White);
+            if constexpr(PushNNUE) updates.addAdd(5, Rook | White);
             break;
         case castling[1]:
             assert(pieceAtIndex(0) != None);
             movePiece(0, Rook | White, 3, None);
+            if constexpr(PushNNUE) updates.addSub(0, Rook | White);
+            if constexpr(PushNNUE) updates.addAdd(3, Rook | White);
             break;
         case castling[2]:
             assert(pieceAtIndex(63) != None);
             movePiece(63, Rook | Black, 61, None);
+            if constexpr(PushNNUE) updates.addSub(63, Rook | Black);
+            if constexpr(PushNNUE) updates.addAdd(61, Rook | Black);
             break;
         case castling[3]:
             assert(pieceAtIndex(56) != None);
             movePiece(56, Rook | Black, 59, None);
+            if constexpr(PushNNUE) updates.addSub(56, Rook | Black);
+            if constexpr(PushNNUE) updates.addAdd(59, Rook | Black);
             break;
         // double pawn push
         case DoublePawnPush:
@@ -716,24 +731,30 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         case EnPassant:
             assert(pieceAtIndex(move.getEndSquare() + directionalOffsets[colorToMove]) != None);
             removePiece(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
+            if constexpr(PushNNUE) updates.addSub(end + directionalOffsets[colorToMove], Pawn | (8 * !colorToMove));
             break;
         // promotion cases
         case promotions[0]:
             addPiece(end, Knight | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.addAdd(end, Knight | (8 * colorToMove));
             break;
         case promotions[1]:
             addPiece(end, Bishop | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.addAdd(end, Bishop | (8 * colorToMove));
             break;
         case promotions[2]:
             addPiece(end, Rook | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.addAdd(end, Rook | (8 * colorToMove));
             break;
         case promotions[3]:
             addPiece(end, Queen | (8 * colorToMove));
+            if constexpr(PushNNUE) updates.addAdd(end, Queen | (8 * colorToMove));
             break;
         default:
             break;
     }
     plyCount++;
+    if constexpr(PushNNUE) nnueState.performUpdates(updates);
     // if in check, move was illegal
     if(isInCheck()) {
         // so you must undo it and return false

@@ -33,6 +33,7 @@
 #include <chrono>
 #include <fstream>
 #include <thread>
+#include "nwupdate.h"
 #include "eval.h"
 #include <memory>
 

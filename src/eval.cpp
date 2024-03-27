@@ -43,6 +43,17 @@ void NetworkState::reset() {
 
     stack[current].initialize(network->featureBiases);
 }
+
+void NetworkState::performUpdates(NetworkUpdates updates) {
+    push();
+    for(int i = 0; i < updates.numAdds; i++) {
+        activateFeature(updates.adds[i].square, updates.adds[i].piece);
+    }
+    for(int i = 0; i < updates.numSubs; i++) {
+        disableFeature(updates.adds[i].square, updates.adds[i].piece);                
+    }
+}
+
 void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());

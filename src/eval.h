@@ -50,6 +50,7 @@ class NetworkState {
             stack[current + 1] = stack[current];
             current++;
         }
+        void performUpdates(NetworkUpdates updates);
         inline void pop() {
             current--;
         }
