@@ -72,6 +72,7 @@ struct Board;
 struct BoardState {
     std::array<uint64_t, 2> coloredBitboards;
     std::array<uint64_t, 6> pieceBitboards;
+    std::array<uint8_t, 64> mailbox;
     uint8_t enPassantIndex;
     std::array<uint8_t, 2> kingSquares;
     uint8_t hundredPlyCounter;

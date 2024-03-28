@@ -105,6 +105,9 @@ Board::Board(std::string fen) {
     stateHistory.push_back(BoardState());
     nnueState.reset();
     stateHistory.back().zobristHash = 0;
+    for(int i = 0; i < 64; i++) {
+        stateHistory.back().mailbox[i] = None;
+    }
     for(int i = 0; i < 6; i++) {
         stateHistory.back().pieceBitboards[i] = 0ULL;
     }
@@ -312,6 +315,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     //std::cout << "Adding piece of type " << std::to_string(type) << " at index " << std::to_string(square) << '\n';
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
+    stateHistory.back().mailbox[square] = type;
     assert(pieceAtIndex(square) == type);
     if constexpr(UpdateNNUE) nnueState.activateFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
@@ -325,6 +329,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     const uint64_t bitboardSquare = squareToBitboard[square];
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
+    stateHistory.back().mailbox[square] = None;
     if constexpr(UpdateNNUE) nnueState.disableFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
@@ -340,28 +345,10 @@ template <bool UpdateNNUE> void Board::movePiece(int square1, int type1, int squ
 }
 
 int Board::pieceAtIndex(int index) const {
-    uint64_t indexBitboard = squareToBitboard[index];
-    if((getOccupiedBitboard() & indexBitboard) != 0) {
-        for(int i = Pawn; i < None; i++) {
-            if((getColoredPieceBitboard(0, i) & indexBitboard) != 0) {
-                return i | Black;
-            }
-            if((getColoredPieceBitboard(1, i) & indexBitboard) != 0) {
-                return i | White;
-            }
-        }
-    }
-    return None;
+    return stateHistory.back().mailbox[index];
 }
 int Board::colorAtIndex(int index) const {
-    uint64_t indexBitboard = squareToBitboard[index];
-    if((stateHistory.back().coloredBitboards[0] & indexBitboard) != 0) {
-        return 0;
-    } else if((stateHistory.back().coloredBitboards[1] & indexBitboard) != 0) {
-        return 1;
-    }
-    // invalid result, bad
-    return 2;
+    return stateHistory.back().mailbox[index] == None ? 2 : getColor(stateHistory.back().mailbox[index]);
 }
 
 uint64_t Board::getColoredPieceBitboard(int color, int piece) const {
