@@ -34,6 +34,7 @@ int SEE_value[7] = {112, 351, 361, 627, 1187, 0, 0};
 
 // Tunable Values
 int killerScore = 70000;
+int counterScore = 71000;
 
 int goodCaptureBonus= 500000;
 // The main search functions
@@ -181,6 +182,8 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             // if not in qsearch, killers
             if(move == stack[ply].killer) {
                 values[i] = killerScore;
+            } else if(ply > 0 && move == counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()]) {
+                values[i] = counterScore;   
             } else {
                 // read from history
                 values[i] = historyTable[colorToMove][start][end]
@@ -453,6 +456,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     if(!inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0];
+        stack[ply].move = Move();
         board.changeColor();
         const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, !isCutNode);
         board.undoChangeColor();
@@ -554,7 +558,8 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             continue;
         }
 
-        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];\
+        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
+        stack[ply].move = move;
         testedMoves[legalMoves] = move;
         legalMoves++;
         nodes++;
@@ -620,6 +625,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     int piece = getType(board.pieceAtIndex(start));
                     updateHistory(colorToMove, start, end, piece, bonus, ply);
                     stack[ply].killer = move;
+                    if(ply > 0) counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()] = move;
                 } else if (move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
                     const int end = move.getEndSquare();
                     const int piece = getType(board.pieceAtIndex(move.getStartSquare()));

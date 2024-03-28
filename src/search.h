@@ -31,6 +31,7 @@ extern int badCaptureScore;
 struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
+    Move move;
     // killer move
     Move killer;
     // static eval used for improving
@@ -71,6 +72,7 @@ struct Engine {
         std::array<std::array<std::array<std::array<int, 7>, 64>, 7>, 2> noisyHistoryTable;
         std::array<std::array<std::array<std::array<int, 7>, 64>, 7>, 2> qsHistoryTable;
         std::unique_ptr<CHTable> conthistTable;
+        std::array<std::array<Move, 64>, 64> counterMoves;
 
         std::array<std::array<int, 64>, 64> nodeTMTable;
 
