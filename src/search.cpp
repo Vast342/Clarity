@@ -582,6 +582,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     depthReduction -= moveValues[i] / int(cmrDivisor.value);
                 }
                 depthReduction += isCutNode;
+                depthReduction -= improving;
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
