@@ -169,7 +169,7 @@ extern std::array<uint64_t, 64> squareToBitboard;
 
 // conthist hehe
 using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
-using CHTable = std::array<std::array<std::array<CHEntry, 64>, 7>, 2>;
+using CHTable = std::array<std::array<std::array<std::array<CHEntry, 7>, 64>, 7>, 2>;
 
 // flags for moves
 constexpr uint8_t Normal = 0b0000;

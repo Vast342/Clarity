@@ -455,7 +455,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     if(!inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
-        stack[ply].ch_entry = &(*conthistTable)[0][0][0];
+        stack[ply].ch_entry = &(*conthistTable)[0][0][0][0];
         stack[ply].move = Move();
         board.changeColor();
         const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, !isCutNode);
@@ -554,11 +554,16 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             }
         }
 
+        int moveVictim = None;
+        if(isCapture) {
+            moveVictim = getType(board.pieceAtIndex(moveEndSquare));
+        }
+
         if(!board.makeMove<true>(move)) {
             continue;
         }
 
-        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare];
+        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare][moveVictim];
         stack[ply].move = move;
         testedMoves[legalMoves] = move;
         legalMoves++;
