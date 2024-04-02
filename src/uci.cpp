@@ -29,10 +29,6 @@ bool useSyzygy = false;
     There are things not supported here though, such as go infinite, and quite a few options
 */
 
-int hardBoundDivisor = 2;
-int softBoundFractionNumerator = 3;
-int softBoundFractionDenominator = 4;
-double softBoundMultiplier = 0.6;
 int defaultMovesToGo = 20;
 
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
@@ -121,7 +117,7 @@ void identify() {
     std::cout << "option name Hash type spin default 64 min 1 max 2048" << std::endl;
     std::cout << "option name Threads type spin default 1 min 1 max 64" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
-    //outputTunables();
+    outputTunables();
     std::cout << "uciok" << std::endl;
 }
 
@@ -201,8 +197,8 @@ void go(std::vector<std::string> bits) {
     } else {
         // go wtime x btime x
         // the formulas here are former formulas from Stormphrax
-        const int softBound = softBoundMultiplier * (time / movestogo + inc * softBoundFractionNumerator / softBoundFractionDenominator);
-        const int hardBound = time / hardBoundDivisor;
+        const int softBound = tmsMultiplier.value * (time / movestogo + inc * tmsNumerator.value / tmsDenominator.value);
+        const int hardBound = time / tmhDivisor.value;
         for(int i = 0; i < threadCount; i++) {
             threads.emplace_back([i, softBound, hardBound]{
                 engines[i].think(board, softBound, hardBound, i == 0);

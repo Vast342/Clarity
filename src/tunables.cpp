@@ -77,7 +77,44 @@ Tunable deiDepth("DEI_Depth", 10, 1);
 
 Tunable lmrDepth("LMR_Depth", 1, 1);
 
+Tunable mvvPawn("MVV_Pawn", 112, 1);
+Tunable mvvKnight("MVV_Knight", 351, 1);
+Tunable mvvBishop("MVV_Bishop", 361, 1);
+Tunable mvvRook("MVV_Rook", 627, 1);
+Tunable mvvQueen("MVV_Queen", 1187, 1);
+Tunable blank("blank", 0, 1);
+
+Tunable seePawn("SEE_Pawn", 112, 1);
+Tunable seeKnight("SEE_Knight", 351, 1);
+Tunable seeBishop("SEE_Bishop", 361, 1);
+Tunable seeRook("SEE_Rook", 627, 1);
+Tunable seeQueen("SEE_Queen", 1187, 1);
+
+Tunable tmhDivisor("TMH_Divisor", 2, 1);
+Tunable tmsNumerator("TMS_Numerator", 3, 1);
+Tunable tmsDenominator("TMS_Denominator", 4, 1);
+Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
+
 // Declaration of pointers to tunables
+std::array<Tunable *, 7> MVV_values = {
+    &mvvPawn,
+    &mvvKnight,
+    &mvvBishop,
+    &mvvRook,
+    &mvvQueen,
+    &blank,
+    &blank,
+};
+
+std::array<Tunable *, 7> SEE_values = {
+    &seePawn,
+    &seeKnight,
+    &seeBishop,
+    &seeRook,
+    &seeQueen,
+    &blank,
+    &blank,
+};
 
 std::vector<Tunable *> tunables = {
     &aspBaseDelta,
@@ -121,7 +158,21 @@ std::vector<Tunable *> tunables = {
     &dexMargin,
     &dexLimit,
     &deiDepth,
-    &lmrDepth
+    &lmrDepth,
+    &mvvPawn,
+    &mvvKnight,
+    &mvvBishop,
+    &mvvRook,
+    &mvvQueen,
+    &seePawn,
+    &seeKnight,
+    &seeBishop,
+    &seeRook,
+    &seeQueen,
+    &tmhDivisor,
+    &tmsNumerator,
+    &tmsDenominator,
+    &tmsMultiplier
 };
 
 
