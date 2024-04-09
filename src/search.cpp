@@ -29,9 +29,6 @@ int hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
 
-int MVV_value[7] = {112, 351, 361, 627, 1187, 0, 0};
-int SEE_value[7] = {112, 351, 361, 627, 1187, 0, 0};
-
 // Tunable Values
 int killerScore = 70000;
 int counterScore = 71000;
@@ -61,18 +58,18 @@ void Engine::resetEngine() {
 
 int Engine::estimateMoveValue(const Board& board, const int end, const int flag) {
     // starting with the end square piece
-    int value = SEE_value[getType(board.pieceAtIndex(end))];
+    int value = SEE_values[getType(board.pieceAtIndex(end))]->value;
     // promotions! pawn--, newpiece++
     for(int i = 0; i < 4; i++) {
         if(flag == promotions[i]) {
-            value = SEE_value[i + 1] - SEE_value[Pawn];
+            value = SEE_values[i + 1]->value - SEE_values[Pawn]->value;
             return value;
         }
     }
 
     // Target square is empty for en passant, but you still capture a pawn
     if(flag == EnPassant) {
-        value = SEE_value[Pawn];
+        value = SEE_values[Pawn]->value;
     }
     // castling can't capture and is never encoded as such so we don't care.
     return value;
@@ -99,7 +96,7 @@ bool Engine::see(const Board& board, Move move, int threshold) {
     // best case still doesn't beat threshold, not good
     if(balance < 0) return false;
     // worst case, we lose the piece here
-    balance -= SEE_value[nextVictim];
+    balance -= SEE_values[nextVictim]->value;
     // if it's still winning in the best case scenario, we can just cut it off
     if(balance >= 0) return true;
     // make sure occupied bitboard knows we did the first move
@@ -136,7 +133,7 @@ bool Engine::see(const Board& board, Move move, int threshold) {
         attackers &= occupied;
         color = 1 - color;
         // update balance
-        balance = -balance - 1 - SEE_value[nextVictim];
+        balance = -balance - 1 - SEE_values[nextVictim]->value;
         // if you are ahead
         if(balance >= 0) {
             // speedrunning legality check
@@ -171,7 +168,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             // Captures!
             const int victim = getType(board.pieceAtIndex(end));
             // Capthist!
-            values[i] = MVV_value[victim] + noisyHistoryTable[colorToMove][piece][end][victim];
+            values[i] = MVV_values[victim]->value + noisyHistoryTable[colorToMove][piece][end][victim];
             // see!
             // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
             if(see(board, move, 0)) {
@@ -208,7 +205,7 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
             // Captures!
             const int victim = getType(board.pieceAtIndex(end));
             // Capthist!
-            values[i] = MVV_value[victim] + qsHistoryTable[colorToMove][piece][end][victim];
+            values[i] = MVV_values[victim]->value + qsHistoryTable[colorToMove][piece][end][victim];
             // see!
             // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
             if(see(board, move, 0)) {
@@ -281,7 +278,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
         Move move = moves[i];
 
         // this detects bad captures
-        if(moveValues[i] < MVV_value[Queen] + historyCap) {
+        if(moveValues[i] < MVV_values[Queen]->value + historyCap) {
             break;
         }
 

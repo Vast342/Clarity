@@ -257,6 +257,26 @@ extern Tunable deiDepth;
 
 extern Tunable lmrDepth;
 
+extern Tunable mvvPawn;
+extern Tunable mvvKnight;
+extern Tunable mvvBishop;
+extern Tunable mvvRook;
+extern Tunable mvvQueen;
+extern Tunable blank;
+
+extern Tunable seePawn;
+extern Tunable seeKnight;
+extern Tunable seeBishop;
+extern Tunable seeRook;
+extern Tunable seeQueen;
+
+extern Tunable tmhDivisor;
+extern Tunable tmsNumerator;
+extern Tunable tmsDenominator;
+extern Tunable tmsMultiplier;
+
+extern std::array<Tunable *, 7> MVV_values;
+extern std::array<Tunable *, 7> SEE_values;
 extern std::vector<Tunable *> tunables;
 
 void outputTunables();
