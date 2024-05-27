@@ -101,16 +101,7 @@ constexpr int Qab = Qa * Qb;
 
 
 std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int type, int blackKing, int whiteKing) {
-    assert(type != None);
-    assert(square != 64);
-
-    const uint32_t pieceType = static_cast<uint32_t>(getType(type));
-    const uint32_t color = getColor(type) == 1 ? 0 : 1;
-
-    const uint32_t blackIdx = inputBuckets[blackKing] * inputSize + !color * ColorStride + pieceType * PieceStride + (static_cast<uint32_t>(flipIndex(square)));
-    const uint32_t whiteIdx = inputBuckets[whiteKing] * inputSize +  color * ColorStride + pieceType * PieceStride +  static_cast<uint32_t>(square);
-
-    return {blackIdx, whiteIdx};
+    return {getFeatureIndex(square, type, 0, blackKing), getFeatureIndex(square, type, 1, whiteKing)};
 }
 
 int NetworkState::getFeatureIndex(int square, int type, int color, int king) {

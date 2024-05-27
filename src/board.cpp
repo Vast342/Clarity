@@ -123,52 +123,52 @@ Board::Board(std::string fen) {
         for(char c : rank) {
             switch(c) {
                 case 'p':
-                    addPiece<true>(i, Pawn | Black);
+                    addPiece<false>(i, Pawn | Black);
                     i++;
                     break;
                 case 'P':
-                    addPiece<true>(i, Pawn | White);
+                    addPiece<false>(i, Pawn | White);
                     i++;
                     break;
                 case 'n':
-                    addPiece<true>(i, Knight | Black);
+                    addPiece<false>(i, Knight | Black);
                     i++;
                     break;
                 case 'N':
-                    addPiece<true>(i, Knight | White);
+                    addPiece<false>(i, Knight | White);
                     i++;
                     break;
                 case 'b':
-                    addPiece<true>(i, Bishop | Black);
+                    addPiece<false>(i, Bishop | Black);
                     i++;
                     break;
                 case 'B':
-                    addPiece<true>(i, Bishop | White);
+                    addPiece<false>(i, Bishop | White);
                     i++;
                     break;
                 case 'r':
-                    addPiece<true>(i, Rook | Black);
+                    addPiece<false>(i, Rook | Black);
                     i++;
                     break;
                 case 'R':
-                    addPiece<true>(i, Rook | White);
+                    addPiece<false>(i, Rook | White);
                     i++;
                     break;
                 case 'q':
-                    addPiece<true>(i, Queen | Black);
+                    addPiece<false>(i, Queen | Black);
                     i++;
                     break;
                 case 'Q':
-                    addPiece<true>(i, Queen | White);
+                    addPiece<false>(i, Queen | White);
                     i++;
                     break;
                 case 'k':
-                    addPiece<true>(i, King | Black);
+                    addPiece<false>(i, King | Black);
                     stateHistory.back().kingSquares[0] = i;
                     i++;
                     break;
                 case 'K':
-                    addPiece<true>(i, King | White);
+                    addPiece<false>(i, King | White);
                     stateHistory.back().kingSquares[1] = i;
                     i++;
                     break;
@@ -802,7 +802,7 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
-    return int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()))) * 0.77);
+    return int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard())))/* * 0.77*/);
 }
 
 int Board::getCastlingRights() const {

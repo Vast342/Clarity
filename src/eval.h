@@ -41,6 +41,7 @@ constexpr std::array<int, 64> inputBuckets = {
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
 struct Network {
+    uint64_t header; // because SP
     alignas(32) std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
     alignas(32) std::array<std::int16_t, layer1Size> featureBiases;
     alignas(32) std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
