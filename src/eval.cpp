@@ -100,18 +100,17 @@ constexpr int Qb = 64;
 constexpr int Qab = Qa * Qb;
 
 
-std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int type, int blackKing, int whiteKing) {
-    return {getFeatureIndex(square, type, 0, blackKing), getFeatureIndex(square, type, 1, whiteKing)};
+std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int piece, int blackKing, int whiteKing) {
+    return {getFeatureIndex(square, piece, 0, blackKing), getFeatureIndex(square, piece, 1, whiteKing)};
 }
 
-int NetworkState::getFeatureIndex(int square, int type, int color, int king) {
-    int c = getColor(type) == 1 ? 0 : 1;
+int NetworkState::getFeatureIndex(int square, int piece, int color, int king) {
+    int c = getColor(piece) == 1 ? 0 : 1;
     if(color == 0) {
         square ^= 56;
-        king ^= 56;
         c ^= 1;
     }
-    return inputBuckets[king] * inputSize + c * ColorStride + getType(type) * PieceStride + square;
+    return inputBuckets[king] * inputSize + c * ColorStride + getType(piece) * PieceStride + square;
 }
 
 int getBucket(int pieceCount) {
@@ -230,13 +229,13 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 }
 
 #endif
-void NetworkState::activateFeature(int square, int type, int blackKing, int whiteKing){ 
-    activateFeatureSingle(square, type, 0, blackKing);
-    activateFeatureSingle(square, type, 1, whiteKing);
+void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
+    activateFeatureSingle(square, piece, 0, blackKing);
+    activateFeatureSingle(square, piece, 1, whiteKing);
 }
 
-void NetworkState::activateFeatureSingle(int square, int type, int color, int king){ 
-    const int index = getFeatureIndex(square, type, color, king);
+void NetworkState::activateFeatureSingle(int square, int piece, int color, int king){ 
+    const int index = getFeatureIndex(square, piece, color, king);
 
     // change values for all of them
     if(color == 0) {
@@ -250,8 +249,8 @@ void NetworkState::activateFeatureSingle(int square, int type, int color, int ki
     }
 }
 
-void NetworkState::activateFeatureAndPush(int square, int type, int blackKing, int whiteKing){ 
-    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type, blackKing, whiteKing);
+void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing){ 
+    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece, blackKing, whiteKing);
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
@@ -261,12 +260,12 @@ void NetworkState::activateFeatureAndPush(int square, int type, int blackKing, i
     current++;
 }
 
-void NetworkState::disableFeature(int square, int type, int blackKing, int whiteKing) {
-    disableFeatureSingle(square, type, 0, blackKing);
-    disableFeatureSingle(square, type, 1, whiteKing);
+void NetworkState::disableFeature(int square, int piece, int blackKing, int whiteKing) {
+    disableFeatureSingle(square, piece, 0, blackKing);
+    disableFeatureSingle(square, piece, 1, whiteKing);
 }
-void NetworkState::disableFeatureSingle(int square, int type, int color, int king) {
-    const int index = getFeatureIndex(square, type, color, king);
+void NetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
+    const int index = getFeatureIndex(square, piece, color, king);
 
     // change values for all of them
     if(color == 0) {
