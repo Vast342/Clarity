@@ -94,13 +94,22 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int ty
     return {blackIdx, whiteIdx};
 }
 
+int NetworkState::getFeatureIndex(int square, int type, int color) {
+    int c = getColor(type) == 1 ? 0 : 1;
+    if(color == 0) {
+        square ^= 56;
+        c ^= 1;
+    }
+    return c * ColorStride + getType(type) * PieceStride + square;
+}
+
 int getBucket(int pieceCount) {
     const int divisor = (32 + outputBucketCount - 1) / outputBucketCount;
     return (pieceCount - 2) / divisor;
 }
 
 /*
-    A technique that I am using here was invented yesterday by SomeLizard, developer of the engine Lizard
+    A technique that I am using here was invented yesterday (as of writing this) by SomeLizard, developer of the engine Lizard
     I am using the SCReLU activation function, which is CReLU(x)^2 * W
     the technique is to use CReLU(x) * w * CReLU(x) which allows you (assuming weight is in (-127, 127))
     to fit the resulting number in a 16 bit integer, allowing you to perform the remaining functions
@@ -211,12 +220,22 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 
 #endif
 void NetworkState::activateFeature(int square, int type){ 
-    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
+    activateFeatureSingle(square, type, 0);
+    activateFeatureSingle(square, type, 1);
+}
+
+void NetworkState::activateFeatureSingle(int square, int type, int color){ 
+    const int index = getFeatureIndex(square, type, color);
 
     // change values for all of them
-    for(int i = 0; i < layer1Size; ++i) {
-        stack[current].black[i] += network->featureWeights[blackIdx * layer1Size + i];
-        stack[current].white[i] += network->featureWeights[whiteIdx * layer1Size + i];
+    if(color == 0) {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].black[i] += network->featureWeights[index * layer1Size + i];
+        }
+    } else {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].white[i] += network->featureWeights[index * layer1Size + i];
+        }
     }
 }
 
@@ -232,12 +251,21 @@ void NetworkState::activateFeatureAndPush(int square, int type){
 }
 
 void NetworkState::disableFeature(int square, int type) {
-    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
+    disableFeatureSingle(square, type, 0);
+    disableFeatureSingle(square, type, 1);
+}
+void NetworkState::disableFeatureSingle(int square, int type, int color) {
+    const int index = getFeatureIndex(square, type, color);
 
     // change values for all of them
-    for(int i = 0; i < layer1Size; ++i) {
-        stack[current].black[i] -= network->featureWeights[blackIdx * layer1Size + i];
-        stack[current].white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
+    if(color == 0) {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].black[i] -= network->featureWeights[index * layer1Size + i];
+        }
+    } else {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].white[i] -= network->featureWeights[index * layer1Size + i];
+        }
     }
 }
 

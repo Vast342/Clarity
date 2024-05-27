@@ -19,16 +19,17 @@
 
 #include "globals.h"
 
-// Current Net: clarity_net010
+// Current Net: cn_012
 // Arch: (768->768)x2->1x8 
 constexpr int inputSize = 768;
+constexpr int inputBucketCount = 1;
 constexpr int layer1Size = 768;
 constexpr int outputBucketCount = 8;
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
 struct Network {
-    alignas(32) std::array<std::int16_t, inputSize * layer1Size> featureWeights;
+    alignas(32) std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
     alignas(32) std::array<std::int16_t, layer1Size> featureBiases;
     alignas(32) std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
     alignas(32) std::array<std::int16_t, outputBucketCount> outputBiases;
@@ -57,12 +58,15 @@ class NetworkState {
         }
         void reset();
         void activateFeature(int square, int type);
+        void activateFeatureSingle(int square, int type, int color);
         void activateFeatureAndPush(int square, int type);
         void disableFeature(int square, int type);
+        void disableFeatureSingle(int square, int type, int color);
         int evaluate(int colorToMove, int materialCount);
     private:
         int current;
         std::vector<Accumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
+        static int getFeatureIndex(int square, int type, int color);
         int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::span<const std::int16_t, layer1Size * 2 * outputBucketCount> weights);
 };
