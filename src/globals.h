@@ -34,6 +34,7 @@
 #include <fstream>
 #include <thread>
 #include "nwupdate.h"
+struct BoardState;
 #include "eval.h"
 #include <memory>
 #include <cstring>

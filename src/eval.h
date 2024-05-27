@@ -22,9 +22,21 @@
 // Current Net: cn_012
 // Arch: (768->768)x2->1x8 
 constexpr int inputSize = 768;
-constexpr int inputBucketCount = 1;
+constexpr int inputBucketCount = 4;
 constexpr int layer1Size = 768;
 constexpr int outputBucketCount = 8;
+
+constexpr std::array<int, 64> inputBuckets = {
+    0, 0, 0, 0, 1, 1, 1, 1,
+    0, 0, 0, 0, 1, 1, 1, 1,
+    2, 2, 2, 2, 3, 3, 3, 3,
+    2, 2, 2, 2, 3, 3, 3, 3,
+    2, 2, 2, 2, 3, 3, 3, 3,
+    2, 2, 2, 2, 3, 3, 3, 3,
+    2, 2, 2, 2, 3, 3, 3, 3,
+    2, 2, 2, 2, 3, 3, 3, 3
+};
+
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
@@ -39,6 +51,7 @@ struct Accumulator {
     alignas(32) std::array<std::int16_t, layer1Size> black;
     alignas(32) std::array<std::int16_t, layer1Size> white;
     void initialize(std::span<const std::int16_t, layer1Size> bias);
+    void initHalf(std::span<const std::int16_t, layer1Size> bias, int color);
 };
 
 class NetworkState {
@@ -51,22 +64,32 @@ class NetworkState {
             stack[current + 1] = stack[current];
             current++;
         }
-        void performUpdates(NetworkUpdates updates);
-        void performUpdatesAndPush(NetworkUpdates updates);
+        void performUpdates(NetworkUpdates updates, int blackKing, int whiteKing);
+        void performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing);
         inline void pop() {
             current--;
         }
         void reset();
-        void activateFeature(int square, int type);
-        void activateFeatureSingle(int square, int type, int color);
-        void activateFeatureAndPush(int square, int type);
-        void disableFeature(int square, int type);
-        void disableFeatureSingle(int square, int type, int color);
+        void activateFeature(int square, int type, int blackKing, int whiteKing);
+        void activateFeatureSingle(int square, int type, int color, int king);
+        void activateFeatureAndPush(int square, int type, int blackKing, int whiteKing);
+        void disableFeature(int square, int type, int blackKing, int whiteKing);
+        void disableFeatureSingle(int square, int type, int color, int king);
+        void refreshAccumulator(int color, const BoardState &state, int king);
         int evaluate(int colorToMove, int materialCount);
     private:
         int current;
         std::vector<Accumulator> stack;
-        static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
-        static int getFeatureIndex(int square, int type, int color);
+        static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type, int blackKing, int whiteKing);
+        static int getFeatureIndex(int square, int type, int color, int king);
         int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::span<const std::int16_t, layer1Size * 2 * outputBucketCount> weights);
 };
+
+constexpr bool refreshRequired(int color, int oldKingSquare, int newKingSquare) {
+    if(color == 0) {
+        oldKingSquare ^= 56;
+        newKingSquare ^= 56;
+    }
+
+    return inputBuckets[oldKingSquare] != inputBuckets[newKingSquare];
+}
