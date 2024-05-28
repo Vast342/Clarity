@@ -641,9 +641,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
 
     // king square updates
     if(movedPieceType == King) {
-        if(refreshRequired(colorToMove, start, end)) {
-            nnueState.refreshAccumulator(colorToMove, stateHistory.back(), end);
-        }
+        if(refreshRequired(colorToMove, start, end)) updates.pushBucket(end, colorToMove);
         stateHistory.back().kingSquares[colorToMove] = end;
     }
 
@@ -761,9 +759,9 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         return false;
     } else {
         if constexpr(PushNNUE) {
-            nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+            nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         } else {
-            nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+            nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;

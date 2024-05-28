@@ -65,8 +65,8 @@ class NetworkState {
             stack[current + 1] = stack[current];
             current++;
         }
-        void performUpdates(NetworkUpdates updates, int blackKing, int whiteKing);
-        void performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing);
+        void performUpdates(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state);
+        void performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state);
         inline void pop() {
             current--;
         }
