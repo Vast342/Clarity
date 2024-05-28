@@ -86,7 +86,8 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
 
             while(bitboard != 0) {
                 int index = popLSB(bitboard);
-                activateFeatureSingle(index, 8 * c + piece, color, king);
+                int totalPiece = 8 * c + piece;
+                activateFeatureSingle(index, totalPiece, color, king);
             }
         }
     }
@@ -105,10 +106,10 @@ std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int pi
 }
 
 int NetworkState::getFeatureIndex(int square, int piece, int color, int king) {
-    int c = getColor(piece) == 1 ? 0 : 1;
+    int c = getColor(piece) == color ? 0 : 1;
     if(color == 0) {
         square ^= 56;
-        c ^= 1;
+        king ^= 56;
     }
     return inputBuckets[king] * inputSize + c * ColorStride + getType(piece) * PieceStride + square;
 }

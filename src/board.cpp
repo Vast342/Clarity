@@ -214,7 +214,7 @@ Board::Board(std::string fen) {
     stateHistory.back().hundredPlyCounter = 0;
     // ply count, segment 6
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
-    nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0] ^ 56);
+    nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
     nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
 }
 
@@ -319,7 +319,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = type;
     assert(pieceAtIndex(square) == type);
-    if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0] ^ 56, stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
 }
 
@@ -332,7 +332,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = None;
-    if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0] ^ 56, stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
@@ -642,7 +642,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     // king square updates
     if(movedPieceType == King) {
         if(refreshRequired(colorToMove, start, end)) {
-            nnueState.refreshAccumulator(colorToMove, stateHistory.back(), colorToMove == 0 ? end ^ 56 : end);
+            nnueState.refreshAccumulator(colorToMove, stateHistory.back(), colorToMove == 0 ? end : end);
         }
         stateHistory.back().kingSquares[colorToMove] = end;
     }
@@ -761,9 +761,9 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         return false;
     } else {
         if constexpr(PushNNUE) {
-            nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0] ^ 56, stateHistory.back().kingSquares[1]);
+            nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
         } else {
-            nnueState.performUpdates(updates, stateHistory.back().kingSquares[0] ^ 56, stateHistory.back().kingSquares[1]);
+            nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
         }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
