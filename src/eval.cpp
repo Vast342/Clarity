@@ -61,10 +61,11 @@ void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whi
 void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
-    activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece, blackKing, whiteKing);
     if(updates.bucketChange) {
+        current++;
         refreshAccumulator(updates.bucketUpdate.piece /*being used here to store color*/, state, updates.bucketUpdate.piece == 0 ? blackKing : whiteKing);
     } else {
+        activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece, blackKing, whiteKing);
         for(int i = 1; i < updates.numAdds; i++) {
             activateFeature(updates.adds[i].square, updates.adds[i].piece, blackKing, whiteKing);
         }
