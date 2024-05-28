@@ -639,14 +639,6 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         stateHistory.back().hundredPlyCounter = 0;
     }
 
-    // king square updates
-    if(movedPieceType == King) {
-        if(refreshRequired(colorToMove, start, end)) {
-            nnueState.refreshAccumulator(colorToMove, stateHistory.back(), colorToMove == 0 ? end : end);
-        }
-        stateHistory.back().kingSquares[colorToMove] = end;
-    }
-
     // actually make the move
     if(isCapture) {
         removePiece<false>(end, victim);
@@ -657,6 +649,14 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     if(flag < promotions[0]) {
         addPiece<false>(end, movedPiece);
         updates.pushAdd(end, movedPiece);
+    }
+
+    // king square updates
+    if(movedPieceType == King) {
+        if(refreshRequired(colorToMove, start, end)) {
+            nnueState.refreshAccumulator(colorToMove, stateHistory.back(), end);
+        }
+        stateHistory.back().kingSquares[colorToMove] = end;
     }
 
     // En Passant
