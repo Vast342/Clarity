@@ -19,8 +19,8 @@
 
 #include "globals.h"
 
-// Current Net: cn_012
-// Arch: (768->768)x2->1x8 
+// Current Net: cn_013
+// Arch: (768x4->768)x2->1x8 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 4;
 constexpr int layer1Size = 768;
@@ -41,7 +41,6 @@ constexpr std::array<int, 64> inputBuckets = {
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
 struct Network {
-    [[maybe_unused]] std::array<uint8_t, 64> header;// because SP
     alignas(32) std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
     alignas(32) std::array<std::int16_t, layer1Size> featureBiases;
     alignas(32) std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
