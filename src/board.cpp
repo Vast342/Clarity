@@ -123,52 +123,52 @@ Board::Board(std::string fen) {
         for(char c : rank) {
             switch(c) {
                 case 'p':
-                    addPiece<true>(i, Pawn | Black);
+                    addPiece<false>(i, Pawn | Black);
                     i++;
                     break;
                 case 'P':
-                    addPiece<true>(i, Pawn | White);
+                    addPiece<false>(i, Pawn | White);
                     i++;
                     break;
                 case 'n':
-                    addPiece<true>(i, Knight | Black);
+                    addPiece<false>(i, Knight | Black);
                     i++;
                     break;
                 case 'N':
-                    addPiece<true>(i, Knight | White);
+                    addPiece<false>(i, Knight | White);
                     i++;
                     break;
                 case 'b':
-                    addPiece<true>(i, Bishop | Black);
+                    addPiece<false>(i, Bishop | Black);
                     i++;
                     break;
                 case 'B':
-                    addPiece<true>(i, Bishop | White);
+                    addPiece<false>(i, Bishop | White);
                     i++;
                     break;
                 case 'r':
-                    addPiece<true>(i, Rook | Black);
+                    addPiece<false>(i, Rook | Black);
                     i++;
                     break;
                 case 'R':
-                    addPiece<true>(i, Rook | White);
+                    addPiece<false>(i, Rook | White);
                     i++;
                     break;
                 case 'q':
-                    addPiece<true>(i, Queen | Black);
+                    addPiece<false>(i, Queen | Black);
                     i++;
                     break;
                 case 'Q':
-                    addPiece<true>(i, Queen | White);
+                    addPiece<false>(i, Queen | White);
                     i++;
                     break;
                 case 'k':
-                    addPiece<true>(i, King | Black);
+                    addPiece<false>(i, King | Black);
                     stateHistory.back().kingSquares[0] = i;
                     i++;
                     break;
                 case 'K':
-                    addPiece<true>(i, King | White);
+                    addPiece<false>(i, King | White);
                     stateHistory.back().kingSquares[1] = i;
                     i++;
                     break;
@@ -214,6 +214,8 @@ Board::Board(std::string fen) {
     stateHistory.back().hundredPlyCounter = 0;
     // ply count, segment 6
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
+    nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
+    nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
 }
 
 std::string Board::getFenString() {
@@ -317,7 +319,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = type;
     assert(pieceAtIndex(square) == type);
-    if constexpr(UpdateNNUE) nnueState.activateFeature(square, type);
+    if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
 }
 
@@ -330,7 +332,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = None;
-    if constexpr(UpdateNNUE) nnueState.disableFeature(square, type);
+    if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
@@ -637,6 +639,12 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         stateHistory.back().hundredPlyCounter = 0;
     }
 
+    // king square updates
+    if(movedPieceType == King) {
+        if(refreshRequired(colorToMove, start, end)) updates.pushBucket(end, colorToMove);
+        stateHistory.back().kingSquares[colorToMove] = end;
+    }
+
     // actually make the move
     if(isCapture) {
         removePiece<false>(end, victim);
@@ -651,11 +659,6 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
 
     // En Passant
     stateHistory.back().enPassantIndex = 64;
-
-    // king square updates
-    if(movedPieceType == King) {
-        stateHistory.back().kingSquares[colorToMove] = end;
-    }
     
     // castling rights updates!
     if((stateHistory.back().castlingRights & kingRightMasks[1 - colorToMove]) != 0) {
@@ -756,9 +759,9 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         return false;
     } else {
         if constexpr(PushNNUE) {
-            nnueState.performUpdatesAndPush(updates);
+            nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         } else {
-            nnueState.performUpdates(updates);
+            nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;

@@ -44,33 +44,78 @@ void NetworkState::reset() {
     stack[current].initialize(network->featureBiases);
 }
 
-void NetworkState::performUpdates(NetworkUpdates updates) {
+void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
-
-    for(int i = 0; i < updates.numAdds; i++) {
-        activateFeature(updates.adds[i].square, updates.adds[i].piece);
-    }
-    for(int i = 0; i < updates.numSubs; i++) {
-        disableFeature(updates.subs[i].square, updates.subs[i].piece);                
+    if(updates.bucketChange) {
+        for(int i = 0; i < updates.numAdds; i++) {
+            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
+        for(int i = 0; i < updates.numSubs; i++) {
+            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
+        refreshAccumulator(updates.bucketUpdate.piece /*being used here to store color*/, state, updates.bucketUpdate.piece == 0 ? blackKing : whiteKing);
+    } else {
+        for(int i = 0; i < updates.numAdds; i++) {
+            activateFeature(updates.adds[i].square, updates.adds[i].piece, blackKing, whiteKing);
+        }
+        for(int i = 0; i < updates.numSubs; i++) {
+            disableFeature(updates.subs[i].square, updates.subs[i].piece, blackKing, whiteKing);                
+        }
     }
 }
-void NetworkState::performUpdatesAndPush(NetworkUpdates updates) {
+void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
-    activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece);
-
-    for(int i = 1; i < updates.numAdds; i++) {
-        activateFeature(updates.adds[i].square, updates.adds[i].piece);
-    }
-    for(int i = 0; i < updates.numSubs; i++) {
-        disableFeature(updates.subs[i].square, updates.subs[i].piece);                
+    // LMAO this isn't pushing or performing the updates on the other accumulator AAAAAAAAAAAAAAA
+    if(updates.bucketChange) {
+        if(updates.bucketUpdate.piece == 0) {
+            stack[current + 1].white = stack[current].white; 
+        } else {
+            stack[current + 1].black = stack[current].black;
+        }
+        current++;
+        for(int i = 0; i < updates.numAdds; i++) {
+            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
+        for(int i = 0; i < updates.numSubs; i++) {
+            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
+        refreshAccumulator(updates.bucketUpdate.piece /*being used here to store color*/, state, updates.bucketUpdate.piece == 0 ? blackKing : whiteKing);
+    } else {
+        activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece, blackKing, whiteKing);
+        for(int i = 1; i < updates.numAdds; i++) {
+            activateFeature(updates.adds[i].square, updates.adds[i].piece, blackKing, whiteKing);
+        }
+        for(int i = 0; i < updates.numSubs; i++) {
+            disableFeature(updates.subs[i].square, updates.subs[i].piece, blackKing, whiteKing);
+        }
     }
 }
 
 void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());
+}
+void Accumulator::initHalf(std::span<const int16_t, layer1Size> bias, int color) {
+    std::copy(bias.begin(), bias.end(), color == 0 ? black.begin() : white.begin());
+}
+
+
+void NetworkState::refreshAccumulator(int color, const BoardState &state, int king) {
+    stack[current].initHalf(network->featureBiases, color);
+
+    for(int c = 0; c < 2; c++) {
+        for(int piece = 0; piece < 6; piece++) {
+            uint64_t bitboard = state.pieceBitboards[piece] & state.coloredBitboards[c];
+
+            while(bitboard != 0) {
+                int index = popLSB(bitboard);
+                int totalPiece = 8 * c + piece;
+                activateFeatureSingle(index, totalPiece, color, king);
+            }
+        }
+    }
 }
 
 constexpr uint32_t ColorStride = 64 * 6;
@@ -81,17 +126,17 @@ constexpr int Qb = 64;
 constexpr int Qab = Qa * Qb;
 
 
-std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int type) {
-    assert(type != None);
-    assert(square != 64);
+std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int piece, int blackKing, int whiteKing) {
+    return {getFeatureIndex(square, piece, 0, blackKing), getFeatureIndex(square, piece, 1, whiteKing)};
+}
 
-    const uint32_t pieceType = static_cast<uint32_t>(getType(type));
-    const uint32_t color = getColor(type) == 1 ? 0 : 1;
-
-    const uint32_t blackIdx = !color * ColorStride + pieceType * PieceStride + (static_cast<uint32_t>(flipIndex(square)));
-    const uint32_t whiteIdx =  color * ColorStride + pieceType * PieceStride +  static_cast<uint32_t>(square)        ;
-
-    return {blackIdx, whiteIdx};
+int NetworkState::getFeatureIndex(int square, int piece, int color, int king) {
+    int c = getColor(piece) == color ? 0 : 1;
+    if(color == 0) {
+        square ^= 56;
+        king ^= 56;
+    }
+    return inputBuckets[king] * inputSize + c * ColorStride + getType(piece) * PieceStride + square;
 }
 
 int getBucket(int pieceCount) {
@@ -100,7 +145,7 @@ int getBucket(int pieceCount) {
 }
 
 /*
-    A technique that I am using here was invented yesterday by SomeLizard, developer of the engine Lizard
+    A technique that I am using here was invented yesterday (as of writing this) by SomeLizard, developer of the engine Lizard
     I am using the SCReLU activation function, which is CReLU(x)^2 * W
     the technique is to use CReLU(x) * w * CReLU(x) which allows you (assuming weight is in (-127, 127))
     to fit the resulting number in a 16 bit integer, allowing you to perform the remaining functions
@@ -210,18 +255,28 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 }
 
 #endif
-void NetworkState::activateFeature(int square, int type){ 
-    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
+void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
+    activateFeatureSingle(square, piece, 0, blackKing);
+    activateFeatureSingle(square, piece, 1, whiteKing);
+}
+
+void NetworkState::activateFeatureSingle(int square, int piece, int color, int king){ 
+    const int index = getFeatureIndex(square, piece, color, king);
 
     // change values for all of them
-    for(int i = 0; i < layer1Size; ++i) {
-        stack[current].black[i] += network->featureWeights[blackIdx * layer1Size + i];
-        stack[current].white[i] += network->featureWeights[whiteIdx * layer1Size + i];
+    if(color == 0) {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].black[i] += network->featureWeights[index * layer1Size + i];
+        }
+    } else {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].white[i] += network->featureWeights[index * layer1Size + i];
+        }
     }
 }
 
-void NetworkState::activateFeatureAndPush(int square, int type){ 
-    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
+void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing){ 
+    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece, blackKing, whiteKing);
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
@@ -231,13 +286,22 @@ void NetworkState::activateFeatureAndPush(int square, int type){
     current++;
 }
 
-void NetworkState::disableFeature(int square, int type) {
-    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, type);
+void NetworkState::disableFeature(int square, int piece, int blackKing, int whiteKing) {
+    disableFeatureSingle(square, piece, 0, blackKing);
+    disableFeatureSingle(square, piece, 1, whiteKing);
+}
+void NetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
+    const int index = getFeatureIndex(square, piece, color, king);
 
     // change values for all of them
-    for(int i = 0; i < layer1Size; ++i) {
-        stack[current].black[i] -= network->featureWeights[blackIdx * layer1Size + i];
-        stack[current].white[i] -= network->featureWeights[whiteIdx * layer1Size + i];
+    if(color == 0) {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].black[i] -= network->featureWeights[index * layer1Size + i];
+        }
+    } else {
+        for(int i = 0; i < layer1Size; ++i) {
+            stack[current].white[i] -= network->featureWeights[index * layer1Size + i];
+        }
     }
 }
 
