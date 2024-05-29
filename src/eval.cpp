@@ -74,12 +74,12 @@ void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, 
     assert(updates.numSubs <= 2);
     // LMAO this isn't pushing or performing the updates on the other accumulator AAAAAAAAAAAAAAA
     if(updates.bucketChange) {
-        current++;
         if(updates.bucketUpdate.piece == 0) {
-            stack[current].white = stack[current - 1].white; 
+            stack[current + 1].white = stack[current].white; 
         } else {
-            stack[current].black = stack[current - 1].black;
+            stack[current + 1].black = stack[current].black;
         }
+        current++;
         for(int i = 0; i < updates.numAdds; i++) {
             activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
         }
