@@ -48,11 +48,6 @@ void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whi
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
     if(updates.bucketChange) {
-        if(updates.bucketUpdate.piece == 0) {
-            stack[current].white = stack[current - 1].white; 
-        } else {
-            stack[current].black = stack[current - 1].black;
-        }
         for(int i = 0; i < updates.numAdds; i++) {
             activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
         }
