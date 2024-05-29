@@ -48,6 +48,17 @@ void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whi
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
     if(updates.bucketChange) {
+        if(updates.bucketUpdate.piece == 0) {
+            stack[current].white = stack[current - 1].white; 
+        } else {
+            stack[current].black = stack[current - 1].black;
+        }
+        for(int i = 0; i < updates.numAdds; i++) {
+            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
+        for(int i = 0; i < updates.numSubs; i++) {
+            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
         refreshAccumulator(updates.bucketUpdate.piece /*being used here to store color*/, state, updates.bucketUpdate.piece == 0 ? blackKing : whiteKing);
     } else {
         for(int i = 0; i < updates.numAdds; i++) {
@@ -61,8 +72,20 @@ void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whi
 void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
+    // LMAO this isn't pushing or performing the updates on the other accumulator AAAAAAAAAAAAAAA
     if(updates.bucketChange) {
         current++;
+        if(updates.bucketUpdate.piece == 0) {
+            stack[current].white = stack[current - 1].white; 
+        } else {
+            stack[current].black = stack[current - 1].black;
+        }
+        for(int i = 0; i < updates.numAdds; i++) {
+            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
+        for(int i = 0; i < updates.numSubs; i++) {
+            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+        }
         refreshAccumulator(updates.bucketUpdate.piece /*being used here to store color*/, state, updates.bucketUpdate.piece == 0 ? blackKing : whiteKing);
     } else {
         activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece, blackKing, whiteKing);
