@@ -19,22 +19,27 @@
 
 #include "globals.h"
 
-// Current Net: cn_013
-// Arch: (768x4->768)x2->1x8 
+/*
+Current Net: cn_014
+Arch: (768x4->768)x2->1x8
+Activation: SCReLU
+Special Details: 
+ - Horizontal Mirroring
+*/ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 4;
 constexpr int layer1Size = 768;
 constexpr int outputBucketCount = 8;
 
 constexpr std::array<int, 64> inputBuckets = {
-    0, 0, 0, 0, 1, 1, 1, 1,
-    0, 0, 0, 0, 1, 1, 1, 1,
-    2, 2, 2, 2, 3, 3, 3, 3,
-    2, 2, 2, 2, 3, 3, 3, 3,
-    2, 2, 2, 2, 3, 3, 3, 3,
-    2, 2, 2, 2, 3, 3, 3, 3,
-    2, 2, 2, 2, 3, 3, 3, 3,
-    2, 2, 2, 2, 3, 3, 3, 3
+    0, 0, 1, 1, 5, 5, 4, 4,
+    2, 2, 2, 2, 6, 6, 6, 6,
+    3, 3, 3, 3, 7, 7, 7, 7,
+    3, 3, 3, 3, 7, 7, 7, 7,
+    3, 3, 3, 3, 7, 7, 7, 7,
+    3, 3, 3, 3, 7, 7, 7, 7,
+    3, 3, 3, 3, 7, 7, 7, 7,
+    3, 3, 3, 3, 7, 7, 7, 7
 };
 
 
