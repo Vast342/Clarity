@@ -19,22 +19,17 @@
 
 #include "globals.h"
 
-// Current Net: cn_014
-// Arch: (768x4->768)x2->1x8
-// Activation: SCReLU
-// Special Details:
 /*
 Current Net: cn_014
 Arch: (768x4->768)x2->1x8
 Activation: SCReLU
 Special Details: 
  - Horizontal Mirroring
- - Nicknamed ""
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 4;
-constexpr int layer1Size = 1024;
-constexpr int outputBucketCount = 1;
+constexpr int layer1Size = 768;
+constexpr int outputBucketCount = 8;
 
 constexpr std::array<int, 64> inputBuckets = {
     0, 0, 1, 1, 5, 5, 4, 4,
