@@ -1,6 +1,6 @@
 /*
     Clarity
-    Copyright (C) 2023 Joseph Pasfield
+    Copyright (C) 2024 Joseph Pasfield
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -20,12 +20,6 @@
 
 // runs a single perft test
 int perft(Board &board, int depth) {
-    // tests to make sure incremental updates were working
-    //std::cout << "incremental says: "<< std::to_string(board.getEvaluation()) << ", full regen says " << std::to_string(board.fullEvalRegen()) << " at position " << board.getFenString() << '\n';
-    //assert(board.getEvaluation() == board.fullEvalRegen());
-    //uint64_t regenerated = board.fullZobristRegen();
-    //std::cout << "incremental says: "<< std::to_string(board.zobristHash) << ", full regen says " << std::to_string(regenerated) << " at position " << board.getFenString() << '\n';
-    //assert(board.zobristHash == regenerated);
     if(depth == 0) return 1;
     std::array<Move, 256> moves;
     int numMoves = board.getMoves(moves);

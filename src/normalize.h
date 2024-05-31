@@ -1,8 +1,24 @@
+/*
+    Clarity
+    Copyright (C) 2024 Joseph Pasfield
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 #pragma once
 
 #include "globals.h"
 
-// initial values borrowed from stockfish
 std::array<double, 8> params = {-1.719, 32.248, -71.755, 292.083, 75.399, 2.505, -129.953, 14.509};
 
 // function to get horizontal shift parameter
