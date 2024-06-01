@@ -20,8 +20,8 @@
 #include "globals.h"
 
 /*
-Current Net: cn_014
-Arch: (768x4->768)x2->1x8
+Current Net: cn_015
+Arch: (768x4->1024)x2->1x8
 Activation: SCReLU
 Special Details: 
  - Horizontal Mirroring
