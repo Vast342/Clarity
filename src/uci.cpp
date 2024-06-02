@@ -157,6 +157,7 @@ void go(std::vector<std::string> bits) {
     int inc = 0;
     int movestogo = defaultMovesToGo;
     int nodes = 0;
+    bool infinite = false;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
             time = std::stoi(bits[i+1]);
@@ -179,6 +180,10 @@ void go(std::vector<std::string> bits) {
         if(bits[i] == "nodes") {
             nodes = std::stoi(bits[i+1]);
         }
+        if(bits[i] == "infinite") {
+            infinite = true;
+            i--;
+        }
     }
     // go depth x
     if(depth != 0) {
@@ -192,6 +197,12 @@ void go(std::vector<std::string> bits) {
         for(int i = 0; i < threadCount; i++) {
             threads.emplace_back([nodes, i]{
                 engines[i].fixedNodesSearch(board, nodes, i == 0);
+            });
+        }
+    } else if(infinite) {
+        for(int i = 0; i < threadCount; i++) {
+            threads.emplace_back([i]{
+                engines[i].fixedDepthSearch(board, 100, i == 0);
             });
         }
     } else {
