@@ -188,7 +188,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                     + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
                     + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
                     + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0);
-                    + pawnHistoryTable[board.getPawnHashIndex()][colorToMove][piece][to];
+                    + pawnHistoryTable[board.getPawnHashIndex()][colorToMove][piece][end];
             }
         }
     }
