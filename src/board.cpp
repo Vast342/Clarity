@@ -105,6 +105,7 @@ Board::Board(std::string fen) {
     stateHistory.push_back(BoardState());
     nnueState.reset();
     stateHistory.back().zobristHash = 0;
+	stateHistory.back().pawnHash = 0;
     for(int i = 0; i < 64; i++) {
         stateHistory.back().mailbox[i] = None;
     }
@@ -321,6 +322,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     assert(pieceAtIndex(square) == type);
     if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
+    if(getType(type) = Pawn) stateHistory.back().pawnHash ^= zobTable[square][type];
 }
 
 template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
@@ -334,6 +336,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().mailbox[square] = None;
     if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
+    if(getType(type) = Pawn) stateHistory.back().pawnHash ^= zobTable[square][type];
     assert(pieceAtIndex(square) == None);
 }
 
@@ -930,4 +933,9 @@ bool Board::isPKEndgame() const {
     uint64_t occupied = getOccupiedBitboard();
     uint64_t pk = getPieceBitboard(Pawn) | getPieceBitboard(King);
     return ((getColoredBitboard(colorToMove) & (occupied ^ pk)) == 0);
+}
+
+int Boatd::getPawnHashIndex() const {
+	// last 15 bits
+    return stateHistory.back() & 0b111111111111111;
 }
