@@ -937,5 +937,5 @@ bool Board::isPKEndgame() const {
 
 int Board::getPawnHashIndex() const {
 	// last 15 bits
-    return stateHistory.back() & 0b111111111111111;
+    return stateHistory.back().pawnHash & 0b111111111111111;
 }
