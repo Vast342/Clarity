@@ -44,6 +44,7 @@ void Engine::clearHistory() {
     std::memset(conthistTable.get(), 0, sizeof(conthistTable));
     std::memset(qsHistoryTable.data(), 0, sizeof(qsHistoryTable));
     std::memset(pawnHistoryTable.data(), 0, sizeof(pawnHistoryTable));
+    std::memset(correctionHistoryTable.data(), 0, sizeof(correctionHistoryTable));
 }
 
 Move Engine::getBestMove() {
@@ -189,8 +190,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                     + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
                     + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
                     + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
-                    + pawnHistoryTable[hash][colorToMove][piece][end]
-                    + correctionHistoryTable[hash][colorToMove];
+                    + pawnHistoryTable[hash][colorToMove][piece][end];
             }
         }
     }
@@ -351,7 +351,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
 }
 
 // adds to the history of a particular move
-void Engine::updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply, const int hash, const int correctionBonus) {
+void Engine::updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply, const int hash) {
     int thingToAdd = bonus - historyTable[colorToMove][start][end] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][end] += thingToAdd;
     if(ply > 0) {
@@ -368,11 +368,9 @@ void Engine::updateHistory(const int colorToMove, const int start, const int end
         thingToAdd = bonus - (*stack[ply - 4].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 4].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
+
     thingToAdd = bonus - pawnHistoryTable[hash][colorToMove][piece][end] * std::abs(bonus) / historyCap;
     pawnHistoryTable[hash][colorToMove][piece][end] += thingToAdd;
-    
-    thingToAdd = correctionBonus - correctionHistoryTable[hash][colorToMove] * std::abs(correctionBonus) / historyCap;
-    correctionHistoryTable[hash][colorToMove] += thingToAdd;
 }
 
 void Engine::updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
@@ -445,6 +443,12 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     )) {
         staticEval = entry->score;
     }
+    
+    // more corrections
+    const int ctm = board.getColorToMove();
+    const int numWrites = correctionHistoryTable[board.getPawnHashIndex()][ctm][1];
+    const int correctionAverage = correctionHistoryTable[board.getPawnHashIndex()][ctm][0] / (numWrites == 0 ? 1 : numWrites);
+    staticEval += correctionAverage;
 
     // Razoring
     if(!inSingularSearch && !isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
@@ -631,13 +635,15 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 // testing berserk history bonus
                 int bonus = std::min(hstMaxBonus.value, hstMultiplier.value * depth * depth + hstAdder.value * depth - hstSubtractor.value);
                 int hash = board.getPawnHashIndex();
-                int correctionBonus = -std::abs(bestScore - staticEval);
+                int correctionBonus = bestScore - staticEval;
+                correctionHistoryTable[hash][colorToMove][0] += correctionBonus;
+                correctionHistoryTable[hash][colorToMove][1]++;
                 if(isQuiet) {
                     // adds to the move's history and adjusts the killer move accordingly
                     int start = moveStartSquare;
                     int end = moveEndSquare;
                     int piece = getType(board.pieceAtIndex(start));
-                    updateHistory(colorToMove, start, end, piece, bonus, ply, hash, correctionBonus);
+                    updateHistory(colorToMove, start, end, piece, bonus, ply, hash);
                     stack[ply].killer = move;
                     if(ply > 0) counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()] = move;
                 } else if (move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
@@ -657,7 +663,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                     bool maluIsCapture = ((capturable & (1ULL << end)) != 0) || flag == EnPassant;
                     bool maluIsQuiet = (!maluIsCapture && (flag <= DoublePawnPush));
                     if(maluIsQuiet) {
-                        updateHistory(colorToMove, start, end, piece, bonus, ply, hash, correctionBonus);
+                        updateHistory(colorToMove, start, end, piece, bonus, ply, hash);
                     } else if(maluMove.getFlag() < promotions[0] || maluMove.getFlag() == promotions[3]) {
                         const int victim = getType(board.pieceAtIndex(end));
                         updateNoisyHistory(colorToMove, piece, end, victim, bonus);

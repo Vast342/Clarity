@@ -72,7 +72,7 @@ struct Engine {
         std::array<std::array<std::array<std::array<int, 7>, 64>, 7>, 2> noisyHistoryTable;
         std::array<std::array<std::array<std::array<int, 7>, 64>, 7>, 2> qsHistoryTable;
         std::array<std::array<std::array<std::array<int, 64>, 7>, 2>, 32768> pawnHistoryTable;
-        std::array<std::array<int, 2>, 32768> correctionHistoryTable;
+        std::array<std::array<std::array<int, 2>, 2>, 32768> correctionHistoryTable;
         std::unique_ptr<CHTable> conthistTable;
         std::array<std::array<Move, 64>, 64> counterMoves;
 
@@ -85,7 +85,7 @@ struct Engine {
         void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply);
         void scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove);
         int qSearch(Board &board, int alpha, int beta, int ply);
-        void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply, const int hash, const int correctionBonus);
+        void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply, const int hash);
         void updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         void updateQSHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, bool isCutNode);
