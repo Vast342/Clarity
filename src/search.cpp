@@ -447,7 +447,8 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // corrections
     const int ctm = board.getColorToMove();
     int pawnHash = board.getPawnHashIndex();
-    staticEval += correctionHistoryTable[pawnHash][ctm] * std::abs(correctionHistoryTable[pawnHash][ctm]) / 10000;
+    int numWrites = correctionHistoryTable[pawnHash][ctm][1];
+    staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
 
     // Razoring
     if(!inSingularSearch && !isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
@@ -685,7 +686,8 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
         int correctionBonus = std::clamp(bestScore - staticEval, -256, 256);
-        correctionHistoryTable[pawnHash][ctm] += correctionBonus;
+        correctionHistoryTable[pawnHash][ctm][0] += correctionBonus;
+        correctionHistoryTable[pawnHash][ctm][1]++;
     }
 
     // push to TT
