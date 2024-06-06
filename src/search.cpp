@@ -30,8 +30,8 @@ int hardNodeCap = 400000;
 constexpr int historyCap = 16384;
 
 // Tunable Values
-int killerScore = 98306;
-int counterScore = 98305;
+int killerScore = 81922;
+int counterScore = 81921;
 
 int goodCaptureBonus= 500000;
 // The main search functions
@@ -443,12 +443,11 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     )) {
         staticEval = entry->score;
     }
-    
-    // more corrections
+
+    // corrections
     const int ctm = board.getColorToMove();
-    const int numWrites = correctionHistoryTable[board.getPawnHashIndex()][ctm][1];
-    const int correctionAverage = correctionHistoryTable[board.getPawnHashIndex()][ctm][0] / (numWrites == 0 ? 1 : numWrites);
-    staticEval += correctionAverage;
+    int pawnHash = board.getPawnHashIndex();
+    staticEval += correctionHistoryTable[pawnHash][ctm] * std::abs(correctionHistoryTable[pawnHash][ctm]) / 10000;
 
     // Razoring
     if(!inSingularSearch && !isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
@@ -488,6 +487,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // values useful for writing to TT later
     int bestScore = matedScore;
     Move bestMove;
+    bool bestIsCapture = false;
     int flag = FailLow;
 
     // extensions, currently only extending if you are in check
@@ -522,7 +522,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         int moveFlag = move.getFlag();
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
-        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 6);
+        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 5);
 
         // move loop prunings:
         // futility pruning
@@ -623,6 +623,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 flag = Exact; 
                 alpha = score;
                 bestMove = move;
+                bestIsCapture = isCapture;
                 if(ply == 0) rootBestMove = move;
             }
 
@@ -630,14 +631,12 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             if(score >= beta) {
                 flag = BetaCutoff;
                 bestMove = move;
+                bestIsCapture = isCapture;
                 if(ply == 0) rootBestMove = move;
                 const int colorToMove = board.getColorToMove();
                 // testing berserk history bonus
                 int bonus = std::min(hstMaxBonus.value, hstMultiplier.value * depth * depth + hstAdder.value * depth - hstSubtractor.value);
                 int hash = board.getPawnHashIndex();
-                int correctionBonus = bestScore - staticEval;
-                correctionHistoryTable[hash][colorToMove][0] += correctionBonus;
-                correctionHistoryTable[hash][colorToMove][1]++;
                 if(isQuiet) {
                     // adds to the move's history and adjusts the killer move accordingly
                     int start = moveStartSquare;
@@ -683,6 +682,10 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
             return matedScore + ply;
         }
         return 0;
+    }
+    if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
+        int correctionBonus = std::clamp(bestScore - staticEval, -256, 256);
+        correctionHistoryTable[pawnHash][ctm] += correctionBonus;
     }
 
     // push to TT
