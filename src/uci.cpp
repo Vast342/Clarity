@@ -80,8 +80,7 @@ void setOption(const std::vector<std::string>& bits) {
         newGame();
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
-        std::cout <<  initSuccess << std::endl;
-        useSyzygy = true;
+        useSyzygy = initSuccess;
     } else {
         adjustTunable(name, std::stod(bits[4]));
     }
@@ -147,8 +146,6 @@ void go(std::vector<std::string> bits) {
                 Move tbBest = Move(start, end, promotion, ep, board);
                 std::cout << "bestmove " << toLongAlgebraic(tbBest) << std::endl;
                 return;
-            } else {
-                std::cout << "probe failed" << std::endl;
             }
         }
     }

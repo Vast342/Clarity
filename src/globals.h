@@ -79,6 +79,7 @@ struct BoardState {
     uint8_t hundredPlyCounter;
     uint8_t castlingRights;
     uint64_t zobristHash;
+    uint64_t pawnHash;
 };
 
 // a single move, stored in 16 bits
@@ -132,6 +133,7 @@ struct Board {
         uint64_t keyAfter(const Move move) const;
         int getPlyCount() const;
         bool isPKEndgame() const;
+        int getPawnHashIndex() const;
     private:
         int plyCount;
         uint8_t colorToMove;
