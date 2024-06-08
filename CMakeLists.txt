@@ -28,7 +28,6 @@ add_executable(Clarity_Native ${Common_SRC_Files} src/bmi2.cpp src/uci.cpp)
 
 # data generator build
 add_executable(Clarity_Datagen ${Common_SRC_Files} src/bmi2.cpp src/datagen.cpp)
-add_executable(Clarity_WDL_Datagen ${Common_SRC_Files} src/bmi2.cpp src/wdldatagen.cpp)
 
 target_compile_options(Clarity_x86-64-v1 PRIVATE -Wall -Wextra -Wpedantic -march=x86-64 -flto)
 target_compile_options(Clarity_x86-64-v2 PRIVATE -Wall -Wextra -Wpedantic -march=x86-64-v2 -flto)
@@ -38,7 +37,6 @@ target_compile_options(Clarity_x86-64-v4 PRIVATE -Wall -Wextra -Wpedantic -march
 target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Wpedantic -march=native -flto)
 
 target_compile_options(Clarity_Datagen PRIVATE -Wall -Wextra -Wpedantic -march=native -flto)
-target_compile_options(Clarity_WDL_Datagen PRIVATE -Wall -Wextra -Wpedantic -march=native -flto)
 
 # making the entire binary need only itself to run, for ease of use
 target_link_libraries(Clarity_x86-64-v1 -static)
@@ -49,7 +47,6 @@ target_link_libraries(Clarity_x86-64-v4 -static)
 target_link_libraries(Clarity_Native -static)
 
 target_link_libraries(Clarity_Datagen -static)
-target_link_libraries(Clarity_WDL_Datagen -static)
 
 target_compile_definitions(Clarity_x86-64-v1 PUBLIC NetworkFile="../src/cn_015.nnue")
 target_compile_definitions(Clarity_x86-64-v2 PUBLIC NetworkFile="../src/cn_015.nnue")
@@ -59,4 +56,3 @@ target_compile_definitions(Clarity_x86-64-v4 PUBLIC NetworkFile="../src/cn_015.n
 target_compile_definitions(Clarity_Native PUBLIC NetworkFile="../src/cn_015.nnue")
 
 target_compile_definitions(Clarity_Datagen PUBLIC NetworkFile="../src/cn_015.nnue")
-target_compile_definitions(Clarity_WDL_Datagen PUBLIC NetworkFile="../src/cn_015.nnue")
