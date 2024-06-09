@@ -593,37 +593,9 @@ bool Board::isInCheck() {
 }
 
 // thanks ciekce, shoutout stormphrax
-bool Board::squareIsUnderAttack(int square) {
+bool Board::squareIsUnderAttack(int square) const {
     if(stateHistory.back().threats != 0) {
-        //return (stateHistory.back().threats & (1ULL << square));
-        bool oldTech = false;
-        bool newTech = (stateHistory.back().threats & (1ULL << square));
-        const auto opponent = 1 - colorToMove;
-
-        const auto queens = getColoredPieceBitboard(opponent, Queen);
-
-        uint64_t mask = (getRookAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Rook)));
-        if(mask != 0)
-            oldTech = true;
-
-        mask = (getBishopAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Bishop)));
-        if(mask != 0 && !oldTech)
-            oldTech = true;
-
-        mask = getKnightAttacks(square) & getColoredPieceBitboard(opponent, Knight);
-        if(mask != 0 && !oldTech)
-            oldTech = true;
-
-        mask = getPawnAttacks(square, colorToMove) & getColoredPieceBitboard(opponent, Pawn);
-        if(mask != 0 && !oldTech)
-            oldTech = true;
-
-        mask = getKingAttacks(square) & getColoredPieceBitboard(opponent, King);
-        if(mask != 0 && !oldTech)
-            oldTech = true;
-
-        //std::cout << (oldTech == newTech) << " with position " << getFenString() << " and square " << square << std::endl;
-        return oldTech;
+        return (stateHistory.back().threats & (1ULL << square));
     } else {
         const auto opponent = 1 - colorToMove;
 

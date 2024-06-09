@@ -109,7 +109,7 @@ struct Board {
         int getMovesQSearch(std::array<Move, 256> &moves);
         std::string getFenString();
         bool isInCheck();
-        bool squareIsUnderAttack(int square);
+        bool squareIsUnderAttack(int square) const;
         void toString();
         uint8_t getColorToMove() const;
         uint64_t getCurrentPlayerBitboard() const;
