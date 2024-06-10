@@ -281,6 +281,10 @@ void interpretCommand(std::string command) {
         outputTunableOB(); 
     } else if(bits[0] == "stop") {
         stopThePresses();
+    } else if(bits[0] == "showthreats") {
+        std::cout << board.getThreats() << std::endl; 
+    } else if(bits[0] == "calcthreats") {
+        std::cout << board.calculateThreats() << std::endl;   
     } else {
         std::cout << "invalid or unsupported command\n";
     }

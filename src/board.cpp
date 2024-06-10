@@ -217,6 +217,7 @@ Board::Board(std::string fen) {
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
     nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
     nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
+    stateHistory.back().threats = calculateThreats();
 }
 
 std::string Board::getFenString() {
@@ -592,32 +593,36 @@ bool Board::isInCheck() {
 }
 
 // thanks ciekce, shoutout stormphrax
-bool Board::squareIsUnderAttack(int square) {
-    const auto opponent = 1 - colorToMove;
+bool Board::squareIsUnderAttack(int square) const {
+    if(stateHistory.back().threats != 0) {
+        return (stateHistory.back().threats & (1ULL << square));
+    } else {
+        const auto opponent = 1 - colorToMove;
 
-    const auto queens = getColoredPieceBitboard(opponent, Queen);
+        const auto queens = getColoredPieceBitboard(opponent, Queen);
 
-    uint64_t mask = (getRookAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Rook)));
-    if(mask != 0)
-        return true;
+        uint64_t mask = (getRookAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Rook)));
+        if(mask != 0)
+            return true;
 
-    mask = (getBishopAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Bishop)));
-    if(mask != 0)
-        return true;
+        mask = (getBishopAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Bishop)));
+        if(mask != 0)
+            return true;
 
-    mask = getKnightAttacks(square) & getColoredPieceBitboard(opponent, Knight);
-    if(mask != 0)
-        return true;
+        mask = getKnightAttacks(square) & getColoredPieceBitboard(opponent, Knight);
+        if(mask != 0)
+            return true;
 
-    mask = getPawnAttacks(square, colorToMove) & getColoredPieceBitboard(opponent, Pawn);
-    if(mask != 0)
-        return true;
+        mask = getPawnAttacks(square, colorToMove) & getColoredPieceBitboard(opponent, Pawn);
+        if(mask != 0)
+            return true;
 
-    mask = getKingAttacks(square) & getColoredPieceBitboard(opponent, King);
-    if(mask != 0)
-        return true;
+        mask = getKingAttacks(square) & getColoredPieceBitboard(opponent, King);
+        if(mask != 0)
+            return true;
 
-    return false;
+        return false;
+    }
 }
 
 template <bool PushNNUE> bool Board::makeMove(Move move) {
@@ -625,6 +630,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     // push to vectors
     stateHistory.push_back(stateHistory.back());
     NetworkUpdates updates;
+    stateHistory.back().threats = 0;
 
     // get information
     int start = move.getStartSquare();
@@ -768,6 +774,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
+        stateHistory.back().threats = calculateThreats();
         //std::cout << "Changing Color To Move, move was legal\n";
         stateHistory.back().zobristHash ^= zobColorToMove;
         return true;
@@ -793,6 +800,7 @@ void Board::changeColor() {
     stateHistory.back().enPassantIndex = 64;
     stateHistory.back().hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
+    stateHistory.back().threats = calculateThreats();
     stateHistory.back().zobristHash ^= zobColorToMove;
 }
 
@@ -938,4 +946,44 @@ bool Board::isPKEndgame() const {
 int Board::getPawnHashIndex() const {
 	// last 15 bits
     return stateHistory.back().pawnHash & 0b111111111111111;
+}
+
+uint64_t Board::calculateThreats() {
+    const int them = 1 - colorToMove;
+    const uint64_t occupied = getOccupiedBitboard();
+
+    uint64_t threats = 0;
+    
+    const uint64_t queens = getColoredPieceBitboard(them, Queen);
+
+    uint64_t rooks = queens | getColoredPieceBitboard(them, Rook);
+    while(rooks) {
+        const int rook = popLSB(rooks);
+        threats |= getRookAttacks(rook, occupied);
+    }
+
+    uint64_t bishops = queens | getColoredPieceBitboard(them, Bishop);
+    while(bishops) {
+        const int bishop = popLSB(bishops);
+        threats |= getBishopAttacks(bishop, occupied);
+    }
+
+    uint64_t knights = getColoredPieceBitboard(them, Knight);
+    while(knights) {
+        const int knight = popLSB(knights);
+        threats |= getKnightAttacks(knight);
+    }
+
+    const uint64_t pawns = getColoredPieceBitboard(them, Pawn);
+    if(them == 0)
+        threats |= ((pawns >> 9) & ~getFileMask(7)) | ((pawns >> 7) & ~getFileMask(0));
+    else threats |= ((pawns << 7) & ~getFileMask(7)) | ((pawns << 9) & ~getFileMask(0));
+
+    threats |= getKingAttacks(stateHistory.back().kingSquares[them]);
+
+    return threats;
+}
+
+uint64_t Board::getThreats() const {
+    return stateHistory.back().threats;
 }

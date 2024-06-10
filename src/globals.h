@@ -80,6 +80,7 @@ struct BoardState {
     uint8_t castlingRights;
     uint64_t zobristHash;
     uint64_t pawnHash;
+    uint64_t threats;
 };
 
 // a single move, stored in 16 bits
@@ -108,7 +109,7 @@ struct Board {
         int getMovesQSearch(std::array<Move, 256> &moves);
         std::string getFenString();
         bool isInCheck();
-        bool squareIsUnderAttack(int square);
+        bool squareIsUnderAttack(int square) const;
         void toString();
         uint8_t getColorToMove() const;
         uint64_t getCurrentPlayerBitboard() const;
@@ -134,6 +135,8 @@ struct Board {
         int getPlyCount() const;
         bool isPKEndgame() const;
         int getPawnHashIndex() const;
+        uint64_t getThreats() const;
+        uint64_t calculateThreats();
     private:
         int plyCount;
         uint8_t colorToMove;
