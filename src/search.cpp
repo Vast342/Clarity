@@ -519,6 +519,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         Move move = moves[i];
         if(move == stack[ply].excluded) continue;
         int moveStartSquare = move.getStartSquare();
+        int movedPiece = board.pieceAtIndex(moveStartSquare);
         int moveEndSquare = move.getEndSquare();
         int moveFlag = move.getFlag();
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
@@ -595,7 +596,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 if(isQuiet) {
                     depthReduction -= moveValues[i] / int(hmrDivisor.value);
                 } else {
-                    depthReduction -= moveValues[i] / int(cmrDivisor.value);
+                    depthReduction -= noisyHistoryTable[1 - board.getColorToMove()][movedPiece][moveEndSquare][moveVictim] / int(cmrDivisor.value);
                 }
                 depthReduction += isCutNode;
                 depthReduction -= improving;
