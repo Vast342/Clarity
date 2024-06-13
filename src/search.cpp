@@ -600,6 +600,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
                 }
                 depthReduction += isCutNode;
                 depthReduction -= improving;
+                depthReduction -= !isQuietOrBadCapture;
 
                 depthReduction = std::clamp(depthReduction, 0, depth - 2);
             }
