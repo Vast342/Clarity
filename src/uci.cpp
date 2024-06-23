@@ -113,8 +113,8 @@ void loadPosition(const std::vector<std::string>& bits) {
 void identify() {
     std::cout << "id name Clarity V7.0.0" << std::endl;
     std::cout << "id author Vast" << std::endl;
-    std::cout << "option name Hash type spin default 64 min 1 max 2048" << std::endl;
-    std::cout << "option name Threads type spin default 1 min 1 max 64" << std::endl;
+    std::cout << "option name Hash type spin default 64 min 1 max 524288" << std::endl;
+    std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     //outputTunables();
     std::cout << "uciok" << std::endl;
@@ -214,6 +214,10 @@ void go(std::vector<std::string> bits) {
         }
         //bestMove = engine.think(board, softBound, hardBound, true);
     }
+    for(int i = 0; i < threadCount; i++) {
+        threads[i].join();
+    }
+    threads.clear();
 }
 
 void stopThePresses() {
