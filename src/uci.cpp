@@ -214,6 +214,10 @@ void go(std::vector<std::string> bits) {
         }
         //bestMove = engine.think(board, softBound, hardBound, true);
     }
+    for(int i = 0; i < threadCount; i++) {
+        threads[i].join();
+    }
+    threads.clear();
 }
 
 void stopThePresses() {
