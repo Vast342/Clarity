@@ -447,8 +447,11 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // corrections
     const int ctm = board.getColorToMove();
     int pawnHash = board.getPawnHashIndex();
-    int numWrites = correctionHistoryTable[pawnHash][ctm][1];
-    staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
+    // no adjustments if it's a mate score
+    if(abs(staticEval) < abs(matedScore + 256)) {
+        int numWrites = correctionHistoryTable[pawnHash][ctm][1];
+        staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
+    }
 
     // Razoring
     if(!inSingularSearch && !isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
