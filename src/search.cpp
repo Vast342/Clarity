@@ -773,15 +773,18 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         int alpha = std::max(matedScore, score - delta);
         int beta = std::min(-matedScore, score + delta);
         const Move previousBest = rootBestMove;
+        int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true, false);
+                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
                 if(timesUp) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
+                    usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, matedScore);
+                    usedDepth = depth;
                 } else break;
 
                 delta *= aspDeltaMultiplier.value;
@@ -846,15 +849,18 @@ int Engine::benchSearch(Board board, int depthToSearch) {
         int delta = aspBaseDelta.value;
         int alpha = std::max(matedScore, score - delta);
         int beta = std::min(-matedScore, score + delta);
+        int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true, false);
+                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
                 
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
+                    usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, matedScore);
+                    usedDepth = depth;
                 } else break;
 
                 delta *= aspDeltaMultiplier.value;
@@ -891,15 +897,18 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         int delta = aspBaseDelta.value;
         int alpha = std::max(matedScore, score - delta);
         int beta = std::min(-matedScore, score + delta);
+        int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true, false);
+                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
                 
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
+                    usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, matedScore);
+                    usedDepth = depth;
                 } else break;
 
                 delta *= aspDeltaMultiplier.value;
@@ -962,15 +971,18 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
         int delta = aspBaseDelta.value;
         int alpha = std::max(matedScore, score - delta);
         int beta = std::min(-matedScore, score + delta);
+        int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true, false);
+                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
                 
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
+                    usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, matedScore);
+                    usedDepth = depth;
                 } else break;
                 if(nodes > nodeCap) break;
                 delta *= aspDeltaMultiplier.value;
@@ -1006,16 +1018,19 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         int delta = aspBaseDelta.value;
         int alpha = std::max(matedScore, score - delta);
         int beta = std::min(-matedScore, score + delta);
+        int usedDepth = depth;
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, depth, alpha, beta, 0, true, false);
+                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
                 if(timesUp) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
+                    usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, matedScore);
+                    usedDepth = depth;
                 } else break;
 
                 delta *= aspDeltaMultiplier.value;
