@@ -432,6 +432,13 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
 
     int staticEval = board.getEvaluation();
     if(ply > depthLimit - 1) return staticEval;
+
+    // corrections
+    const int ctm = board.getColorToMove();
+    int pawnHash = board.getPawnHashIndex();
+    int numWrites = correctionHistoryTable[pawnHash][ctm][1];
+    staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
+
     stack[ply].staticEval = staticEval;
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
 
@@ -442,15 +449,6 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
         (entry->flag == FailLow && entry->score <= staticEval)
     )) {
         staticEval = entry->score;
-    }
-
-    // corrections
-    const int ctm = board.getColorToMove();
-    int pawnHash = board.getPawnHashIndex();
-    // no adjustments if it's a mate score
-    if(abs(staticEval) < abs(matedScore + 256)) {
-        int numWrites = correctionHistoryTable[pawnHash][ctm][1];
-        staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
     }
 
     // Razoring
