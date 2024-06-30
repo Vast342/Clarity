@@ -24,6 +24,9 @@ int nodes = 0;
 #include "tt.h"
 #include "normalize.h"
 #include "external/fathom/tbprobe.h"
+#include "uci.h"
+
+bool mainThreadDone = false;
 
 int hardNodeCap = 400000;
 
@@ -822,8 +825,12 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         }
     }
     
-    if(info) timesUp = true;
-    if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+    if(info) {
+        timesUp = true;
+        stopOtherThreads();
+        std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+        mainThreadDone = true;
+    }
     return rootBestMove;
 }
 
@@ -946,8 +953,12 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         }
     }
 
-    if(info) timesUp = true;
-    if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+    if(info) {
+        timesUp = true;
+        stopOtherThreads();
+        std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+        mainThreadDone = true;
+    }
     return rootBestMove;
 }
 
@@ -1070,7 +1081,11 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         }
     }
     
-    if(info) timesUp = true;
-    if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+    if(info) {
+        timesUp = true;
+        stopOtherThreads();
+        std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+        mainThreadDone = true;
+    }
     return rootBestMove;
 }

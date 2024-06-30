@@ -21,6 +21,7 @@
 #include "tt.h"
 #include "bench.h"
 #include "external/fathom/tbprobe.h"
+#include "uci.h"
 
 bool useSyzygy = false;
 
@@ -228,6 +229,12 @@ void stopThePresses() {
     threads.clear();
 }
 
+void stopOtherThreads() {
+    for(uint32_t i = 1; i < threads.size(); i++) {
+        if(threads[i].joinable()) threads[i].join();
+    }
+}
+
 // interprets the command
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
@@ -305,6 +312,9 @@ int main(int argc, char* argv[]) {
     std::string command;
     while(true) {
         std::getline(std::cin, command, '\n');
+        if(mainThreadDone) {
+            threads.clear();
+        }
         if(command == "quit") {
             if(threads.size() != 0) {
                 stopThePresses();
