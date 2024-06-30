@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX := clang
 ARCH := -march=native
-CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra
+CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -fuse-ld=lld
 _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 _ROOT     := $(_THIS)
 EVALFILE   = $(_ROOT)/src/cn_015.nnue
@@ -29,7 +29,6 @@ EXE := Clarity
 
 # Append .exe to the binary name on Windows
 ifeq ($(OS),Windows_NT)
-	CXXFLAGS += -fuse-ld=lld
     override EXE := $(EXE).exe
 endif
 
