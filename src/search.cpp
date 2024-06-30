@@ -822,7 +822,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         }
     }
     
-    timesUp = true;
+    if(info) timesUp = true;
     if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
     return rootBestMove;
 }
@@ -946,7 +946,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         }
     }
 
-    timesUp = true;
+    if(info) timesUp = true;
     if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
     return rootBestMove;
 }
@@ -1070,7 +1070,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         }
     }
     
-    timesUp = true;
+    if(info) timesUp = true;
     if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
     return rootBestMove;
 }
