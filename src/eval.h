@@ -20,11 +20,12 @@
 #include "globals.h"
 
 /*
-Current Net: cn_015
+Current Net: cn_017
 Arch: (768x4->1024)x2->1x8
 Activation: SCReLU
 Special Details: 
  - Horizontal Mirroring
+ - first network with actually proper amounts of data (nearly 5b instead of 560m)
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 4;
