@@ -21,6 +21,7 @@
 #include "tt.h"
 #include "bench.h"
 #include "external/fathom/tbprobe.h"
+#include "uci.h"
 
 bool useSyzygy = false;
 
@@ -214,18 +215,20 @@ void go(std::vector<std::string> bits) {
         }
         //bestMove = engine.think(board, softBound, hardBound, true);
     }
-    for(int i = 0; i < threadCount; i++) {
-        threads[i].join();
-    }
-    threads.clear();
 }
 
 void stopThePresses() {
     timesUp = true;
     for(int i = 0; i < threadCount; i++) {
-        threads[i].join();
+        if(threads[i].joinable()) threads[i].join();
     }
     threads.clear();
+}
+
+void stopOtherThreads() {
+    for(uint32_t i = 1; i < threads.size(); i++) {
+        if(threads[i].joinable()) threads[i].join();
+    }
 }
 
 // interprets the command
@@ -305,6 +308,9 @@ int main(int argc, char* argv[]) {
     std::string command;
     while(true) {
         std::getline(std::cin, command, '\n');
+        if(mainThreadDone) {
+            threads.clear();
+        }
         if(command == "quit") {
             if(threads.size() != 0) {
                 stopThePresses();
