@@ -25,12 +25,13 @@
 */
 
 // at 16 bytes per entry, this gives me a 64mb hash table
-constexpr uint64_t defaultSize = 4194304;
+constexpr uint64_t defaultSize = 6710886;
 
+#pragma pack(push, 1)
 struct Transposition {
-    uint64_t zobristKey;
     int score;
     Move bestMove;
+    uint16_t zobristKey;
     uint8_t flag;
     uint8_t depth;
     Transposition() {
@@ -41,13 +42,14 @@ struct Transposition {
         depth = 0;
     }
     Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _score, uint8_t _depth) {
-        zobristKey = _zobristKey;
+        zobristKey = (_zobristKey & 0xFFFF);
         bestMove = _bestMove;
         flag = _flag;
         score = _score;
         depth = _depth;
     }
 };
+#pragma pack(pop)
 
 struct TranspositionTable {
     public:

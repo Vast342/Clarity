@@ -248,7 +248,7 @@ int Engine::qSearch(Board &board, int alpha, int beta, int ply) {
     // TT check
     Transposition* entry = TT->getEntry(hash);
 
-    if(entry->zobristKey == hash && (
+    if(entry->zobristKey == (hash & 0xFFFF) && (
         entry->flag == Exact // exact score
             || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
             || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
@@ -421,7 +421,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
     // turns out that score above was complete bs lol, my isPV was broken
-    if(!inSingularSearch && !isPV && ply > 0 && entry->zobristKey == hash && entry->depth >= depth && (
+    if(!inSingularSearch && !isPV && ply > 0 && entry->zobristKey == (hash & 0xFFFF) && entry->depth >= depth && (
             entry->flag == Exact // exact score
                 || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
                 || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
@@ -431,7 +431,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
 
     // Internal Iterative Reduction (IIR)
     // Things to test: alternative depth
-    if(!inSingularSearch && (entry->zobristKey != hash || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
+    if(!inSingularSearch && (entry->zobristKey != (hash & 0xFFFF) || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
 
     int staticEval = board.getEvaluation();
     if(ply > depthLimit - 1) return staticEval;
@@ -446,7 +446,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
     const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
 
     // adjust staticEval to TT score if it's good enough
-    if(!inCheck && !inSingularSearch && hash == entry->zobristKey && (
+    if(!inCheck && !inSingularSearch && (hash & 0xFFFF) == entry->zobristKey && (
         entry->flag == Exact ||
         (entry->flag == BetaCutoff && entry->score >= staticEval) ||
         (entry->flag == FailLow && entry->score <= staticEval)
@@ -698,7 +698,7 @@ int Engine::negamax(Board &board, int depth, int alpha, int beta, int ply, bool 
 
     // push to TT
     if(!inSingularSearch) {
-        if(entry->zobristKey == hash && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
+        if(entry->zobristKey == (hash & 0xFFFF) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
         TT->setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
     }
 
@@ -718,7 +718,7 @@ std::string Engine::getPV(Board board, std::vector<uint64_t> &hashVector, int nu
     hashVector.push_back(hash);
     numEntries++;
     Transposition* entry = TT->getEntry(hash);
-    if(entry->zobristKey == hash && entry->flag == Exact) {
+    if(entry->zobristKey == (hash & 0xFFFF) && entry->flag == Exact) {
         Move bestMove = entry->bestMove;
         if(bestMove != Move() && board.makeMove<true>(bestMove)) {
             std::string restOfPV = getPV(board, hashVector, numEntries);
