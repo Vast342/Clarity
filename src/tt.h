@@ -24,7 +24,12 @@
     Stores the result of past searches in a large table, so that you don't have to make redundant searches
 */
 
-// at 16 bytes per entry, this gives me a 64mb hash table
+
+constexpr uint16_t shrink(uint64_t hash) {
+    return (hash & 0xFFFF);
+}
+
+// this gives me a 64mb hash table
 constexpr uint64_t defaultSize = 6710886;
 
 #pragma pack(push, 1)
@@ -42,7 +47,7 @@ struct Transposition {
         depth = 0;
     }
     Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _score, uint8_t _depth) {
-        zobristKey = (_zobristKey & 0xFFFF);
+        zobristKey = shrink(_zobristKey);
         bestMove = _bestMove;
         flag = _flag;
         score = _score;
