@@ -30,11 +30,11 @@ constexpr uint16_t shrink(uint64_t hash) {
 }
 
 // this gives me a 64mb hash table
-constexpr uint64_t defaultSize = 6710886;
+constexpr uint64_t defaultSize = 4194304 * 2;;
 
 #pragma pack(push, 1)
 struct Transposition {
-    int score;
+    int16_t score;
     Move bestMove;
     uint16_t zobristKey;
     uint8_t flag;
