@@ -257,7 +257,13 @@ int16_t Engine::qSearch(Board &board, int16_t alpha, int16_t beta, int16_t ply) 
     }
 
     // stand pat shenanigans
-    int16_t staticEval = board.getEvaluation();
+    int staticEval = 0;
+    if(entry->zobristKey == shrink(hash)) {
+        staticEval = entry->staticEval;
+    } else {
+        staticEval = board.getEvaluation();
+    }
+    if(ply > depthLimit - 1) return staticEval;
     int16_t bestScore = staticEval;
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
@@ -348,7 +354,7 @@ int16_t Engine::qSearch(Board &board, int16_t alpha, int16_t beta, int16_t ply) 
     }
 
     // push to TT
-    TT->setEntry(hash, Transposition(hash, bestMove, flag, bestScore, 0));
+    TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0));
 
     return bestScore;
 }
@@ -433,7 +439,14 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
     // Things to test: alternative depth
     if(!inSingularSearch && (entry->zobristKey != shrink(hash) || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
 
-    int staticEval = board.getEvaluation();
+    int staticEval = 0;
+    int originalStaticEval = 0;
+    if(!inSingularSearch && entry->zobristKey == shrink(hash)) {
+        staticEval = entry->staticEval;
+    } else {
+        staticEval = board.getEvaluation();
+    }
+    originalStaticEval = staticEval;
     if(ply > depthLimit - 1) return staticEval;
 
     // corrections
@@ -699,7 +712,7 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
     // push to TT
     if(!inSingularSearch) {
         if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-        TT->setEntry(hash, Transposition(hash, bestMove, flag, bestScore, depth));
+        TT->setEntry(hash, Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth));
     }
 
     return bestScore;
