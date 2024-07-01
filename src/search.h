@@ -24,7 +24,7 @@ extern bool timesUp;
 
 constexpr int depthLimit = 120;
 
-constexpr int matedScore = -10000000;
+constexpr int16_t matedScore = -32000;
 
 extern int badCaptureScore;
 
@@ -82,13 +82,13 @@ struct Engine {
         void clearHistory();
         int estimateMoveValue(const Board& board, const int end, const int flag);
         bool see(const Board& board, Move move, int threshold);
-        void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int ply);
+        void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply);
         void scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove);
-        int qSearch(Board &board, int alpha, int beta, int ply);
-        void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int ply, const int hash, const bool startAttack, const bool endAttack);
+        int16_t qSearch(Board &board, int16_t alpha, int16_t beta, int16_t ply);
+        void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int16_t ply, const int hash, const bool startAttack, const bool endAttack);
         void updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         void updateQSHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
-        int negamax(Board &board, int depth, int alpha, int beta, int ply, bool nmpAllowed, bool isCutNode);
+        int16_t negamax(Board &board, int depth, int16_t alpha, int16_t beta, int16_t ply, bool nmpAllowed, bool isCutNode);
         std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries);
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);
 };

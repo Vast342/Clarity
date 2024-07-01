@@ -28,7 +28,7 @@ Move TranspositionTable::getBestMove(uint64_t zkey) {
 }
 
 bool TranspositionTable::matchZobrist(uint64_t zkey) {
-    return table[zkey & mask].zobristKey == zkey;
+    return table[zkey & mask].zobristKey == shrink(zkey);
 }
 
 uint8_t TranspositionTable::getFlag(uint64_t zkey) {
@@ -59,7 +59,7 @@ void TranspositionTable::setBestMove(uint64_t zkey, Move bestMove) {
 }
 
 void TranspositionTable::setZobrist(uint64_t zkey) {
-    table[zkey & mask].zobristKey = zkey;
+    table[zkey & mask].zobristKey = shrink(zkey);
 }
 
 void TranspositionTable::setFlag(uint64_t zkey, uint8_t flag) {
