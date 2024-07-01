@@ -26,7 +26,7 @@
 
 
 constexpr uint16_t shrink(uint64_t hash) {
-    return (hash & 0xFFFF);
+    return (hash >> 48);
 }
 
 // this gives me a 64mb hash table
