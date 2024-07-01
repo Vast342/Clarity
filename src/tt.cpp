@@ -19,55 +19,60 @@
 
 // all the functions for the transposition table
 
+uint64_t index(uint64_t key, int size) {
+    // this emits a single mul on both x64 and arm64
+    return static_cast<uint64_t>((static_cast<unsigned __int128>(key) * static_cast<unsigned __int128>(size)) >> 64);
+}
+
 int TranspositionTable::getScore(uint64_t zkey) {
-    return table[zkey & mask].score;
+    return table[index(zkey, size)].score;
 }
 
 Move TranspositionTable::getBestMove(uint64_t zkey) {
-    return table[zkey & mask].bestMove;
+    return table[index(zkey, size)].bestMove;
 }
 
 bool TranspositionTable::matchZobrist(uint64_t zkey) {
-    return table[zkey & mask].zobristKey == shrink(zkey);
+    return table[index(zkey, size)].zobristKey == shrink(zkey);
 }
 
 uint8_t TranspositionTable::getFlag(uint64_t zkey) {
-    return table[zkey & mask].flag;
+    return table[index(zkey, size)].flag;
 }
 
 Transposition* TranspositionTable::getEntry(uint64_t zkey) {
-    //if(table[zkey & mask].zobristKey != 0) std::cout << std::to_string(table[zkey & mask].score) << ", " << std::to_string(zkey) << '\n';
-    return &table[zkey & mask];
+    //if(table[index(zkey, size)].zobristKey != 0) std::cout << std::to_string(table[index(zkey, size)].score) << ", " << std::to_string(zkey) << '\n';
+    return &table[index(zkey, size)];
 }
 
 int TranspositionTable::getDepth(uint64_t zkey) {
-    return table[zkey & mask].depth;
+    return table[index(zkey, size)].depth;
 }
 
 void TranspositionTable::setEntry(uint64_t zkey, Transposition entry) {
     //std::cout << "recieved, writing an entry at " << std::to_string(zkey) << " with score " << std::to_string(entry.score) << '\n';
-    table[zkey & mask] = entry;
-    //std::cout << "reading entry just written, score is " << std::to_string(table[zkey & mask].score) << '\n';
+    table[index(zkey, size)] = entry;
+    //std::cout << "reading entry just written, score is " << std::to_string(table[index(zkey, size)].score) << '\n';
 }
 
 void TranspositionTable::setScore(uint64_t zkey, int score) {
-    table[zkey & mask].score = score;
+    table[index(zkey, size)].score = score;
 }
 
 void TranspositionTable::setBestMove(uint64_t zkey, Move bestMove) {
-    table[zkey & mask].bestMove = bestMove;
+    table[index(zkey, size)].bestMove = bestMove;
 }
 
 void TranspositionTable::setZobrist(uint64_t zkey) {
-    table[zkey & mask].zobristKey = shrink(zkey);
+    table[index(zkey, size)].zobristKey = shrink(zkey);
 }
 
 void TranspositionTable::setFlag(uint64_t zkey, uint8_t flag) {
-    table[zkey & mask].flag = flag;
+    table[index(zkey, size)].flag = flag;
 }
 
 void TranspositionTable::setDepth(uint64_t zkey, uint16_t depth) {
-    table[zkey & mask].depth = depth;
+    table[index(zkey, size)].depth = depth;
 }
 
 void TranspositionTable::clearTable() {
@@ -75,7 +80,7 @@ void TranspositionTable::clearTable() {
 }
 
 void TranspositionTable::resize(int newSize) {
-    mask = newSize - 1;
+    size = newSize;
     table.resize(newSize, Transposition());
     clearTable();
 }
