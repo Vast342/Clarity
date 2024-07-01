@@ -95,6 +95,8 @@ Tunable tmsNumerator("TMS_Numerator", 2, 1);
 Tunable tmsDenominator("TMS_Denominator", 4, 1);
 Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
 
+Tunable pvTTDepthMargin("PVTT_DepthMargin", 2, 1);
+
 // Declaration of pointers to tunables
 std::array<Tunable *, 7> MVV_values = {
     &mvvPawn,

@@ -281,6 +281,8 @@ extern Tunable tmsNumerator;
 extern Tunable tmsDenominator;
 extern Tunable tmsMultiplier;
 
+extern Tunable pvTTDepthMargin;
+
 extern std::array<Tunable *, 7> MVV_values;
 extern std::array<Tunable *, 7> SEE_values;
 extern std::vector<Tunable *> tunables;
