@@ -190,7 +190,7 @@ struct Tunable {
           value(_value),
           max(value * _divisor * 2),
           divisor(_divisor),
-          step(max / 20 == 0 ? 1 : max / 20) {}
+          step(double(max) / 20 == 0 ? 1 : double(max) / 20) {}
 
     void updateValue(double newValue) {
         value = newValue / divisor;
