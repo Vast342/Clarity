@@ -190,7 +190,7 @@ struct Tunable {
           value(_value),
           max(value * _divisor * 2),
           divisor(_divisor),
-          step(max / 15 == 0 ? 1 : max / 15) {}
+          step(max / 20 == 0 ? 1 : max / 20) {}
 
     void updateValue(double newValue) {
         value = newValue / divisor;
@@ -200,7 +200,7 @@ struct Tunable {
     double value;
     int max;
     int divisor;
-    int step;
+    double step;
 };
 
 extern Tunable aspBaseDelta;
