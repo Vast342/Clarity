@@ -445,6 +445,9 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
         staticEval = entry->staticEval;
     } else {
         staticEval = board.getEvaluation();
+        if(!inSingularSearch && entry->zobristKey == 0) {
+            TT->setEntry(hash, Transposition(hash, Move(), 0, staticEval, 0, 0));
+        }
     }
     originalStaticEval = staticEval;
     if(ply > depthLimit - 1) return staticEval;
