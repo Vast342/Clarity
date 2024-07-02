@@ -17,17 +17,17 @@
 */
 #include "globals.h"
 
-Tunable aspBaseDelta("ASP_BaseDelta", 14, 1);
-Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.34, 10);
+Tunable aspBaseDelta("ASP_BaseDelta", 13, 1);
+Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.30, 10);
 Tunable aspDepthCondition("ASP_DepthCondition", 4, 1);
 
 Tunable rfpDepthCondition("RFP_DepthCondition", 10, 1);
-Tunable rfpMultiplier("RFP_Multiplier", 92, 1);
+Tunable rfpMultiplier("RFP_Multiplier", 84, 1);
 
 Tunable iirDepthCondition("IIR_DepthCondition", 2, 1);
 
 Tunable fpDepthCondition("FP_DepthCondition", 1, 1);
-Tunable fpBase("FP_Base", 327, 1);
+Tunable fpBase("FP_Base", 312, 1);
 Tunable fpMultiplier("FP_Multiplier", 44, 1);
 
 Tunable lmpBase("LMP_Base", 1, 1);// No divisor adjustment
@@ -36,64 +36,64 @@ Tunable sprDepthCondition("SPR_DepthCondition", 2, 1);
 Tunable sprCaptureThreshold("SPR_CaptureThreshold", -98, -1);
 Tunable sprQuietThreshold("SPR_QuietThreshold", -34, -1);
 
-Tunable nmpDivisor("NMP_Divisor", 147, 1);
+Tunable nmpDivisor("NMP_Divisor", 140, 1);
 Tunable nmpSubtractor("NMP_Subtractor", 4, 1);
-Tunable nmpDepthCondition("NMP_DepthCondition", 0, 1);
+Tunable nmpDepthCondition("NMP_DepthCondition", 0, 1); // I need to fix this before next tune, it's locked at 0
 
-Tunable hmrDivisor("HMR_Divisor", 7828, 1); 
-Tunable cmrDivisor("CMR_Divisor", 4506, 1);
+Tunable hmrDivisor("HMR_Divisor", 8108, 1); 
+Tunable cmrDivisor("CMR_Divisor", 4762, 1);
 
-Tunable lmrBase("LMR_Base", 0.82, 100);// Adjusted divisor for lmrBase
-Tunable lmrMultiplier("LMR_Multiplier", 0.53, 100);// Adjusted divisor for lmrMultiplier
+Tunable lmrBase("LMR_Base", 0.92, 100);// Adjusted divisor for lmrBase
+Tunable lmrMultiplier("LMR_Multiplier", 0.56, 100);// Adjusted divisor for lmrMultiplier
 
-Tunable hstMaxBonus("HST_MaxBonus", 1642, 1);
+Tunable hstMaxBonus("HST_MaxBonus", 1616, 1);
 Tunable hstMultiplier("HST_Multiplier", 3, 1);
-Tunable hstAdder("HST_Adder", 146, 1);
-Tunable hstSubtractor("HST_Subtractor", 120, 1);
+Tunable hstAdder("HST_Adder", 152, 1);
+Tunable hstSubtractor("HST_Subtractor", 121, 1);
 
 Tunable sinDepthCondition("SIN_DepthCondition", 7, 1);
 Tunable sinDepthMargin("SIN_DepthMargin", 3, 1);
-Tunable sinDepthScale("SIN_DepthScale", 33, 1);
+Tunable sinDepthScale("SIN_DepthScale", 32, 1);
 
-Tunable razDepthMultiplier("RAZ_DepthMultiplier", 495, 1);
+Tunable razDepthMultiplier("RAZ_DepthMultiplier", 437, 1);
 
 Tunable ntmDepthCondition("NTM_DepthCondition", 10, 1);
-Tunable ntmSubtractor("NTM_Subtractor", 1.69, 100);
-Tunable ntmMultiplier("NTM_Multiplier", 1.32, 100);
-Tunable ntmDefault("NTM_Default", 1.34, 100);
+Tunable ntmSubtractor("NTM_Subtractor", 1.70, 100);
+Tunable ntmMultiplier("NTM_Multiplier", 1.42, 100);
+Tunable ntmDefault("NTM_Default", 1.30, 100);
 
-Tunable hipDepthCondition("HIP_DepthCondition", 7, 1);
-Tunable hipDepthMultiplier("HIP_DepthMultiplier", -2470, -1);
+Tunable hipDepthCondition("HIP_DepthCondition", 8, 1);
+Tunable hipDepthMultiplier("HIP_DepthMultiplier", -2494, -1);
 
-Tunable qhsMaxBonus("QHS_MaxBonus", 1589, 1);
+Tunable qhsMaxBonus("QHS_MaxBonus", 1500, 1);
 Tunable qhsMultiplier("QHS_Multiplier", 6, 1);
-Tunable qhsAdder("QHS_Adder", 72, 1);
-Tunable qhsSubtractor("QHS_Subtractor", 105, 1);
+Tunable qhsAdder("QHS_Adder", 75, 1);
+Tunable qhsSubtractor("QHS_Subtractor", 100, 1);
 
-Tunable dexMargin("DEX_Margin", 32, 1);
-Tunable dexLimit("DEX_Limit", 24, 1);
+Tunable dexMargin("DEX_Margin", 34, 1);
+Tunable dexLimit("DEX_Limit", 22, 1);
 
-Tunable deiDepth("DEI_Depth", 13, 1);
+Tunable deiDepth("DEI_Depth", 14, 1);
 
 Tunable lmrDepth("LMR_Depth", 2, 1);
 
-Tunable mvvPawn("MVV_Pawn", 91, 1);
-Tunable mvvKnight("MVV_Knight", 401, 1);
-Tunable mvvBishop("MVV_Bishop", 502, 1);
-Tunable mvvRook("MVV_Rook", 736, 1);
-Tunable mvvQueen("MVV_Queen", 1192, 1);
+Tunable mvvPawn("MVV_Pawn", 96, 1);
+Tunable mvvKnight("MVV_Knight", 426, 1);
+Tunable mvvBishop("MVV_Bishop", 505, 1);
+Tunable mvvRook("MVV_Rook", 701, 1);
+Tunable mvvQueen("MVV_Queen", 1194, 1);
 Tunable blank("blank", 0, 1);
 
-Tunable seePawn("SEE_Pawn", 108, 1);
-Tunable seeKnight("SEE_Knight", 446, 1);
-Tunable seeBishop("SEE_Bishop", 428, 1);
-Tunable seeRook("SEE_Rook", 665, 1);
-Tunable seeQueen("SEE_Queen", 1110, 1);
+Tunable seePawn("SEE_Pawn", 112, 1);
+Tunable seeKnight("SEE_Knight", 403, 1);
+Tunable seeBishop("SEE_Bishop", 424, 1);
+Tunable seeRook("SEE_Rook", 650, 1);
+Tunable seeQueen("SEE_Queen", 1096, 1);
 
 Tunable tmhDivisor("TMH_Divisor", 2, 1);
 Tunable tmsNumerator("TMS_Numerator", 2, 1);
 Tunable tmsDenominator("TMS_Denominator", 4, 1);
-Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
+Tunable tmsMultiplier("TMS_Multiplier", 0.7, 10);
 
 Tunable pvTTDepthMargin("PVTT_DepthMargin", 2, 1);
 
@@ -174,7 +174,8 @@ std::vector<Tunable *> tunables = {
     &tmhDivisor,
     &tmsNumerator,
     &tmsDenominator,
-    &tmsMultiplier
+    &tmsMultiplier,
+    &pvTTDepthMargin
 };
 
 
