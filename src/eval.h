@@ -28,19 +28,19 @@ Special Details:
  - first network with actually proper amounts of data (nearly 5b instead of 560m)
 */ 
 constexpr int inputSize = 768;
-constexpr int inputBucketCount = 4;
-constexpr int layer1Size = 1024;
+constexpr int inputBucketCount = 1;
+constexpr int layer1Size = 768;
 constexpr int outputBucketCount = 8;
 
 constexpr std::array<int, 64> inputBuckets = {
-    0, 0, 1, 1, 5, 5, 4, 4,
-    2, 2, 2, 2, 6, 6, 6, 6,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0
 };
 
 

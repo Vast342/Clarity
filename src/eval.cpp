@@ -136,10 +136,10 @@ int NetworkState::getFeatureIndex(int square, int piece, int color, int king) {
         square ^= 56;
         king ^= 56;
     }
-    if(king % 8 > 3) {
+    /*if(king % 8 > 3) {
         square ^= 7;
         king ^= 7;
-    }
+    }*/
     return inputBuckets[king] * inputSize + c * ColorStride + getType(piece) * PieceStride + square;
 }
 
