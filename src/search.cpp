@@ -459,7 +459,16 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
     staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
 
     stack[ply].staticEval = staticEval;
-    const bool improving = (ply > 1 && !inCheck && staticEval > stack[ply - 2].staticEval && !stack[ply - 2].inCheck);
+    bool improving = false;
+    if(inCheck) {
+        improving = false;
+    } else if(!stack[ply - 2].inCheck) {
+        improving = staticEval > stack[ply - 2].staticEval;
+    } else if(!stack[ply - 4].inCheck) {
+        improving = staticEval > stack[ply - 4].staticEval;
+    } else {
+        improving = true;
+    }
 
     // adjust staticEval to TT score if it's good enough
     if(!inCheck && !inSingularSearch && shrink(hash) == entry->zobristKey && (
