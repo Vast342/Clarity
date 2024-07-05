@@ -462,9 +462,9 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
     bool improving = false;
     if(inCheck) {
         improving = false;
-    } else if(!stack[ply - 2].inCheck) {
+    } else if(ply > 1 && !stack[ply - 2].inCheck) {
         improving = staticEval > stack[ply - 2].staticEval;
-    } else if(!stack[ply - 4].inCheck) {
+    } else if(ply > 3 && !stack[ply - 4].inCheck) {
         improving = staticEval > stack[ply - 4].staticEval;
     } else {
         improving = true;
