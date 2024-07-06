@@ -1031,6 +1031,29 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
         //outputInfo(board, score, depth, elapsedTime);
         if(nodes > nodeCap) break;
     }
+
+    if(rootBestMove == Move()) {
+        std::array<Move, 256> moves;
+        int totalMoves = board.getMoves(moves);
+        std::array<int, 256> moveValues;
+        Transposition* entry = TT->getEntry(board.getZobristHash());
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+
+        for(int i = 0; i < totalMoves; i++) {
+            for(int j = i + 1; j < totalMoves; j++) {
+                if(moveValues[j] > moveValues[i]) {
+                    std::swap(moveValues[j], moveValues[i]);
+                    std::swap(moves[j], moves[i]);
+                }
+            }
+            if(board.makeMove<true>(moves[i])) {
+                board.undoMove<true>();
+                rootBestMove = moves[i];
+                break;
+            }
+        }
+    }
+
     return std::pair<Move, int>(rootBestMove, score);
 }
 

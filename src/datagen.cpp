@@ -17,8 +17,13 @@
 */
 #include "globals.h"
 #include "datagen.h"
+#include "uci.h"
 #include "search.h"
 #include <thread>
+
+void stopOtherThreads() {
+    // hehehe
+}
 
 std::string directory;
 uint64_t totalPositions = 0;
@@ -64,7 +69,7 @@ void generateData(int numGames, int numThreads) {
     }
     for(auto &thread : threads) {
         //std::cout << "Joining Thread\n";
-        thread.join();
+        if(thread.joinable()) thread.join();
     }
 }
 
@@ -73,12 +78,12 @@ void threadFunction(int numGames, int threadID) {
     //std::cout << "Thread Function called on thread " << std::to_string(threadID) << '\n';
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     TranspositionTable TT;
-    Engine engine(&TT);
+    std::unique_ptr<Engine> engine = std::make_unique<Engine>(&TT);
     std::ofstream output;
     output.open(directory + "thread" + std::to_string(threadID) + ".txt");
     for(int i = 0; i < numGames; i++) {
         std::vector<std::string> fenVector;
-        double result = runGame(engine, fenVector, board);
+        double result = runGame(*engine, fenVector, board);
         if(result == 2) {
             fenVector.clear();
             i--;
@@ -121,7 +126,7 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
             std::uniform_int_distribution distribution{0, legalMoves - 1};
 
             const int index = distribution(gen);
-            board.makeMove<true>(moves[index]);
+            board.makeMove<false>(moves[index]);
             // move has been made now, cool
             //std::cout << board.getFenString() << '\n';
         } else {
@@ -153,15 +158,15 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
                 }
                 break;
             }
-            // get move from engine normally
-            //std::cout << "sending board with position " << board.getFenString() << '\n';
-            const auto result = engine.dataGenSearch(board, 5000);
-            score = (board.getColorToMove() == 1 ? result.second : -result.second);
             // i think that this score might be a problem
             if(abs(score) > 2500) {
                 if(outOfBounds) break;
                 outOfBounds = true;
             }
+            // get move from engine normally
+            //std::cout << "sending board with position " << board.getFenString() << '\n';
+            const auto result = engine.dataGenSearch(board, 5000);
+            score = (board.getColorToMove() == 1 ? result.second : -result.second);
             if(((1ULL << result.first.getEndSquare()) & board.getOccupiedBitboard()) == 0 && result.first.getFlag() != EnPassant) {
                 if(abs(score) < abs(matedScore + 256)) {
                     if(!board.isInCheck()) {
@@ -174,7 +179,7 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
                 }
             }
             //std::cout << "score is now " << score << '\n';
-            if(!board.makeMove<true>(result.first)) {
+            if(!board.makeMove<false>(result.first)) {
                 std::cout << "Engine made an illegal move\n";
             }
             //std::cout << board.getFenString() << '\n';
