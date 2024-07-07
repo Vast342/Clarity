@@ -213,12 +213,6 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
             const int victim = getType(board.pieceAtIndex(end));
             // Capthist!
             values[i] = MVV_values[victim]->value + qsHistoryTable[colorToMove][piece][end][victim];
-            // see!
-            // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-            if(see(board, move, 0)) {
-                // good captures
-                values[i] += goodCaptureBonus;
-            }
         }
     }
 }
@@ -291,8 +285,8 @@ int16_t Engine::qSearch(Board &board, int16_t alpha, int16_t beta, int16_t ply) 
         Move move = moves[i];
 
         // this detects bad captures
-        if(moveValues[i] < MVV_values[Queen]->value + historyCap) {
-            break;
+        if(!see(board, move, 0)) {
+            continue;
         }
 
         // TT prefetching
