@@ -38,7 +38,7 @@ target_compile_options(Clarity_Native PRIVATE -Wall -Wextra -Wpedantic -march=na
 
 target_compile_options(Clarity_Datagen PRIVATE -Wall -Wextra -Wpedantic -march=native -flto)
 
-# making the entire binary need only itself to run, for ease of use
+# making the entire binary standalone, for ease of use
 target_link_libraries(Clarity_x86-64-v1 -static)
 target_link_libraries(Clarity_x86-64-v2 -static)
 target_link_libraries(Clarity_x86-64-v3_Magic -static)

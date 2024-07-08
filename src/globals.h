@@ -64,7 +64,7 @@ enum Pieces {
 constexpr int Black = 0;
 constexpr int White = 8;
 
-extern std::array<std::array<uint8_t, 218>, 50> reductions;
+extern std::array<std::array<uint8_t, 218>, 150> reductions;
 
 // structs and stuff
 struct Board;

@@ -71,10 +71,10 @@ std::string toLongAlgebraic(Move move) {
 }
 
 // calculates the reductions used for LMR, ran on startup
-std::array<std::array<uint8_t, 218>, 50> reductions;
+std::array<std::array<uint8_t, 218>, 150> reductions;
 
 void calculateReductions() {
-    for(int depth = 0; depth < 50; depth++) {
+    for(int depth = 0; depth < 150; depth++) {
         for(int move = 0; move < 218; move++) {
             reductions[depth][move] = uint8_t(lmrBase.value + log(depth) * log(move) * lmrMultiplier.value);
         }
