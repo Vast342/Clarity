@@ -986,16 +986,20 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
     //clearHistory();
     useNodeCap = true;
     nodes = 0;
-    hardLimit = 1215752192;
+    hardLimit = 400000;
     seldepth = 0;
     timesUp = false;
 
     begin = std::chrono::steady_clock::now();
 
     rootBestMove = Move();
+    Move previousBest = Move();
+    int16_t previousScore = 0;
     int16_t score = 0;
     // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
     for(int depth = 1; depth <= 100; depth++) {
+        previousBest = Move();
+        previousScore = score;
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
         int16_t delta = aspBaseDelta.value;
@@ -1015,10 +1019,16 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
                     usedDepth = depth;
                 } else break;
                 if(nodes > nodeCap) break;
+                if(timesUp) break;
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
+        }
+        if(timesUp) {
+            rootBestMove = previousBest;
+            score = previousScore;
+            break;
         }
         //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
