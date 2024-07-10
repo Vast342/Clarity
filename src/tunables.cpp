@@ -47,8 +47,7 @@ Tunable lmrBase("LMR_Base", 0.94, 100);// Adjusted divisor for lmrBase
 Tunable lmrMultiplier("LMR_Multiplier", 0.56, 100);// Adjusted divisor for lmrMultiplier
 
 Tunable hstMaxBonus("HST_MaxBonus", 1629, 1);
-Tunable hstMultiplier("HST_Multiplier", 3, 1);
-Tunable hstAdder("HST_Adder", 158, 1);
+Tunable hstAdder("HST_Adder", 300, 1);
 Tunable hstSubtractor("HST_Subtractor", 117, 1);
 
 Tunable sinDepthCondition("SIN_DepthCondition", 7, 1);
@@ -140,7 +139,6 @@ std::vector<Tunable *> tunables = {
     &lmrBase,
     &lmrMultiplier,
     &hstMaxBonus,
-    &hstMultiplier,
     &hstAdder,
     &hstSubtractor,
     &sinDepthCondition,

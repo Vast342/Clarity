@@ -233,7 +233,6 @@ extern Tunable lmrBase;
 extern Tunable lmrMultiplier;
 
 extern Tunable hstMaxBonus;
-extern Tunable hstMultiplier;
 extern Tunable hstAdder;
 extern Tunable hstSubtractor;
 
