@@ -661,7 +661,7 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
                 if(ply == 0) rootBestMove = move;
                 const int colorToMove = board.getColorToMove();
                 // testing berserk history bonus
-                int bonus = std::min(hstMaxBonus.value, hstMultiplier.value * depth * depth + hstAdder.value * depth - hstSubtractor.value);
+                int bonus = std::min(hstMaxBonus.value, hstAdder.value * depth - hstSubtractor.value);
                 int hash = board.getPawnHashIndex();
                 if(isQuiet) {
                     // adds to the move's history and adjusts the killer move accordingly
