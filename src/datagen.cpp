@@ -25,6 +25,11 @@ void stopOtherThreads() {
     // hehehe
 }
 
+uint64_t getTotalNodes() {
+    // hehehe
+    return 0;
+}
+
 std::string directory;
 uint64_t totalPositions = 0;
 std::chrono::steady_clock::time_point beginTime;
