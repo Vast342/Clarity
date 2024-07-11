@@ -28,6 +28,7 @@ void stopOtherThreads() {
 std::string directory;
 uint64_t totalPositions = 0;
 std::chrono::steady_clock::time_point beginTime;
+std::vector<uint64_t> gamesPerThread;
 
 // run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games* *number of threads*
 int main([[maybe_unused]]int argc, char** argv) {
@@ -60,6 +61,7 @@ void generateData(int numGames, int numThreads) {
     //std::cout << "Made it through the generateData Call\n";
     std::vector<std::jthread> threads;
     threads.reserve(numThreads);
+    gamesPerThread.resize(numThreads);
     for(int i = 1; i <= numThreads; i++) {
         //std::cout << "Made Thread " << i << '\n';
         // lambda AAAAAAAAAAAAAAAAAAA RUN IN FeAR
@@ -91,6 +93,7 @@ void threadFunction(int numGames, int threadID) {
         }
         //std::cout << "Finished Game " << i << "on thread" << threadID << '\n';
         dumpToArray(output, result, fenVector);
+        gamesPerThread[threadID - 1]++;
     }
 }
 constexpr int moveLimit = 1000;
@@ -162,6 +165,8 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
             if(abs(score) > 2500) {
                 if(outOfBounds) break;
                 outOfBounds = true;
+            } else {
+                outOfBounds = false;
             }
             // get move from engine normally
             //std::cout << "sending board with position " << board.getFenString() << '\n';
@@ -184,7 +189,6 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
             }
             //std::cout << board.getFenString() << '\n';
         }
-        if(i == moveLimit) return 0.5;
     }
 
     // return 1 if white won, 0 if black won, and 0.5 if draw, this will be useful later
@@ -216,5 +220,10 @@ void dumpToArray(std::ofstream &output, double result, std::vector<std::string>&
         std::cout << "Time: " << (elapsedTime / 1000) << " seconds " << '\n';
         std::cout << "Positions per second: " << (totalPositions / (elapsedTime / 1000)) << '\n';
         std::cout << "Positions per game: " << (totalPositions / games) << '\n';
+        std::cout << "Games Per Thread: [";
+        for(const uint64_t gameCount : gamesPerThread) {
+            std::cout << gameCount << ", ";
+        }
+        std::cout << "]" << std::endl;
     }
 }

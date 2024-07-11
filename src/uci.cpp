@@ -217,6 +217,14 @@ void go(std::vector<std::string> bits) {
     }
 }
 
+uint64_t getTotalNodes() {
+    uint64_t sum = 0;
+    for(const auto &engine : engines) {
+        sum += engine.nodes;
+    }
+    return sum;
+}
+
 void stopThePresses() {
     timesUp = true;
     for(int i = 0; i < threadCount; i++) {

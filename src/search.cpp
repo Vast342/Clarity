@@ -18,8 +18,6 @@
 
 bool timesUp = false;
 
-int nodes = 0;
-
 #include "search.h"
 #include "tt.h"
 #include "normalize.h"
@@ -760,11 +758,12 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
         scoreString += "mate ";
         scoreString += std::to_string((abs(abs(score) + matedScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
+    uint64_t nodeSum = getTotalNodes();
     if(depth > 6) {
         std::vector<uint64_t> hashVector;
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
     } else {
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
+        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
     }
 }
 

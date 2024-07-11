@@ -21,3 +21,4 @@
 
 extern bool mainThreadDone;
 void stopOtherThreads();
+uint64_t getTotalNodes();

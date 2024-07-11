@@ -55,6 +55,8 @@ struct Engine {
             conthistTable = std::make_unique<CHTable>();
             TT = tt;
         }
+
+        int nodes = 0;
     private:
         bool useNodeCap = false;
 
