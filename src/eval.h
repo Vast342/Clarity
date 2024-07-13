@@ -35,7 +35,7 @@ constexpr int outputBucketCount = 8;
 constexpr std::array<int, 64> inputBuckets = {
     0, 0, 1, 1, 5, 5, 4, 4,
     2, 2, 2, 2, 6, 6, 6, 6,
-    3, 3, 3, 3, 7, 7, 7, 7,
+    2, 2, 2, 2, 6, 6, 6, 6,
     3, 3, 3, 3, 7, 7, 7, 7,
     3, 3, 3, 3, 7, 7, 7, 7,
     3, 3, 3, 3, 7, 7, 7, 7,
