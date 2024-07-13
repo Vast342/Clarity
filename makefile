@@ -1,5 +1,5 @@
 # Compiler and flags
-CXX := clang
+CXX := clang++
 ARCH := -march=native
 CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -fuse-ld=lld
 _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
@@ -7,7 +7,6 @@ _ROOT     := $(_THIS)
 EVALFILE   = $(_ROOT)/src/cn_022.nnue
 
 CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\"
-LDFLAGS :=
 
 # Debug compiler flags
 DEBUG_CXXFLAGS := -g3 -O1 -DDEBUG
@@ -57,10 +56,10 @@ debug: $(EXE)
 
 # Clean the build
 clean:
-	rm -rf $(BUILD_DIR) $(EXE) $(PGO_DIR) 
+	rm -rf $(BUILD_DIR) $(EXE)
 
 # Phony targets
-.PHONY: all debug clean pgo-generate
+.PHONY: all debug clean
 
 # Disable built-in rules and variables
 .SUFFIXES:
