@@ -30,7 +30,7 @@ Special Details:
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 4;
 constexpr int layer1Size = 768;
-constexpr int outputBucketCount = 8;
+constexpr int outputBucketCount = 16;
 
 constexpr std::array<int, 64> inputBuckets = {
     0, 0, 1, 1, 5, 5, 4, 4,
