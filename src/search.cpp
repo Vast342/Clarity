@@ -767,6 +767,8 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
     }
 }
 
+constexpr std::array<double, 7> stabilityNumbers = {2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9};
+
 // the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
 Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     stack[0].doubleExtensions = 0;
@@ -778,6 +780,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     hardLimit = hardBound;
     seldepth = 0;
     timesUp = false;
+    int stability = 0;
 
     begin = std::chrono::steady_clock::now();
 
@@ -796,6 +799,11 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, usedDepth, alpha, beta, 0, true, false);
+                if(rootBestMove == previousBest) {
+                    stability++;
+                } else {
+                    stability = 0;
+                }
                 if(timesUp) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
@@ -815,7 +823,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // soft time bounds check
         double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
-        if(timesUp || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value)) break;
+        if(timesUp || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
         // outputs info which is picked up by the user
         if(info) outputInfo(board, score, depth, elapsedTime);
         //if(elapsedTime > softBound) break;
