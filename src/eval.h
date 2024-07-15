@@ -20,16 +20,16 @@
 #include "globals.h"
 
 /*
-Current Net: cn_017
-Arch: (768x4->1024)x2->1x8
+Current Net: cn_024
+Arch: (768x4->1024)x2->1x16
 Activation: SCReLU
 Special Details: 
  - Horizontal Mirroring
- - first network with actually proper amounts of data (nearly 5b instead of 560m)
+ - Fully caught up to my leela data self in terms of arch now
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 4;
-constexpr int layer1Size = 768;
+constexpr int layer1Size = 1024;
 constexpr int outputBucketCount = 16;
 
 constexpr std::array<int, 64> inputBuckets = {
