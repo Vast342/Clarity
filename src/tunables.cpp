@@ -96,6 +96,8 @@ Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
 
 Tunable pvTTDepthMargin("PVTT_DepthMargin", 2, 1);
 
+Tunable texMargin("TEX_Margin", 75, 1);
+
 // Declaration of pointers to tunables
 std::array<Tunable *, 7> MVV_values = {
     &mvvPawn,
