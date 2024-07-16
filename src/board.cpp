@@ -811,7 +811,15 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
-    return int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()))));
+    int eval = int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()))));
+    int phase =  3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Knight])
+               + 3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Bishop])
+               + 5 * __builtin_popcountll(stateHistory.back().pieceBitboards[Rook])
+               + 10 * __builtin_popcountll(stateHistory.back().pieceBitboards[Queen]);    
+
+    eval = eval * (206 + phase) / 256; 
+
+    return eval;
 }
 
 int Board::getCastlingRights() const {
