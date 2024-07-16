@@ -819,6 +819,8 @@ int Board::getEvaluation() {
 
     eval = eval * (206 + phase) / 256; 
 
+    eval = eval * (200 - stateHistory.back().hundredPlyCounter) / 200;
+
     return eval;
 }
 
