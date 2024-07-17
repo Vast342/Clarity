@@ -222,13 +222,13 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
 int16_t Engine::qSearch(Board &board, int16_t alpha, int16_t beta, int16_t ply) {
     //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
-    if(nodes % 4096 == 0) {
-        if(useNodeCap) {
-            if(nodes > hardNodeCap) {
-                timesUp = true;
-                return 0;
-            }
-        } else {
+    if(useNodeCap) {
+        if(nodes > hardNodeCap) {
+            timesUp = true;
+            return 0;
+        }
+    } else {
+        if(nodes % 4096 == 0) {
             if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
                 timesUp = true;
                 return 0;
@@ -389,13 +389,13 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
     // if it's a repeated position, it's a draw
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time check every 4096 nodes
-    if(nodes % 4096 == 0) {
-        if(useNodeCap) {
-            if(nodes > hardNodeCap) {
-                timesUp = true;
-                return 0;
-            }
-        } else {
+    if(useNodeCap) {
+        if(nodes >= hardNodeCap) {
+            timesUp = true;
+            return 0;
+        }
+    } else {
+        if(nodes % 4096 == 0) {
             if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
                 timesUp = true;
                 return 0;
@@ -1108,14 +1108,14 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         } else {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
-        if(timesUp) {
-            rootBestMove = previousBest;
-            break;
-        }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
         if(info) outputInfo(board, score, depth, elapsedTime);
         //if(elapsedTime > softBound) break;
+        if(timesUp) {
+            rootBestMove = previousBest;
+            break;
+        }
     }
 
     if(rootBestMove == Move()) {
