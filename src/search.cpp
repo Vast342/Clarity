@@ -572,7 +572,7 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
             stack[ply].excluded = Move();
             if(score < sBeta) {
                 if (!isPV && score < sBeta - dexMargin.value && stack[ply].doubleExtensions <= dexLimit.value) {
-                    TTExtensions = 2;
+                    TTExtensions = 2 + (score < sBeta - texMargin.value);
                     depth += (depth < deiDepth.value);
                     stack[ply].doubleExtensions++;
                 } else {
