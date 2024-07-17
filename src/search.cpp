@@ -56,6 +56,8 @@ Move Engine::getBestMove() {
 void Engine::resetEngine() {
     stack = {};
     TT->clearTable();
+    std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
+    std::memset(counterMoves.data(), 0, sizeof(counterMoves));
     clearHistory(); 
 }
 
@@ -866,6 +868,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
     //clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
+    std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
     useNodeCap = false;
     seldepth = 0;
     timesUp = false;
