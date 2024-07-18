@@ -45,6 +45,7 @@ void newGame() {
     engines.clear();
     for(int i = 0; i < threadCount; i++) {
         engines.emplace_back(&TT);
+        engines[i].resetEngine();
     }
     TT.clearTable();
     board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
