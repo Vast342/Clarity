@@ -221,7 +221,7 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
 //constexpr int deltas[] = {814, 139, 344, 403, 649, 867, 0};
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
-int16_t Engine::qSearch(Board &board, int16_t alpha, int16_t beta, int16_t ply) {
+int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(useNodeCap) {
@@ -387,7 +387,7 @@ void Engine::updateQSHistory(const int colorToMove, const int piece, const int e
 }
 
 // The main search function
-int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, int16_t ply, bool nmpAllowed, bool isCutNode) {
+int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t ply, bool nmpAllowed, bool isCutNode) {
     // if it's a repeated position, it's a draw
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time check every 4096 nodes
@@ -511,8 +511,8 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
 
     // Mate Distance Pruning (I will test it at some point I swear)
     if(!isPV) {    
-        const auto mdAlpha = std::max(alpha, int16_t(matedScore + ply));
-        const auto mdBeta = std::min(beta, int16_t(-matedScore - ply - 1));
+        const auto mdAlpha = std::max(alpha, matedScore + ply);
+        const auto mdBeta = std::min(beta, -matedScore - ply - 1);
         if(mdAlpha >= mdBeta) {
             return mdAlpha;
         }
@@ -785,9 +785,9 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     for(int depth = 1; depth < 100; depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
-        int16_t delta = aspBaseDelta.value;
-        int16_t alpha = std::max(matedScore, int16_t(score - delta));
-        int16_t beta = std::min(-matedScore, score + delta);
+        int delta = aspBaseDelta.value;
+        int alpha = std::max(int(matedScore), score - delta);
+        int beta = std::min(-matedScore, score + delta);
         const Move previousBest = rootBestMove;
         int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
@@ -804,7 +804,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
                     usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(int16_t(alpha - delta), matedScore);
+                    alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
                 } else break;
 
@@ -873,9 +873,9 @@ int Engine::benchSearch(Board board, int depthToSearch) {
     for(int depth = 1; depth <= depthToSearch; depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
-        int16_t delta = aspBaseDelta.value;
-        int16_t alpha = std::max(matedScore, int16_t(score - delta));
-        int16_t beta = std::min(-matedScore, score + delta);
+        int delta = aspBaseDelta.value;
+        int alpha = std::max(int(matedScore), score - delta);
+        int beta = std::min(-matedScore, score + delta);
         int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
@@ -886,7 +886,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
                     usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(int16_t(alpha - delta), matedScore);
+                    alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
                 } else break;
 
@@ -921,9 +921,9 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
 
     for(int depth = 1; depth <= depthToSearch; depth++) {
         seldepth = 0;
-        int16_t delta = aspBaseDelta.value;
-        int16_t alpha = std::max(matedScore, int16_t(score - delta));
-        int16_t beta = std::min(-matedScore, score + delta);
+        int delta = aspBaseDelta.value;
+        int alpha = std::max(int(matedScore), score - delta);
+        int beta = std::min(-matedScore, score + delta);
         int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
@@ -934,7 +934,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
                     usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(int16_t(alpha - delta), matedScore);
+                    alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
                 } else break;
 
@@ -1004,9 +1004,9 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
         previousScore = score;
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
-        int16_t delta = aspBaseDelta.value;
-        int16_t alpha = std::max(matedScore, int16_t(score - delta));
-        int16_t beta = std::min(-matedScore, score + delta);
+        int delta = aspBaseDelta.value;
+        int alpha = std::max(int(matedScore), score - delta);
+        int beta = std::min(-matedScore, score + delta);
         int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
@@ -1017,7 +1017,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
                     usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(int16_t(alpha - delta), matedScore);
+                    alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
                 } else break;
                 if(nodes > nodeCap) break;
@@ -1080,9 +1080,9 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
     for(int depth = 1; depth < 100; depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
-        int16_t delta = aspBaseDelta.value;
-        int16_t alpha = std::max(matedScore, int16_t(score - delta));
-        int16_t beta = std::min(-matedScore, score + delta);
+        int delta = aspBaseDelta.value;
+        int alpha = std::max(int(matedScore), score - delta);
+        int beta = std::min(-matedScore, score + delta);
         int usedDepth = depth;
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
@@ -1094,7 +1094,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
                     usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
-                    alpha = std::max(int16_t(alpha - delta), matedScore);
+                    alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
                 } else break;
 
