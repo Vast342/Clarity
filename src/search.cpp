@@ -473,14 +473,6 @@ int16_t Engine::negamax(Board &board, int depth, int16_t alpha, int16_t beta, in
         staticEval = entry->score;
     }
 
-    // Razoring
-    if(!inSingularSearch && !isPV && staticEval < alpha - razDepthMultiplier.value * depth) {
-        int score = qSearch(board, alpha, beta, ply);
-        if(score < alpha) {
-            return score;
-        }
-    }
-
     // Reverse Futility Pruning
     if(!inSingularSearch && staticEval - rfpMultiplier.value * (depth - improving) >= beta && !inCheck && depth < rfpDepthCondition.value && !isPV) return staticEval;
 
