@@ -76,7 +76,7 @@ std::array<std::array<uint8_t, 218>, 150> reductions;
 void calculateReductions() {
     for(int depth = 0; depth < 150; depth++) {
         for(int move = 0; move < 218; move++) {
-            reductions[depth][move] = uint8_t(lmrBase.value + log(depth) * log(move) * lmrMultiplier.value);
+            reductions[depth][move] = uint8_t(std::clamp(lmrBase.value + log(depth) * log(move) * lmrMultiplier.value, -32678.0, 32678.0));
         }
     }
 }
