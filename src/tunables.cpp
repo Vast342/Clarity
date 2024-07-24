@@ -30,7 +30,7 @@ Tunable fpDepthCondition("FP_DepthCondition", 1, 1);
 Tunable fpBase("FP_Base", 336, 1);
 Tunable fpMultiplier("FP_Multiplier", 44, 1);
 
-Tunable lmpBase("LMP_Base", 1, 1);// No divisor adjustment
+Tunable lmpBase("LMP_Base", 3, 1);
 
 Tunable sprDepthCondition("SPR_DepthCondition", 2, 1);
 Tunable sprCaptureThreshold("SPR_CaptureThreshold", -98, -1);
@@ -43,8 +43,8 @@ Tunable nmpDepthCondition("NMP_DepthCondition", 0, 1); // I need to fix this bef
 Tunable hmrDivisor("HMR_Divisor", 8175, 1); 
 Tunable cmrDivisor("CMR_Divisor", 4866, 1);
 
-Tunable lmrBase("LMR_Base", 0.94, 100);// Adjusted divisor for lmrBase
-Tunable lmrMultiplier("LMR_Multiplier", 0.56, 100);// Adjusted divisor for lmrMultiplier
+Tunable lmrBase("LMR_Base", 0.94, 100);
+Tunable lmrMultiplier("LMR_Multiplier", 0.56, 100);
 
 Tunable hstMaxBonus("HST_MaxBonus", 1629, 1);
 Tunable hstAdder("HST_Adder", 300, 1);
