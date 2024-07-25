@@ -80,7 +80,6 @@ class NetworkState {
         NetworkState() {
             stack.resize(128);
             reset();
-            refreshTable.init();
         }
         inline void push() {
             stack[current + 1] = stack[current];
