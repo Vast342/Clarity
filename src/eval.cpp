@@ -118,7 +118,7 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
 
     RefreshTableEntry &entry = refreshTable.table[bucket];
     BoardState &prevBoards = entry.colorBoards(color);
-    entry.accumulator.initHalf(network->featureBiases, color);
+    //entry.accumulator.initHalf(network->featureBiases, color);
 
     for(int piece = 0; piece < None; ++piece) {
         const uint64_t prev = prevBoards.pieceBitboards[piece];
@@ -126,10 +126,13 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
 
         uint64_t added = curr & ~prev;
         uint64_t removed = prev & ~curr;
+        //std::cout << "added:  " << added << std::endl;
+        //std::cout << "removed: " << removed << std::endl;
 
         while(added) {
             const int sq = popLSB(added);
-            const int index = getFeatureIndex(sq, piece, color, king);
+            const int p = state.mailbox[sq];
+            const int index = getFeatureIndex(sq, p, color, king);
             // change values for all of them
             if(color == 0) {
                 for(int i = 0; i < layer1Size; ++i) {
@@ -144,7 +147,8 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
 
         while(removed) {
             const int sq = popLSB(removed);
-            const int index = getFeatureIndex(sq, piece, color, king);
+            const int p = prevBoards.mailbox[sq];
+            const int index = getFeatureIndex(sq, p, color, king);
             // change values for all of them
             if(color == 0) {
                 for(int i = 0; i < layer1Size; ++i) {
