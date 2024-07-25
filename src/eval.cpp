@@ -164,9 +164,9 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
 }
 
 void RefreshTable::init() {
-    for(auto &entry : table) {
-        entry.accumulator.initialize(network->featureBiases);
-        std::memcpy(entry.boards.data(), 0, sizeof(entry.boards));
+    for(int i = 0; i < inputBucketCount * 2; i++) {
+        table[i].accumulator.initialize(network->featureBiases);
+        std::memset(table[i].boards.data(), 0, sizeof(BoardState) * 2);
     }
 }
 

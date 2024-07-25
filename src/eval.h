@@ -62,7 +62,7 @@ struct Accumulator {
 
 struct RefreshTableEntry {
     Accumulator accumulator;
-    std::array<BoardState, 2> boards;
+    std::array<BoardState, 2> boards{};
 
     BoardState &colorBoards(int c) {
         return boards[c];
