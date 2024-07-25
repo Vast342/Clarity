@@ -273,6 +273,8 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     Move bestMove;
     int flag = FailLow;
     
+    const int futility = staticEval + qsfpMargin.value;
+
     int legalMoves = 0;
     // loop though all the moves
     for(int i = 0; i < totalMoves; i++) {
@@ -283,6 +285,13 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
             }
         }
         Move move = moves[i];
+
+        if(!board.isInCheck() && futility <= alpha && !see(board, move, 1)) { 
+            if(bestScore < futility) {
+                bestScore = futility;
+            }
+            continue;
+        }
 
         // this detects bad captures
         if(!see(board, move, 0)) {
