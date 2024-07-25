@@ -69,7 +69,6 @@ void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whi
 void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
-    // LMAO this isn't pushing or performing the updates on the other accumulator AAAAAAAAAAAAAAA
     if(updates.bucketChange) {
         if(updates.bucketUpdate.piece == 0) {
             stack[current + 1].white = stack[current].white; 
