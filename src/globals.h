@@ -34,8 +34,6 @@
 #include <fstream>
 #include <thread>
 #include "nwupdate.h"
-struct BoardState;
-#include "eval.h"
 #include <memory>
 #include <cstring>
 
@@ -97,6 +95,8 @@ struct Move {
     private: 
         uint16_t value;
 };
+
+#include "eval.h"
 
 // the board itself
 struct Board {

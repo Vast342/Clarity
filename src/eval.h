@@ -60,11 +60,27 @@ struct Accumulator {
     void initHalf(std::span<const std::int16_t, layer1Size> bias, int color);
 };
 
+struct RefreshTableEntry {
+    Accumulator accumulator;
+    std::array<BoardState, 2> boards;
+
+    BoardState &colorBoards(int c) {
+        return boards[c];
+    }
+};
+
+struct RefreshTable {
+    std::array<RefreshTableEntry, inputBucketCount> table;
+
+    void init();
+};
+
 class NetworkState {
     public:
         NetworkState() {
             stack.resize(128);
             reset();
+            refreshTable.init();
         }
         inline void push() {
             stack[current + 1] = stack[current];
@@ -84,6 +100,7 @@ class NetworkState {
         void refreshAccumulator(int color, const BoardState &state, int king);
         int evaluate(int colorToMove, int materialCount);
     private:
+        RefreshTable refreshTable;
         int current;
         std::vector<Accumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type, int blackKing, int whiteKing);

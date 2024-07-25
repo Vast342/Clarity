@@ -101,20 +101,70 @@ void Accumulator::initHalf(std::span<const int16_t, layer1Size> bias, int color)
     std::copy(bias.begin(), bias.end(), color == 0 ? black.begin() : white.begin());
 }
 
+int getIBucket(int color, int king) {
+    if(color == 0) {
+        king ^= 56;
+    }
+    if(king % 8 > 3) {
+        king ^= 7;
+    }
+    return inputBuckets[king];
+}
 
 void NetworkState::refreshAccumulator(int color, const BoardState &state, int king) {
-    stack[current].initHalf(network->featureBiases, color);
+    RefreshTableEntry &entry = refreshTable.table[color];
+    BoardState &prevBoards = entry.colorBoards(color);
+    entry.accumulator.initHalf(network->featureBiases, color);
 
-    for(int c = 0; c < 2; c++) {
-        for(int piece = 0; piece < 6; piece++) {
-            uint64_t bitboard = state.pieceBitboards[piece] & state.coloredBitboards[c];
+    for(int piece = 0; piece < None; ++piece) {
+        const uint64_t prev = prevBoards.pieceBitboards[piece];
+        const uint64_t curr = state.pieceBitboards[piece];
 
-            while(bitboard != 0) {
-                int index = popLSB(bitboard);
-                int totalPiece = 8 * c + piece;
-                activateFeatureSingle(index, totalPiece, color, king);
+        uint64_t added = curr & ~prev;
+        uint64_t removed = prev & ~curr;
+
+        while(added) {
+            const int sq = popLSB(added);
+            const int index = getFeatureIndex(sq, piece, color, king);
+            // change values for all of them
+            if(color == 0) {
+                for(int i = 0; i < layer1Size; ++i) {
+                    entry.accumulator.black[i] += network->featureWeights[index * layer1Size + i];
+                }
+            } else {
+                for(int i = 0; i < layer1Size; ++i) {
+                    entry.accumulator.white[i] += network->featureWeights[index * layer1Size + i];
+                }
             }
         }
+
+        while(removed) {
+            const int sq = popLSB(removed);
+            const int index = getFeatureIndex(sq, piece, color, king);
+            // change values for all of them
+            if(color == 0) {
+                for(int i = 0; i < layer1Size; ++i) {
+                    entry.accumulator.black[i] -= network->featureWeights[index * layer1Size + i];
+                }
+            } else {
+                for(int i = 0; i < layer1Size; ++i) {
+                    entry.accumulator.white[i] -= network->featureWeights[index * layer1Size + i];
+                }
+            }
+        }
+    }
+    if(color == 0) {
+        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<std::int16_t, layer1Size>));
+    } else {
+        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<std::int16_t, layer1Size>));
+    }
+    prevBoards = state;
+}
+
+void RefreshTable::init() {
+    for(auto &entry : table) {
+        entry.accumulator.initialize(network->featureBiases);
+        std::memcpy(entry.boards.data(), 0, sizeof(entry.boards));
     }
 }
 
