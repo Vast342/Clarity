@@ -112,7 +112,9 @@ int getIBucket(int color, int king) {
 }
 
 void NetworkState::refreshAccumulator(int color, const BoardState &state, int king) {
-    RefreshTableEntry &entry = refreshTable.table[color];
+    const int bucket = inputBuckets[king];
+
+    RefreshTableEntry &entry = refreshTable.table[bucket];
     BoardState &prevBoards = entry.colorBoards(color);
     entry.accumulator.initHalf(network->featureBiases, color);
 
