@@ -811,7 +811,10 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
+    std::cout << "evaluating " << getFenString() << std::endl;
     int eval = int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()))));
+    nnueState.fullRefresh(stateHistory.back(), stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    assert(eval == nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard())));
     int phase =  3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Knight])
                + 3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Bishop])
                + 5 * __builtin_popcountll(stateHistory.back().pieceBitboards[Rook])

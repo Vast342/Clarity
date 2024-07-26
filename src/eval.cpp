@@ -167,6 +167,27 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
     std::memcpy(&prevBoards, &state, sizeof(BoardState));
 }
 
+void NetworkState::fullRefresh(const BoardState &state, int blackKing, int whiteKing) {
+    halfRefresh(0, state, blackKing);
+    halfRefresh(1, state, whiteKing);
+}
+
+void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
+    stack[current].initHalf(network->featureBiases, color);
+
+    for(int c = 0; c < 2; c++) {
+        for(int piece = 0; piece < 6; piece++) {
+            uint64_t bitboard = state.pieceBitboards[piece] & state.coloredBitboards[c];
+
+            while(bitboard != 0) {
+                int index = popLSB(bitboard);
+                int totalPiece = 8 * c + piece;
+                activateFeatureSingle(index, totalPiece, color, king);
+            }
+        }
+    }
+}
+
 void RefreshTable::init() {
     for(int i = 0; i < inputBucketCount * 2; i++) {
         table[i].accumulator.initialize(network->featureBiases);

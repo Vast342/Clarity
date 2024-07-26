@@ -98,6 +98,8 @@ class NetworkState {
         void disableFeatureSingle(int square, int type, int color, int king);
         void refreshAccumulator(int color, const BoardState &state, int king);
         int evaluate(int colorToMove, int materialCount);
+        void fullRefresh(const BoardState &state, int blackKing, int whiteKing);
+        void halfRefresh(int color, const BoardState &state, int king);
     private:
         RefreshTable refreshTable;
         int current;
