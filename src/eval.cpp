@@ -106,14 +106,11 @@ int getIBucket(int color, int king) {
     if(color == 0) {
         king ^= 56;
     }
-    if(king % 8 > 3) {
-        king ^= 7;
-    }
     return inputBuckets[king];
 }
 
 void NetworkState::refreshAccumulator(int color, const BoardState &state, int king) {
-    const int bucket = inputBuckets[king];
+    const int bucket = getIBucket(color, king);
 
     RefreshTableEntry &entry = refreshTable.table[bucket];
     BoardState &prevBoards = entry.colorBoards(color);
@@ -132,6 +129,7 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
             const int sq = popLSB(added);
             const int p = state.mailbox[sq];
             const int index = getFeatureIndex(sq, p, color, king);
+            //std::cout << "sq " << sq << " p " << p << std::endl;
             // change values for all of them
             if(color == 0) {
                 for(int i = 0; i < layer1Size; ++i) {
@@ -148,6 +146,7 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
             const int sq = popLSB(removed);
             const int p = prevBoards.mailbox[sq];
             const int index = getFeatureIndex(sq, p, color, king);
+            //std::cout << "sq " << sq << " p " << p << std::endl;
             // change values for all of them
             if(color == 0) {
                 for(int i = 0; i < layer1Size; ++i) {
@@ -165,7 +164,7 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
     } else {
         std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<std::int16_t, layer1Size>));
     }
-    prevBoards = state;
+    std::memcpy(&prevBoards, &state, sizeof(BoardState));
 }
 
 void RefreshTable::init() {
