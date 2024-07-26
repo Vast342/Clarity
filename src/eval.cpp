@@ -188,6 +188,7 @@ void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
 }
 
 void RefreshTable::init() {
+    table.resize(inputBucketCount * 2);
     for(int i = 0; i < inputBucketCount * 2; i++) {
         table[i].accumulator.initialize(network->featureBiases);
         std::memset(table[i].boards.data(), 0, sizeof(BoardState) * 2);

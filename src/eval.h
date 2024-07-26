@@ -70,7 +70,7 @@ struct RefreshTableEntry {
 };
 
 struct RefreshTable {
-    std::array<RefreshTableEntry, inputBucketCount * 2> table;
+    std::vector<RefreshTableEntry> table;
 
     void init();
 };
