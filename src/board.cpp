@@ -627,6 +627,7 @@ bool Board::squareIsUnderAttack(int square) const {
 
 template <bool PushNNUE> bool Board::makeMove(Move move) {
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
+    //std::cout << "makemove " << toLongAlgebraic(move) << std::endl;
     // push to vectors
     stateHistory.push_back(stateHistory.back());
     NetworkUpdates updates;
@@ -782,10 +783,12 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
 }
 
 template <bool PushNNUE> void Board::undoMove() {
+    //std::cout << "undomove\n";
     stateHistory.pop_back();
     if constexpr(PushNNUE) nnueState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
+    //std::cout << "position fen " << getFenString() << std::endl;
     //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
 }
@@ -811,10 +814,11 @@ void Board::undoChangeColor() {
 }
 
 int Board::getEvaluation() {   
-    std::cout << "evaluating " << getFenString() << std::endl;
+    //std::cout << "position fen " << getFenString() << std::endl;
+    //std::cout << "evaluate" << std::endl;
     int eval = int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()))));
-    nnueState.fullRefresh(stateHistory.back(), stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
-    assert(eval == nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard())));
+    //nnueState.fullRefresh(stateHistory.back(), stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    //assert(eval == nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard())));
     int phase =  3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Knight])
                + 3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Bishop])
                + 5 * __builtin_popcountll(stateHistory.back().pieceBitboards[Rook])
