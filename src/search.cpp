@@ -619,7 +619,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 } else {
                     depthReduction -= noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim] / int(cmrDivisor.value);
                 }
-                depthReduction += isCutNode;
+                depthReduction += isCutNode * 2;
                 depthReduction -= improving;
                 depthReduction -= !isQuietOrBadCapture;
 
