@@ -39,7 +39,9 @@ namespace {
 
 void NetworkState::reset() {
     std::memset(stack.data(), 0, sizeof(Accumulator) * stack.size());
+    std::memset(&refreshTable, 0, sizeof(RefreshTable));
     current = 0;
+    refreshTable.init();
 
     stack[current].initialize(network->featureBiases);
 }
@@ -67,7 +69,6 @@ void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whi
 void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
-    // LMAO this isn't pushing or performing the updates on the other accumulator AAAAAAAAAAAAAAA
     if(updates.bucketChange) {
         if(updates.bucketUpdate.piece == 0) {
             stack[current + 1].white = stack[current].white; 
@@ -101,8 +102,76 @@ void Accumulator::initHalf(std::span<const int16_t, layer1Size> bias, int color)
     std::copy(bias.begin(), bias.end(), color == 0 ? black.begin() : white.begin());
 }
 
+int getIBucket(int color, int king) {
+    if(color == 0) {
+        king ^= 56;
+    }
+    return inputBuckets[king];
+}
 
 void NetworkState::refreshAccumulator(int color, const BoardState &state, int king) {
+    const int bucket = getIBucket(color, king);
+
+    RefreshTableEntry &entry = refreshTable.table[bucket];
+    BoardState &prevBoards = entry.colorBoards(color);
+
+    for(int piece = 0; piece < None; ++piece) {
+        for(int c = 0; c < 2; c++) {
+            const uint64_t prev = prevBoards.pieceBitboards[piece] & prevBoards.coloredBitboards[c];
+            const uint64_t curr = state.pieceBitboards[piece] & state.coloredBitboards[c];
+
+            uint64_t added = curr & ~prev;
+            uint64_t removed = prev & ~curr;
+            //std::cout << "added:  " << added << std::endl;
+            //std::cout << "removed: " << removed << std::endl;
+
+            while(added) {
+                const int sq = popLSB(added);
+                const int index = getFeatureIndex(sq, c * 8 + piece, color, king);
+                //std::cout << "sq " << sq << " p " << p << std::endl;
+                // change values for all of them
+                if(color == 0) {
+                    for(int i = 0; i < layer1Size; ++i) {
+                        entry.accumulator.black[i] += network->featureWeights[index * layer1Size + i];
+                    }
+                } else {
+                    for(int i = 0; i < layer1Size; ++i) {
+                        entry.accumulator.white[i] += network->featureWeights[index * layer1Size + i];
+                    }
+                }
+            }
+
+            while(removed) {
+                const int sq = popLSB(removed);
+                const int index = getFeatureIndex(sq, c * 8 + piece, color, king);
+                //std::cout << "sq " << sq << " p " << p << std::endl;
+                // change values for all of them
+                if(color == 0) {
+                    for(int i = 0; i < layer1Size; ++i) {
+                        entry.accumulator.black[i] -= network->featureWeights[index * layer1Size + i];
+                    }
+                } else {
+                    for(int i = 0; i < layer1Size; ++i) {
+                        entry.accumulator.white[i] -= network->featureWeights[index * layer1Size + i];
+                    }
+                }
+            }
+        }
+    }
+    if(color == 0) {
+        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<std::int16_t, layer1Size>));
+    } else {
+        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<std::int16_t, layer1Size>));
+    }
+    std::memcpy(&prevBoards, &state, sizeof(BoardState));
+}
+
+void NetworkState::fullRefresh(const BoardState &state, int blackKing, int whiteKing) {
+    halfRefresh(0, state, blackKing);
+    halfRefresh(1, state, whiteKing);
+}
+
+void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
     stack[current].initHalf(network->featureBiases, color);
 
     for(int c = 0; c < 2; c++) {
@@ -115,6 +184,14 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
                 activateFeatureSingle(index, totalPiece, color, king);
             }
         }
+    }
+}
+
+void RefreshTable::init() {
+    table.resize(inputBucketCount * 2);
+    for(int i = 0; i < inputBucketCount * 2; i++) {
+        table[i].accumulator.initialize(network->featureBiases);
+        std::memset(table[i].boards.data(), 0, sizeof(BoardState) * 2);
     }
 }
 
