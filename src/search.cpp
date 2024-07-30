@@ -623,7 +623,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 depthReduction -= improving;
                 depthReduction -= !isQuietOrBadCapture;
 
-                depthReduction = std::clamp(depthReduction, 0, depth - 2);
+                depthReduction = std::clamp(depthReduction, 0, depth - 1);
             }
             // this is more PVS stuff, searching with a reduced margin
             score = -negamax(board, depth - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true, true);
