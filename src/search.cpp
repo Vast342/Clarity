@@ -588,7 +588,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             } else if(isCutNode) {
                 TTExtensions = -1;
             } else {
-                alpha = sBeta;
+                alpha = (alpha + score + sBeta) / 3;
             }
         }
 
