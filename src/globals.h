@@ -36,6 +36,7 @@
 #include "nwupdate.h"
 #include <memory>
 #include <cstring>
+#include <atomic>
 
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;

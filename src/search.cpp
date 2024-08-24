@@ -16,13 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-bool timesUp = false;
-
 #include "search.h"
 #include "tt.h"
 #include "normalize.h"
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
+
+std::atomic<bool> timesUp = false;
 
 bool mainThreadDone = false;
 
@@ -226,13 +226,13 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     // time check every 4096 nodes
     if(useNodeCap) {
         if(nodes > hardNodeCap) {
-            timesUp = true;
+            timesUp.store(true);
             return 0;
         }
     } else {
         if(nodes % 4096 == 0) {
             if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-                timesUp = true;
+                timesUp.store(true);
                 return 0;
             }
         }
@@ -305,7 +305,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
         const int score = -qSearch(board, -beta, -alpha, ply + 1);
         board.undoMove<true>();
         // time check
-        if(timesUp) return 0;
+        if(timesUp.load()) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -393,13 +393,13 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // time check every 4096 nodes
     if(useNodeCap) {
         if(nodes >= hardNodeCap) {
-            timesUp = true;
+            timesUp.store(true);
             return 0;
         }
     } else {
         if(nodes % 4096 == 0) {
             if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-                timesUp = true;
+                timesUp.store(true);
                 return 0;
             }
         }
@@ -639,7 +639,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         if(ply == 0) nodeTMTable[moveStartSquare][moveEndSquare] += nodes - presearchNodeCount;
 
         // backup time check
-        if(timesUp) return 0;
+        if(timesUp.load()) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -781,7 +781,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     useNodeCap = false;
     hardLimit = hardBound;
     seldepth = 0;
-    timesUp = false;
+    timesUp.store(false);
     int stability = 0;
 
     begin = std::chrono::steady_clock::now();
@@ -806,7 +806,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
                 } else {
                     stability = 0;
                 }
-                if(timesUp) break;
+                if(timesUp.load()) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
                     usedDepth = std::max(usedDepth - 1, depth - 5);
@@ -821,11 +821,11 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         } else {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
-        if(timesUp) rootBestMove = previousBest;
+        if(timesUp.load()) rootBestMove = previousBest;
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // soft time bounds check
         double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
-        if(timesUp || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
+        if(timesUp.load() || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
         // outputs info which is picked up by the user
         if(info) outputInfo(board, score, depth, elapsedTime);
         //if(elapsedTime > softBound) break;
@@ -854,7 +854,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     }
     
     if(info) {
-        timesUp = true;
+        timesUp.store(true);
         stopOtherThreads();
         std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
         mainThreadDone = true;
@@ -871,7 +871,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
     useNodeCap = false;
     seldepth = 0;
-    timesUp = false;
+    timesUp.store(false);
     
     begin = std::chrono::steady_clock::now();
 
@@ -920,7 +920,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     useNodeCap = false;
     seldepth = 0;
     hardLimit = 1215752192;
-    timesUp = false;
+    timesUp.store(false);
     begin = std::chrono::steady_clock::now();
 
     int16_t score = 0;
@@ -983,7 +983,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     }
 
     if(info) {
-        timesUp = true;
+        timesUp.store(true);
         stopOtherThreads();
         std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
         mainThreadDone = true;
@@ -998,7 +998,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
     nodes = 0;
     hardLimit = 400000;
     seldepth = 0;
-    timesUp = false;
+    timesUp.store(false);
 
     begin = std::chrono::steady_clock::now();
 
@@ -1077,7 +1077,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
     hardNodeCap = nodeCount;
     useNodeCap = true;
     seldepth = 0;
-    timesUp = false;
+    timesUp.store(false);
 
     begin = std::chrono::steady_clock::now();
 
@@ -1144,7 +1144,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
     }
     
     if(info) {
-        timesUp = true;
+        timesUp.store(true);
         stopOtherThreads();
         std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
         mainThreadDone = true;

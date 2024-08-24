@@ -20,7 +20,7 @@
 #include "globals.h"
 #include "tt.h"
 
-extern bool timesUp;
+extern std::atomic<bool> timesUp;
 
 constexpr int depthLimit = 120;
 
