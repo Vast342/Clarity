@@ -227,7 +227,7 @@ uint64_t getTotalNodes() {
 }
 
 void stopThePresses() {
-    timesUp = true;
+    timesUp.store(true);
     for(int i = 0; i < threadCount; i++) {
         if(threads[i].joinable()) threads[i].join();
     }
