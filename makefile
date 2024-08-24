@@ -54,6 +54,9 @@ $(BUILD_DIR):
 debug: CXXFLAGS += $(DEBUG_CXXFLAGS)
 debug: $(EXE)
 
+bench: all
+	./$(EXE) bench
+
 # Clean the build
 clean:
 	rm -rf $(BUILD_DIR) $(EXE)
