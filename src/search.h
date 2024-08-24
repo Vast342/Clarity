@@ -26,8 +26,6 @@ constexpr int depthLimit = 120;
 
 constexpr int16_t matedScore = -32000;
 
-extern int badCaptureScore;
-
 struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
