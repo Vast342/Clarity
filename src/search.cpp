@@ -31,10 +31,10 @@ int hardNodeCap = 400000;
 constexpr int historyCap = 16384;
 
 // Tunable Values
-int killerScore = 81922;
-int counterScore = 81921;
+constexpr int killerScore = 81922;
+constexpr int counterScore = 81921;
 
-int goodCaptureBonus= 500000;
+constexpr int goodCaptureBonus= 500000;
 // The main search functions
 
 // resets the history, done when ucinewgame is sent, and at the start of each turn
@@ -822,13 +822,15 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
         if(timesUp.load()) rootBestMove = previousBest;
-        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        // soft time bounds check
-        double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
-        if(timesUp.load() || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
-        // outputs info which is picked up by the user
-        if(info) outputInfo(board, score, depth, elapsedTime);
-        //if(elapsedTime > softBound) break;
+        if(info) {
+            const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
+            // soft time bounds check
+            double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
+            if(timesUp.load() || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
+            // outputs info which is picked up by the user
+            if(info) outputInfo(board, score, depth, elapsedTime);
+            //if(elapsedTime > softBound) break;
+        }
     }
 
     if(rootBestMove == Move()) {
