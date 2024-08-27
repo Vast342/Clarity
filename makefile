@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX := clang++
 ARCH := -march=native
-CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -fuse-ld=lld
+CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra
 _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 _ROOT     := $(_THIS)
 EVALFILE   = $(_ROOT)/src/cn_026.nnue
@@ -12,6 +12,8 @@ CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\"
 DEBUG_CXXFLAGS := -g3 -O1 -DDEBUG
 
 BUILD_CXXFLAGS := -DNDEBUG -O3
+
+LDFLAGS := -fuse-ld=lld
 
 # Directories
 SRC_DIR := src
@@ -43,7 +45,7 @@ $(EXE): $(OBJS)
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 $(BUILD_DIR)/%.o: src/external/fathom/%.cpp | $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) -pthread -c -o $@ $<
 	
 
 # Create directories if they don't exist
