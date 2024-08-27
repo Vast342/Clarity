@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX := clang++
 ARCH := -march=native
-CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra
+CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -pthread
 _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 _ROOT     := $(_THIS)
 EVALFILE   = $(_ROOT)/src/cn_026.nnue
