@@ -487,7 +487,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // Null Move Pruning (NMP)
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
-    if(!isPV && !inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta && staticEval >= beta + 175 - 25 * depth) {
+    if(!isPV && !inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta && stack[ply].staticEval >= beta + 175 - 25 * depth) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0][0];
         stack[ply].move = Move();
         board.changeColor();
