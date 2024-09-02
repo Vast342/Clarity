@@ -482,7 +482,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     }
 
     // Reverse Futility Pruning
-    if(!inSingularSearch && staticEval - rfpMultiplier.value * (depth - improving) >= beta && !inCheck && depth < rfpDepthCondition.value && !isPV) return staticEval;
+    if(!inSingularSearch && staticEval - rfpMultiplier.value * (depth - improving) >= beta && !inCheck && depth < rfpDepthCondition.value && !isPV) return (staticEval + beta) / 2;
 
     // Null Move Pruning (NMP)
     // Things to test: !isPV, alternate formulas, etc
