@@ -58,7 +58,7 @@ void Engine::resetEngine() {
     TT->clearTable();
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
     std::memset(counterMoves.data(), 0, sizeof(counterMoves));
-    clearHistory(); 
+    clearHistory();
 }
 
 int Engine::estimateMoveValue(const Board& board, const int end, const int flag) {
@@ -185,7 +185,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             if(move == stack[ply].killer) {
                 values[i] = killerScore;
             } else if(ply > 0 && move == counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()]) {
-                values[i] = counterScore;   
+                values[i] = counterScore;
             } else {
                 int hash = board.getPawnHashIndex();
                 // read from history
@@ -272,7 +272,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     // values useful for writing to TT later
     Move bestMove;
     int flag = FailLow;
-    
+
     int legalMoves = 0;
     // loop though all the moves
     for(int i = 0; i < totalMoves; i++) {
@@ -404,7 +404,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             }
         }
     }
-    
+
     const bool inCheck = board.isInCheck();
     stack[ply].inCheck = inCheck;
     // activate q search if at the end of a branch
@@ -415,7 +415,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     // TT check
     Transposition* entry = nullptr;
-    
+
     if(!inSingularSearch) entry = TT->getEntry(hash);
 
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
@@ -426,7 +426,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
                 || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
         )) {
-        return entry->score; 
+        return entry->score;
     }
 
     // Internal Iterative Reduction (IIR)
@@ -517,7 +517,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     depth += inCheck;
 
     // Mate Distance Pruning (I will test it at some point I swear)
-    if(!isPV) {    
+    if(!isPV) {
         const auto mdAlpha = std::max(alpha, matedScore + ply);
         const auto mdBeta = std::min(beta, -matedScore - ply - 1);
         if(mdAlpha >= mdBeta) {
@@ -646,7 +646,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
             // Improve alpha
             if(score > alpha) {
-                flag = Exact; 
+                flag = Exact;
                 alpha = score;
                 bestMove = move;
                 bestIsCapture = isCapture;
@@ -657,7 +657,6 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             if(score >= beta) {
                 flag = BetaCutoff;
                 bestMove = move;
-                bestIsCapture = isCapture;
                 if(ply == 0) rootBestMove = move;
                 const int colorToMove = board.getColorToMove();
                 // testing berserk history bonus
@@ -854,7 +853,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
             }
         }
     }
-    
+
     if(info) {
         timesUp.store(true);
         stopOtherThreads();
@@ -874,7 +873,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
     useNodeCap = false;
     seldepth = 0;
     timesUp.store(false);
-    
+
     begin = std::chrono::steady_clock::now();
 
     rootBestMove = Move();
@@ -890,7 +889,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                
+
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
                     usedDepth = std::max(usedDepth - 1, depth - 5);
@@ -938,7 +937,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                
+
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
                     usedDepth = std::max(usedDepth - 1, depth - 5);
@@ -1021,7 +1020,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                
+
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
                     usedDepth = std::max(usedDepth - 1, depth - 5);
@@ -1144,7 +1143,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
             }
         }
     }
-    
+
     if(info) {
         timesUp.store(true);
         stopOtherThreads();
