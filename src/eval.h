@@ -20,27 +20,27 @@
 #include "globals.h"
 
 /*
-Current Net: cn_024
-Arch: (768x4->1024)x2->1x16
+Current Net: cn_028
+Arch: (768x6->1024)x2->1x8
 Activation: SCReLU
 Special Details: 
  - Horizontal Mirroring
- - Fully caught up to my leela data self in terms of arch now
+ - Few more buckets, let's see if we can get some improvement from finny tables now
 */ 
 constexpr int inputSize = 768;
-constexpr int inputBucketCount = 4;
+constexpr int inputBucketCount = 6;
 constexpr int layer1Size = 1024;
-constexpr int outputBucketCount = 16;
+constexpr int outputBucketCount = 8;
 
 constexpr std::array<int, 64> inputBuckets = {
-    0, 0, 1, 1, 5, 5, 4, 4,
-    2, 2, 2, 2, 6, 6, 6, 6,
-    2, 2, 2, 2, 6, 6, 6, 6,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7,
-    3, 3, 3, 3, 7, 7, 7, 7
+    0, 0, 1, 1, 7, 7, 6, 6,
+    2, 2, 3, 3, 9, 9, 8, 8, 
+    4, 4, 4, 4,10,10,10,10,
+    4, 4, 4, 4,10,10,10,10,
+    5, 5, 5, 5,11,11,11,11,
+    5, 5, 5, 5,11,11,11,11,
+    5, 5, 5, 5,11,11,11,11,
+    5, 5, 5, 5,11,11,11,11,
 };
 
 
