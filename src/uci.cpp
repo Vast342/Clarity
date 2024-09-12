@@ -69,12 +69,12 @@ void runBench(int depth) {
 void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
     if(name == "Hash") {
-        int newSizeMB = std::stoi(bits[4]);
-        int newSizeB = newSizeMB * 1024 * 1024;
+        uint64_t newSizeMB = std::stoi(bits[4]);
+        uint64_t newSizeB = newSizeMB * 1024 * 1024;
         // this should be 16 bytes
-        int entrySizeB = sizeof(Transposition);
+        uint64_t entrySizeB = sizeof(Transposition);
         assert(entrySizeB == 16); 
-        int newSizeEntries = newSizeB / entrySizeB;
+        uint64_t newSizeEntries = newSizeB / entrySizeB;
         //std::cout << log2(newSizeEntries);
         TT.resize(newSizeEntries);
     } else if(name == "Threads") {
