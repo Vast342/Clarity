@@ -285,6 +285,8 @@ extern Tunable pvTTDepthMargin;
 
 extern Tunable texMargin;
 
+extern Tunable lmrThreshold;
+
 extern std::array<Tunable *, 7> MVV_values;
 extern std::array<Tunable *, 7> SEE_values;
 extern std::vector<Tunable *> tunables;

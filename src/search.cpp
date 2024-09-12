@@ -613,7 +613,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         } else {
             // Late Move Reductions (LMR)
             int depthReduction = 0;
-            if(depth > lmrDepth.value) {
+            if(depth > lmrDepth.value && legalMoves > lmrThreshold.value) {
                 depthReduction = reductions[depth][legalMoves];
                 depthReduction -= isPV;
                 if(isQuiet) {
