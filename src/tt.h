@@ -61,18 +61,8 @@ struct Transposition {
 
 struct TranspositionTable {
     public:
-        int getScore(uint64_t zkey);
-        Move getBestMove(uint64_t zkey);
-        bool matchZobrist(uint64_t zkey);
-        uint8_t getFlag(uint64_t zkey);
         Transposition* getEntry(uint64_t zkey);
-        int getDepth(uint64_t zkey);
         void setEntry(uint64_t zkey, Transposition entry);
-        void setScore(uint64_t zkey, int score);
-        void setBestMove(uint64_t zkey, Move bestMove);
-        void setZobrist(uint64_t zkey);
-        void setFlag(uint64_t zkey, uint8_t flag);
-        void setDepth(uint64_t zkey, uint16_t depth);
         void clearTable();
         void resize(int newSize);
         TranspositionTable() {
