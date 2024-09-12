@@ -54,7 +54,7 @@ struct Engine {
             TT = tt;
         }
 
-        int nodes = 0;
+        uint64_t nodes = 0;
     private:
         bool useNodeCap = false;
 
