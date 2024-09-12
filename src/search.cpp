@@ -22,7 +22,7 @@
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
 
-std::atomic<bool> timesUp = false;
+alignas(64) std::atomic<bool> timesUp = false;
 
 bool mainThreadDone = false;
 
@@ -305,7 +305,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
         const int score = -qSearch(board, -beta, -alpha, ply + 1);
         board.undoMove<true>();
         // time check
-        if(timesUp.load()) return 0;
+        if(timesUp.load(std::memory_order_relaxed)) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -639,7 +639,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         if(ply == 0) nodeTMTable[moveStartSquare][moveEndSquare] += nodes - presearchNodeCount;
 
         // backup time check
-        if(timesUp.load()) return 0;
+        if(timesUp.load(std::memory_order_relaxed)) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -806,7 +806,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
                 } else {
                     stability = 0;
                 }
-                if(timesUp.load()) break;
+                if(timesUp.load(std::memory_order_relaxed)) break;
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
                     usedDepth = std::max(usedDepth - 1, depth - 5);
@@ -821,12 +821,12 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         } else {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
-        if(timesUp.load()) rootBestMove = previousBest;
+        if(timesUp.load(std::memory_order_relaxed)) rootBestMove = previousBest;
         if(info) {
             const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
             // soft time bounds check
             double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
-            if(timesUp.load() || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
+            if(timesUp.load(std::memory_order_relaxed) || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
             // outputs info which is picked up by the user
             if(info) outputInfo(board, score, depth, elapsedTime);
             //if(elapsedTime > softBound) break;
