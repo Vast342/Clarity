@@ -9,7 +9,7 @@
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See thfe
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
@@ -319,6 +319,7 @@ int main(int argc, char* argv[]) {
         std::getline(std::cin, command, '\n');
         if(mainThreadDone) {
             threads.clear();
+            mainThreadDone = false;
         }
         if(command == "quit") {
             if(threads.size() != 0) {
