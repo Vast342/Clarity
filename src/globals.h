@@ -190,9 +190,9 @@ struct Tunable {
     explicit Tunable(std::string _name, double _value, int _divisor)
         : name(std::move(_name)),
           value(_value),
-          max(value * _divisor * 2),
+          max(std::max(value * _divisor * 2, 100.0)),
           divisor(_divisor),
-          step(max / 15 == 0 ? 1 : max / 15) {}
+          step(max / 20 == 0 ? 1 : max / 20) {}
 
     void updateValue(double newValue) {
         value = newValue / divisor;
@@ -285,6 +285,9 @@ extern Tunable tmsMultiplier;
 extern Tunable pvTTDepthMargin;
 
 extern Tunable texMargin;
+
+extern Tunable seeMOThreshold;
+extern Tunable qsSPThreshold;
 
 extern std::array<Tunable *, 7> MVV_values;
 extern std::array<Tunable *, 7> SEE_values;

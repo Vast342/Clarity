@@ -118,7 +118,7 @@ void identify() {
     std::cout << "option name Hash type spin default 64 min 1 max 524288" << std::endl;
     std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
-    //outputTunables();
+    outputTunables();
     std::cout << "uciok" << std::endl;
 }
 
@@ -155,7 +155,7 @@ void go(std::vector<std::string> bits) {
     int depth = 0;
     int inc = 0;
     int movestogo = defaultMovesToGo;
-    int nodes = 0;
+    uint64_t nodes = 0;
     bool infinite = false;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {

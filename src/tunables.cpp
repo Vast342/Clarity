@@ -98,6 +98,9 @@ Tunable pvTTDepthMargin("PVTT_DepthMargin", 2, 1);
 
 Tunable texMargin("TEX_Margin", 75, 1);
 
+Tunable seeMOThreshold("SEE_MO_Threshold", 0, -1);
+Tunable qsSPThreshold("QS_SP_Threshold", 0, -1);
+
 // Declaration of pointers to tunables
 std::array<Tunable *, 7> MVV_values = {
     &mvvPawn,
@@ -175,7 +178,10 @@ std::vector<Tunable *> tunables = {
     &tmsNumerator,
     &tmsDenominator,
     &tmsMultiplier,
-    &pvTTDepthMargin
+    &pvTTDepthMargin,
+    &texMargin,
+    &seeMOThreshold,
+    &qsSPThreshold,
 };
 
 

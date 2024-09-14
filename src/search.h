@@ -47,8 +47,8 @@ struct Engine {
         Move getBestMove();
         int benchSearch(Board board, int depthToSearch);
         Move fixedDepthSearch(Board board, int depthToSearch, bool info);
-        std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
-        Move fixedNodesSearch(Board board, int nodeCount, bool info);
+        std::pair<Move, int> dataGenSearch(Board board, uint64_t nodeCap);
+        Move fixedNodesSearch(Board board, uint64_t nodeCount, bool info);
         Engine(TranspositionTable *tt) {
             conthistTable = std::make_unique<CHTable>();
             TT = tt;
