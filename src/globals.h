@@ -37,6 +37,7 @@
 #include <memory>
 #include <cstring>
 #include <atomic>
+#include <span>
 
 // nicknaming std::views because funny and also toanth
 namespace views = std::views;
