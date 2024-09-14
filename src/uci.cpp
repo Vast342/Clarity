@@ -317,9 +317,8 @@ int main(int argc, char* argv[]) {
     std::string command;
     while(true) {
         std::getline(std::cin, command, '\n');
-        if(mainThreadDone) {
+        if(mainThreadDone && threads.size() != 0) {
             threads.clear();
-            mainThreadDone = false;
         }
         if(command == "quit") {
             if(threads.size() != 0) {
