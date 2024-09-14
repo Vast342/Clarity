@@ -22,7 +22,7 @@
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
 
-alignas(64) std::atomic<bool> timesUp = false;
+std::atomic<bool> timesUp = false;
 
 bool mainThreadDone = false;
 
