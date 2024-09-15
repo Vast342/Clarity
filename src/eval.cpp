@@ -38,8 +38,7 @@ namespace {
 }
 
 void NetworkState::reset() {
-    std::memset(stack.data(), 0, sizeof(Accumulator) * stack.size());
-    std::memset(&refreshTable, 0, sizeof(RefreshTable));
+    std::memset(stack.data(), 0, sizeof(stack));
     current = 0;
     refreshTable.init();
 
@@ -188,6 +187,7 @@ void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
 }
 
 void RefreshTable::init() {
+    table.clear();
     table.resize(inputBucketCount * 2);
     for(int i = 0; i < inputBucketCount * 2; i++) {
         table[i].accumulator.initialize(network->featureBiases);
