@@ -118,7 +118,7 @@ void identify() {
     std::cout << "option name Hash type spin default 64 min 1 max 524288" << std::endl;
     std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
-    //outputTunables();
+    outputTunables();
     std::cout << "uciok" << std::endl;
 }
 

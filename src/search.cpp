@@ -26,7 +26,7 @@ std::atomic<bool> timesUp = false;
 
 bool mainThreadDone = false;
 
-int hardNodeCap = 400000;
+uint64_t hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
 
@@ -176,7 +176,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             values[i] = MVV_values[victim]->value + noisyHistoryTable[colorToMove][piece][end][victim];
             // see!
             // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-            if(see(board, move, 0)) {
+            if(see(board, move, seeMOThreshold.value)) {
                 // good captures
                 values[i] += goodCaptureBonus;
             }
@@ -285,7 +285,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
         Move move = moves[i];
 
         // this detects bad captures
-        if(!see(board, move, 0)) {
+        if(!see(board, move, qsSPThreshold.value)) {
             continue;
         }
 
@@ -992,7 +992,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     return rootBestMove;
 }
 
-std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
+std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     stack[0].doubleExtensions = 0;
     //clearHistory();
     useNodeCap = true;
@@ -1072,7 +1072,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
     return std::pair<Move, int>(rootBestMove, score);
 }
 
-Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
+Move Engine::fixedNodesSearch(Board board, uint64_t nodeCount, bool info) {
     stack[0].doubleExtensions = 0;
     nodes = 0;
     hardNodeCap = nodeCount;
