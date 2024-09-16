@@ -312,7 +312,6 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
 
             // Improve alpha
             if(score > alpha) {
-                flag = Exact;
                 alpha = score;
                 bestMove = move;
             }
