@@ -4,7 +4,7 @@ ARCH := -march=native
 CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -pthread
 _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 _ROOT     := $(_THIS)
-EVALFILE   = $(_ROOT)/src/cn_028.nnue
+EVALFILE   = $(_ROOT)/src/cn_030.nnue
 
 CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\"
 
