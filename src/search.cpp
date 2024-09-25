@@ -55,7 +55,6 @@ Move Engine::getBestMove() {
 // resets the engine, done when ucinewgame is sent
 void Engine::resetEngine() {
     stack = {};
-    TT->clearTable();
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
     std::memset(counterMoves.data(), 0, sizeof(counterMoves));
     clearHistory(); 
