@@ -79,11 +79,11 @@ void setOption(const std::vector<std::string>& bits) {
         //std::cout << log2(newSizeEntries);
         TT.resize(newSizeEntries);
     } else if(name == "Threads") {
-        clock_t start = clock();
+        //clock_t start = clock();
         threadCount = std::stoi(bits[4]);
         newGame();
-        clock_t end = clock();
-        std::cout << "operation took " << std::to_string((end-start)/static_cast<double>(1000)) << std::endl;
+        //clock_t end = clock();
+        //std::cout << "operation took " << std::to_string((end-start)/static_cast<double>(1000)) << std::endl;
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
         useSyzygy = initSuccess;
