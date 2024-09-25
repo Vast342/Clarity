@@ -221,6 +221,7 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
+    stack[ply].pvLength = 0;
     //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(useNodeCap) {
@@ -313,6 +314,10 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
             if(score > alpha) {
                 alpha = score;
                 bestMove = move;
+                stack[ply].pvTable[0] = move;
+                stack[ply].pvLength = stack[ply + 1].pvLength + 1;
+                for (int i = 0; i < stack[ply + 1].pvLength; i++)
+                    stack[ply].pvTable[i + 1] = stack[ply + 1].pvTable[i];
             }
 
             // Fail-high
@@ -386,6 +391,7 @@ void Engine::updateQSHistory(const int colorToMove, const int piece, const int e
 
 // The main search function
 int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t ply, bool nmpAllowed, bool isCutNode) {
+    stack[ply].pvLength = 0;
     // if it's a repeated position, it's a draw
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time check every 4096 nodes
@@ -649,6 +655,12 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 bestMove = move;
                 bestIsCapture = isCapture;
                 if(ply == 0) rootBestMove = move;
+                if(isPV) {
+                    stack[ply].pvTable[0] = move;
+                    stack[ply].pvLength = stack[ply + 1].pvLength + 1;
+                    for (int i = 0; i < stack[ply + 1].pvLength; i++)
+                        stack[ply].pvTable[i + 1] = stack[ply + 1].pvTable[i];
+                }
             }
 
             // Fail-high
@@ -723,29 +735,17 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 }
 
 // gets the PV from the TT, has some inconsistencies or illegal moves, and will be replaced with a triangular PV table eventually
-std::string Engine::getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries) {
+// finally being replaced!!
+std::string Engine::getPV(Board board) {
     std::string pv;
-    const uint64_t hash = board.getZobristHash();
-    for(int i = hashVector.size()-1; i > -1; i--) {
-        if(hashVector[i] == hash) {
-            // repitition, GET THAT OUTTA HERE
-            return pv;
-        }
-    }
-    hashVector.push_back(hash);
-    numEntries++;
-    Transposition* entry = TT->getEntry(hash);
-    if(entry->zobristKey == shrink(hash) && entry->flag == Exact) {
-        Move bestMove = entry->bestMove;
-        if(bestMove != Move() && board.makeMove<true>(bestMove)) {
-            std::string restOfPV = getPV(board, hashVector, numEntries);
-            pv = toLongAlgebraic(bestMove) + " " + restOfPV;
-        }
+    for(int i = 0; i < stack[0].pvLength; i++) {
+        pv += toLongAlgebraic(stack[0].pvTable[i]) + " ";
     }
     return pv;
 }
 
 void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTime) {
+    //std::cout << "root pv length: " << stack[0].pvLength << std::endl;
     std::string scoreString = " score ";
     if(abs(score) < abs(matedScore + 256)) {
         scoreString += "cp ";
@@ -759,12 +759,7 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
         scoreString += std::to_string((abs(abs(score) + matedScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
     uint64_t nodeSum = getTotalNodes();
-    if(depth > 6) {
-        std::vector<uint64_t> hashVector;
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board, hashVector, 0) << std::endl;
-    } else {
-        std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << toLongAlgebraic(rootBestMove) << std::endl;
-    }
+    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board) << std::endl;
 }
 
 constexpr std::array<double, 7> stabilityNumbers = {2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9};

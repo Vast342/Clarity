@@ -27,6 +27,8 @@ constexpr int depthLimit = 120;
 constexpr int16_t matedScore = -32000;
 
 struct StackEntry {
+    std::array<Move, depthLimit> pvTable;
+    int pvLength;
     // conthist!
     CHEntry *ch_entry;
     Move move;
@@ -89,6 +91,6 @@ struct Engine {
         void updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         void updateQSHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         int16_t negamax(Board &board, int depth, int alpha, int beta, int16_t ply, bool nmpAllowed, bool isCutNode);
-        std::string getPV(Board board, std::vector<uint64_t> &hashVector, int numEntries);
+        std::string getPV(Board board);
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);
 };
