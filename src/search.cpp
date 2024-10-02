@@ -26,13 +26,14 @@ std::atomic<bool> timesUp = false;
 
 bool mainThreadDone = false;
 
-int hardNodeCap = 400000;
+uint64_t hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
+constexpr int globhistCap = historyCap / 2;
 
 // Tunable Values
-constexpr int killerScore = 81922;
-constexpr int counterScore = 81921;
+constexpr int killerScore = 90114;
+constexpr int counterScore = 90113;
 
 constexpr int goodCaptureBonus= 500000;
 // The main search functions
@@ -363,7 +364,7 @@ void Engine::updateHistory(const int colorToMove, const int start, const int end
     int thingToAdd = bonus - historyTable[colorToMove][start][startAttack][end][endAttack] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][startAttack][end][endAttack] += thingToAdd;
 
-    thingToAdd = bonus - globhistTable[colorToMove][piece][start][end][6] * std::abs(bonus) / historyCap;
+    thingToAdd = bonus - globhistTable[colorToMove][piece][start][end][6] * std::abs(bonus) / globhistCap;
     globhistTable[colorToMove][piece][start][end][6] += thingToAdd;
 
     if(ply > 0) {
@@ -389,7 +390,7 @@ void Engine::updateNoisyHistory(const int colorToMove, const int piece, const in
     int thingToAdd = bonus - noisyHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
     noisyHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
 
-    thingToAdd = bonus - globhistTable[colorToMove][piece][start][end][victim] * std::abs(bonus) / historyCap;
+    thingToAdd = bonus - globhistTable[colorToMove][piece][start][end][victim] * std::abs(bonus) / globhistCap;
     globhistTable[colorToMove][piece][start][end][victim] += thingToAdd;
 }
 
@@ -559,7 +560,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         int moveFlag = move.getFlag();
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
-        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 5);
+        bool isQuietOrBadCapture = (moveValues[i] <= int(double(historyCap * 5.5)));
 
         // move loop prunings:
         // futility pruning
@@ -745,7 +746,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
 // gets the PV from the TT, has some inconsistencies or illegal moves, and will be replaced with a triangular PV table eventually
 // finally being replaced!!
-std::string Engine::getPV(Board board) {
+std::string Engine::getPV() {
     std::string pv;
     for(int i = 0; i < stack[0].pvLength; i++) {
         pv += toLongAlgebraic(stack[0].pvTable[i]) + " ";
@@ -768,7 +769,7 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
         scoreString += std::to_string((abs(abs(score) + matedScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
     uint64_t nodeSum = getTotalNodes();
-    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board) << std::endl;
+    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV() << std::endl;
 }
 
 constexpr std::array<double, 7> stabilityNumbers = {2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9};
@@ -995,7 +996,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     return rootBestMove;
 }
 
-std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
+std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     stack[0].doubleExtensions = 0;
     //clearHistory();
     useNodeCap = true;
@@ -1075,7 +1076,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
     return std::pair<Move, int>(rootBestMove, score);
 }
 
-Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
+Move Engine::fixedNodesSearch(Board board, uint64_t nodeCount, bool info) {
     stack[0].doubleExtensions = 0;
     nodes = 0;
     hardNodeCap = nodeCount;
