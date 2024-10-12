@@ -453,8 +453,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // corrections
     const int ctm = board.getColorToMove();
     int pawnHash = board.getPawnHashIndex();
-    int numWrites = correctionHistoryTable[pawnHash][ctm][1];
-    staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
+    int corrHistPawnHash = pawnHash & 16383;
+    int numWrites = correctionHistoryTable[corrHistPawnHash][ctm][1];
+    staticEval += correctionHistoryTable[corrHistPawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
 
     stack[ply].staticEval = staticEval;
     bool improving = false;
@@ -721,8 +722,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
         int correctionBonus = std::clamp(bestScore - staticEval, -256, 256);
-        correctionHistoryTable[pawnHash][ctm][0] += correctionBonus;
-        correctionHistoryTable[pawnHash][ctm][1]++;
+        correctionHistoryTable[corrHistPawnHash][ctm][0] += correctionBonus;
+        correctionHistoryTable[corrHistPawnHash][ctm][1]++;
     }
 
     // push to TT

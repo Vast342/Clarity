@@ -74,7 +74,7 @@ struct Engine {
         std::array<std::array<std::array<std::array<int16_t, 7>, 64>, 7>, 2> noisyHistoryTable;
         std::array<std::array<std::array<std::array<int16_t, 7>, 64>, 7>, 2> qsHistoryTable;
         std::array<std::array<std::array<std::array<int16_t, 64>, 7>, 2>, 32768> pawnHistoryTable;
-        std::array<std::array<std::array<int32_t, 2>, 2>, 32768> correctionHistoryTable;
+        std::array<std::array<std::array<int32_t, 2>, 2>, 16384> correctionHistoryTable;
         std::unique_ptr<CHTable> conthistTable;
         std::array<std::array<Move, 64>, 64> counterMoves;
 
