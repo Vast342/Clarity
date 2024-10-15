@@ -71,13 +71,7 @@ void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
     if(name == "Hash") {
         uint64_t newSizeMB = std::stoi(bits[4]);
-        uint64_t newSizeB = newSizeMB * 1024 * 1024;
-        // this should be 16 bytes
-        uint64_t entrySizeB = sizeof(Transposition);
-        assert(entrySizeB == 16); 
-        uint64_t newSizeEntries = newSizeB / entrySizeB;
-        //std::cout << log2(newSizeEntries);
-        TT.resize(newSizeEntries);
+        TT.resize(newSizeMB);
     } else if(name == "Threads") {
         //clock_t start = clock();
         threadCount = std::stoi(bits[4]);

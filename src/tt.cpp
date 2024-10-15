@@ -24,63 +24,22 @@ uint64_t index(uint64_t key, int size) {
     return static_cast<uint64_t>((static_cast<unsigned __int128>(key) * static_cast<unsigned __int128>(size)) >> 64);
 }
 
-int TranspositionTable::getScore(uint64_t zkey) {
-    return table[index(zkey, size)].score;
-}
-
-Move TranspositionTable::getBestMove(uint64_t zkey) {
-    return table[index(zkey, size)].bestMove;
-}
-
-bool TranspositionTable::matchZobrist(uint64_t zkey) {
-    return table[index(zkey, size)].zobristKey == shrink(zkey);
-}
-
-uint8_t TranspositionTable::getFlag(uint64_t zkey) {
-    return table[index(zkey, size)].flag;
-}
-
 Transposition* TranspositionTable::getEntry(uint64_t zkey) {
-    //if(table[index(zkey, size)].zobristKey != 0) std::cout << std::to_string(table[index(zkey, size)].score) << ", " << std::to_string(zkey) << '\n';
     return &table[index(zkey, size)];
 }
 
-int TranspositionTable::getDepth(uint64_t zkey) {
-    return table[index(zkey, size)].depth;
-}
-
 void TranspositionTable::setEntry(uint64_t zkey, Transposition entry) {
-    //std::cout << "recieved, writing an entry at " << std::to_string(zkey) << " with score " << std::to_string(entry.score) << '\n';
     table[index(zkey, size)] = entry;
-    //std::cout << "reading entry just written, score is " << std::to_string(table[index(zkey, size)].score) << '\n';
-}
-
-void TranspositionTable::setScore(uint64_t zkey, int score) {
-    table[index(zkey, size)].score = score;
-}
-
-void TranspositionTable::setBestMove(uint64_t zkey, Move bestMove) {
-    table[index(zkey, size)].bestMove = bestMove;
-}
-
-void TranspositionTable::setZobrist(uint64_t zkey) {
-    table[index(zkey, size)].zobristKey = shrink(zkey);
-}
-
-void TranspositionTable::setFlag(uint64_t zkey, uint8_t flag) {
-    table[index(zkey, size)].flag = flag;
-}
-
-void TranspositionTable::setDepth(uint64_t zkey, uint16_t depth) {
-    table[index(zkey, size)].depth = depth;
 }
 
 void TranspositionTable::clearTable() {
     std::fill(table.begin(), table.end(), Transposition());
 }
 
-void TranspositionTable::resize(int newSize) {
-    size = newSize;
-    table.resize(newSize, Transposition());
+void TranspositionTable::resize(size_t newSizeMB) {
+    size_t newSizeB = newSizeMB * 1024 * 1024;
+    size_t newSizeEntries = newSizeB / sizeof(Transposition);
+    size = newSizeEntries;
+    table.resize(newSizeEntries, Transposition());
     clearTable();
 }

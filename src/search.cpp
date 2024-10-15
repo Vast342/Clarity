@@ -26,7 +26,7 @@ std::atomic<bool> timesUp = false;
 
 bool mainThreadDone = false;
 
-int hardNodeCap = 400000;
+uint64_t hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
 
@@ -736,7 +736,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
 // gets the PV from the TT, has some inconsistencies or illegal moves, and will be replaced with a triangular PV table eventually
 // finally being replaced!!
-std::string Engine::getPV(Board board) {
+std::string Engine::getPV() {
     std::string pv;
     for(int i = 0; i < stack[0].pvLength; i++) {
         pv += toLongAlgebraic(stack[0].pvTable[i]) + " ";
@@ -759,7 +759,7 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
         scoreString += std::to_string((abs(abs(score) + matedScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
     uint64_t nodeSum = getTotalNodes();
-    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV(board) << std::endl;
+    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV() << std::endl;
 }
 
 constexpr std::array<double, 7> stabilityNumbers = {2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9};
@@ -986,7 +986,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
     return rootBestMove;
 }
 
-std::pair<Move, int> Engine::dataGenSearch(Board board, int nodeCap) {
+std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     stack[0].doubleExtensions = 0;
     //clearHistory();
     useNodeCap = true;

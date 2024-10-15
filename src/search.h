@@ -49,7 +49,7 @@ struct Engine {
         Move getBestMove();
         int benchSearch(Board board, int depthToSearch);
         Move fixedDepthSearch(Board board, int depthToSearch, bool info);
-        std::pair<Move, int> dataGenSearch(Board board, int nodeCap);
+        std::pair<Move, int> dataGenSearch(Board board, uint64_t nodeCap);
         Move fixedNodesSearch(Board board, int nodeCount, bool info);
         Engine(TranspositionTable *tt) {
             conthistTable = std::make_unique<CHTable>();
@@ -91,6 +91,6 @@ struct Engine {
         void updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         void updateQSHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
         int16_t negamax(Board &board, int depth, int alpha, int beta, int16_t ply, bool nmpAllowed, bool isCutNode);
-        std::string getPV(Board board);
+        std::string getPV();
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);
 };
