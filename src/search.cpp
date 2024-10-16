@@ -351,11 +351,10 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     }
 
     // push to TT
-    TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0, TT->age));
     if(flag == Exact || hash != entry->zobristKey || TT->age != entry->age()) {
-            if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-            TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0, TT->age));
-        }
+        if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
+        TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0, TT->age));
+    }
 
     return bestScore;
 }
@@ -733,7 +732,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     if(!inSingularSearch) {
         // replacement scheme!
         // i'll make those nums tunable later
-        if(flag == Exact || hash != entry->zobristKey || TT->age != entry->age()|| depth + 4 + 2 * isPV > entry->depth) {
+        if(flag == Exact || hash != entry->zobristKey || TT->age != entry->age() || depth + 4 + 2 * isPV > entry->depth) {
             if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
             TT->setEntry(hash, Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth, TT->age));
         }
