@@ -243,9 +243,9 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     Transposition* entry = TT->getEntry(hash);
 
     if(entry->zobristKey == shrink(hash) && (
-        entry->flag == Exact // exact score
-            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
-            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+        entry->flag() == Exact // exact score
+            || (entry->flag() == BetaCutoff && entry->score >= beta) // lower bound, fail high
+            || (entry->flag() == FailLow && entry->score <= alpha) // upper bound, fail low
     )) {
         return entry->score;
     }
@@ -351,7 +351,11 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     }
 
     // push to TT
-    TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0));
+    TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0, TT->age));
+    if(flag == Exact || hash != entry->zobristKey || TT->age != entry->age()) {
+            if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
+            TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0, TT->age));
+        }
 
     return bestScore;
 }
@@ -426,9 +430,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
     // turns out that score above was complete bs lol, my isPV was broken
     if(!inSingularSearch && ply > 0 && entry->zobristKey == shrink(hash) && entry->depth >= depth + pvTTDepthMargin.value * isPV && (
-            entry->flag == Exact // exact score
-                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
-                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+            entry->flag() == Exact // exact score
+                || (entry->flag() == BetaCutoff && entry->score >= beta) // lower bound, fail high
+                || (entry->flag() == FailLow && entry->score <= alpha) // upper bound, fail low
         )) {
         return entry->score; 
     }
@@ -444,7 +448,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     } else {
         staticEval = board.getEvaluation();
         if(!inSingularSearch && entry->zobristKey == 0) {
-            TT->setEntry(hash, Transposition(hash, Move(), 0, staticEval, 0, 0));
+            TT->setEntry(hash, Transposition(hash, Move(), 0, staticEval, 0, 0, 0));
         }
     }
     originalStaticEval = staticEval;
@@ -470,9 +474,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     // adjust staticEval to TT score if it's good enough
     if(!inCheck && !inSingularSearch && shrink(hash) == entry->zobristKey && (
-        entry->flag == Exact ||
-        (entry->flag == BetaCutoff && entry->score >= staticEval) ||
-        (entry->flag == FailLow && entry->score <= staticEval)
+        entry->flag() == Exact ||
+        (entry->flag() == BetaCutoff && entry->score >= staticEval) ||
+        (entry->flag() == FailLow && entry->score <= staticEval)
     )) {
         staticEval = entry->score;
     }
@@ -568,7 +572,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
         int TTExtensions = 0;
         // determine whether or not to extend TT move (Singular Extensions)
-        if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
+        if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag() != FailLow) {
             const auto sBeta = std::max(matedScore, int16_t(entry->score - depth * int(sinDepthScale.value) / 16));
             const auto sDepth = (depth - 1) / 2;
 
@@ -727,8 +731,12 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     // push to TT
     if(!inSingularSearch) {
-        if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-        TT->setEntry(hash, Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth));
+        // replacement scheme!
+        // i'll make those nums tunable later
+        if(flag == Exact || hash != entry->zobristKey || TT->age != entry->age()|| depth + 4 + 2 * isPV > entry->depth) {
+            if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
+            TT->setEntry(hash, Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth, TT->age));
+        }
     }
 
     return bestScore;
@@ -847,6 +855,8 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
             }
         }
     }
+
+    TT->raise_age();
     
     if(info) {
         timesUp.store(true);
@@ -902,6 +912,8 @@ int Engine::benchSearch(Board board, int depthToSearch) {
         // outputs info which is picked up by the user
         //outputInfo(board, score, depth, elapsedTime);
     }
+    
+    TT->raise_age();
     if(rootBestMove == Move()) std::cout << "bench returned null move" << std::endl;
     return nodes;
 }
@@ -976,6 +988,9 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
             }
         }
     }
+
+    
+    TT->raise_age();
 
     if(info) {
         timesUp.store(true);
@@ -1063,6 +1078,9 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         }
     }
 
+    
+    TT->raise_age();
+
     return std::pair<Move, int>(rootBestMove, score);
 }
 
@@ -1137,6 +1155,8 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
             }
         }
     }
+    
+    TT->raise_age();
     
     if(info) {
         timesUp.store(true);

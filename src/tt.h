@@ -38,23 +38,29 @@ struct Transposition {
     Move bestMove;
     uint16_t zobristKey;
     int16_t staticEval;
-    uint8_t flag;
+    uint8_t ageAndFlag;
     uint8_t depth;
     Transposition() {
         zobristKey = 0;
         bestMove = Move();
-        flag = 0;
+        ageAndFlag = 0;
         score = 0;
         depth = 0;
         staticEval = 0;
     }
-    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _staticEval, int _score, uint8_t _depth) {
+    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _staticEval, int _score, uint8_t _depth, uint8_t age) {
         zobristKey = shrink(_zobristKey);
         bestMove = _bestMove;
-        flag = _flag;
+        ageAndFlag = _flag | (age << 2);
         score = _score;
         depth = _depth;
         staticEval = _staticEval;
+    }
+    auto age() {
+        return ageAndFlag >> 2;
+    }
+    auto flag() {
+        return ageAndFlag & 0b11;
     }
 };
 #pragma pack(pop)
@@ -68,6 +74,10 @@ struct TranspositionTable {
         TranspositionTable(uint64_t initSize = defaultSize) {
             resize(initSize);
         }
+        inline void raise_age() {
+            age = (age + 1) % (1 << 6); // 6 = number of bits of age number in the TT
+        }
+        uint8_t age;
         uint64_t size;
     private:
         std::vector<Transposition> table;

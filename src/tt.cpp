@@ -42,4 +42,5 @@ void TranspositionTable::resize(size_t newSizeMB) {
     size = newSizeEntries;
     table.resize(newSizeEntries, Transposition());
     clearTable();
+    age = 0;
 }
