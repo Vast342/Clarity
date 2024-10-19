@@ -62,13 +62,13 @@ struct Transposition {
 struct TranspositionTable {
     public:
         Transposition* getEntry(uint64_t zkey);
-        void setEntry(uint64_t zkey, Transposition entry);
+        void setEntry(uint64_t zkey, Transposition &entry);
         void clearTable();
-        void resize(uint64_t newSizeMB);
+        void resize(size_t newSizeMB);
         TranspositionTable(uint64_t initSize = defaultSize) {
             resize(initSize);
         }
-        uint64_t size;
+        size_t size;
     private:
         std::vector<Transposition> table;
 };

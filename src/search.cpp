@@ -351,7 +351,8 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     }
 
     // push to TT
-    TT->setEntry(hash, Transposition(hash, bestMove, flag, staticEval, bestScore, 0));
+    Transposition entryToWrite = Transposition(hash, bestMove, flag, staticEval, bestScore, 0);
+    TT->setEntry(hash, entryToWrite);
 
     return bestScore;
 }
@@ -444,7 +445,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     } else {
         staticEval = board.getEvaluation();
         if(!inSingularSearch && entry->zobristKey == 0) {
-            TT->setEntry(hash, Transposition(hash, Move(), 0, staticEval, 0, 0));
+            Transposition entryToWrite = Transposition(hash, Move(), 0, staticEval, 0, 0);
+            TT->setEntry(hash, entryToWrite);
         }
     }
     originalStaticEval = staticEval;
@@ -728,7 +730,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // push to TT
     if(!inSingularSearch) {
         if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-        TT->setEntry(hash, Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth));
+        Transposition entryToWrite = Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth);
+        TT->setEntry(hash, entryToWrite);
     }
 
     return bestScore;

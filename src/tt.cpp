@@ -19,7 +19,7 @@
 
 // all the functions for the transposition table
 
-uint64_t index(uint64_t key, int size) {
+uint64_t index(uint64_t key, size_t size) {
     // this emits a single mul on both x64 and arm64
     return static_cast<uint64_t>((static_cast<unsigned __int128>(key) * static_cast<unsigned __int128>(size)) >> 64);
 }
@@ -28,7 +28,7 @@ Transposition* TranspositionTable::getEntry(uint64_t zkey) {
     return &table[index(zkey, size)];
 }
 
-void TranspositionTable::setEntry(uint64_t zkey, Transposition entry) {
+void TranspositionTable::setEntry(uint64_t zkey, Transposition &entry) {
     table[index(zkey, size)] = entry;
 }
 
