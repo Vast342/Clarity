@@ -964,6 +964,11 @@ int Board::getPawnHashIndex() const {
 	// last 15 bits
     return stateHistory.back().pawnHash & 0b111111111111111;
 }
+int Board::getNonPawnHashIndex() const {
+	// last 15 bits
+    uint64_t hash = stateHistory.back().zobristHash ^ (colorToMove * zobColorToMove);
+    return (hash ^ stateHistory.back().pawnHash) & 0b111111111111111;
+}
 
 uint64_t Board::calculateThreats() {
     const int them = 1 - colorToMove;

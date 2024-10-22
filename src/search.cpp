@@ -45,7 +45,8 @@ void Engine::clearHistory() {
     std::memset(conthistTable.get(), 0, sizeof(conthistTable));
     std::memset(qsHistoryTable.data(), 0, sizeof(qsHistoryTable));
     std::memset(pawnHistoryTable.data(), 0, sizeof(pawnHistoryTable));
-    std::memset(correctionHistoryTable.data(), 0, sizeof(correctionHistoryTable));
+    std::memset(pawnCorrhistTable.data(), 0, sizeof(pawnCorrhistTable));
+    std::memset(nonpawnCorrhistTable.data(), 0, sizeof(nonpawnCorrhistTable));
 }
 
 Move Engine::getBestMove() {
@@ -455,8 +456,11 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // corrections
     const int ctm = board.getColorToMove();
     int pawnHash = board.getPawnHashIndex();
-    int numWrites = correctionHistoryTable[pawnHash][ctm][1];
-    staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
+    int nawnPawnHash = board.getNonPawnHashIndex();
+    int numWrites = pawnCorrhistTable[pawnHash][ctm][1];
+    staticEval += pawnCorrhistTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
+    numWrites = nonpawnCorrhistTable[nawnPawnHash][ctm][1];
+    staticEval += nonpawnCorrhistTable[nawnPawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
 
     stack[ply].staticEval = staticEval;
     bool improving = false;
@@ -723,8 +727,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
         int correctionBonus = std::clamp(bestScore - staticEval, -256, 256);
-        correctionHistoryTable[pawnHash][ctm][0] += correctionBonus;
-        correctionHistoryTable[pawnHash][ctm][1]++;
+        pawnCorrhistTable[pawnHash][ctm][0] += correctionBonus;
+        pawnCorrhistTable[pawnHash][ctm][1]++;
+        nonpawnCorrhistTable[nawnPawnHash][ctm][0] += correctionBonus;
+        nonpawnCorrhistTable[nawnPawnHash][ctm][1]++;
     }
 
     // push to TT

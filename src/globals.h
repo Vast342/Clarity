@@ -137,6 +137,7 @@ struct Board {
         int getPlyCount() const;
         bool isPKEndgame() const;
         int getPawnHashIndex() const;
+        int getNonPawnHashIndex() const;
         uint64_t getThreats() const;
         uint64_t calculateThreats();
     private:
