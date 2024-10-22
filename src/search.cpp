@@ -454,9 +454,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     // corrections
     const int ctm = board.getColorToMove();
-    int pawnHash = board.getPawnHashIndex();
-    int correction = correctionHistoryTable[pawnHash][ctm];
-    staticEval = std::clamp(staticEval + (correction * std::abs(correction)) / 32768, matedScore + 256, -matedScore - 256);
+    int chpawnHash = board.getPawnHashIndex() & (16384 - 1);
+    int correction = correctionHistoryTable[chpawnHash][ctm];
+    staticEval = std::clamp(staticEval + (correction * std::abs(correction)) / 16384, matedScore + 256, -matedScore - 256);
     stack[ply].staticEval = staticEval;
     bool improving = false;
     if(inCheck) {
@@ -721,11 +721,11 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        int score = correctionHistoryTable[pawnHash][ctm];
+        int score = correctionHistoryTable[chpawnHash][ctm];
         int error = bestScore - staticEval;
         int correctionBonus = std::clamp(error * depth / 8, -128, 128);
         correctionBonus = correctionBonus - score * std::abs(correctionBonus) / 512;
-        correctionHistoryTable[pawnHash][ctm] += correctionBonus;
+        correctionHistoryTable[chpawnHash][ctm] += correctionBonus;
     }
 
     // push to TT
