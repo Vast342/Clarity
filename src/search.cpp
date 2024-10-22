@@ -456,7 +456,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     const int ctm = board.getColorToMove();
     int chpawnHash = board.getPawnHashIndex() & (16384 - 1);
     int correction = correctionHistoryTable[chpawnHash][ctm];
-    staticEval = std::clamp(staticEval + (correction * std::abs(correction)) / 16384, matedScore + 256, -matedScore - 256);
+    constexpr int corrhistScale = 256;
+    staticEval = (staticEval + correction / corrhistScale);
     stack[ply].staticEval = staticEval;
     bool improving = false;
     if(inCheck) {
@@ -721,11 +722,15 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        int score = correctionHistoryTable[chpawnHash][ctm];
+        // don't worry about it gents, i'll make this tunable soon:tm:
+        auto &score = correctionHistoryTable[chpawnHash][ctm];
         int error = bestScore - staticEval;
-        int correctionBonus = std::clamp(error * depth / 8, -128, 128);
-        correctionBonus = correctionBonus - score * std::abs(correctionBonus) / 512;
-        correctionHistoryTable[chpawnHash][ctm] += correctionBonus;
+        int scaled_bonus = error * corrhistScale;
+        const int weight = std::min(depth - 1, 16);
+        score = (score * (corrhistScale - weight) + scaled_bonus * weight) / corrhistScale;
+        constexpr int min = -64;
+        constexpr int max = 64;
+        score = std::clamp(score, min * corrhistScale, max * corrhistScale);
     }
 
     // push to TT
