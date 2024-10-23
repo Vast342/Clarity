@@ -45,7 +45,7 @@ void Engine::clearHistory() {
     std::memset(conthistTable.get(), 0, sizeof(conthistTable));
     std::memset(qsHistoryTable.data(), 0, sizeof(qsHistoryTable));
     std::memset(pawnHistoryTable.data(), 0, sizeof(pawnHistoryTable));
-    std::memset(correctionHistoryTable.data(), 0, sizeof(correctionHistoryTable));
+    corrhist.clear();
 }
 
 Move Engine::getBestMove() {
@@ -454,10 +454,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     // corrections
     const int ctm = board.getColorToMove();
-    int chpawnHash = board.getPawnHashIndex() & (16384 - 1);
-    int correction = correctionHistoryTable[chpawnHash][ctm];
-    constexpr int corrhistScale = 256;
-    staticEval = (staticEval + correction / corrhistScale);
+    int chpawnHash = board.getPawnHashIndex() & Corrhist::mask;
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval);
     stack[ply].staticEval = staticEval;
     bool improving = false;
     if(inCheck) {
@@ -722,15 +720,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        // don't worry about it gents, i'll make this tunable soon:tm:
-        auto &score = correctionHistoryTable[chpawnHash][ctm];
-        int error = bestScore - staticEval;
-        int scaled_bonus = error * corrhistScale;
-        const int weight = std::min(depth - 1, 16);
-        score = (score * (corrhistScale - weight) + scaled_bonus * weight) / corrhistScale;
-        constexpr int min = -64;
-        constexpr int max = 64;
-        score = std::clamp(score, min * corrhistScale, max * corrhistScale);
+        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth);
     }
 
     // push to TT
