@@ -45,7 +45,7 @@ void Engine::clearHistory() {
     std::memset(conthistTable.get(), 0, sizeof(conthistTable));
     std::memset(qsHistoryTable.data(), 0, sizeof(qsHistoryTable));
     std::memset(pawnHistoryTable.data(), 0, sizeof(pawnHistoryTable));
-    std::memset(correctionHistoryTable.data(), 0, sizeof(correctionHistoryTable));
+    corrhist.clear();
 }
 
 Move Engine::getBestMove() {
@@ -454,10 +454,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     // corrections
     const int ctm = board.getColorToMove();
-    int pawnHash = board.getPawnHashIndex();
-    int numWrites = correctionHistoryTable[pawnHash][ctm][1];
-    staticEval += correctionHistoryTable[pawnHash][ctm][0] / (numWrites == 0 ? 1 : numWrites);
-
+    int chpawnHash = board.getPawnHashIndex() & Corrhist::mask;
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval);
     stack[ply].staticEval = staticEval;
     bool improving = false;
     if(inCheck) {
@@ -722,9 +720,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        int correctionBonus = std::clamp(bestScore - staticEval, -256, 256);
-        correctionHistoryTable[pawnHash][ctm][0] += correctionBonus;
-        correctionHistoryTable[pawnHash][ctm][1]++;
+        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth);
     }
 
     // push to TT
