@@ -13,8 +13,6 @@ DEBUG_CXXFLAGS := -g3 -O1 -DDEBUG
 
 BUILD_CXXFLAGS := -DNDEBUG -O3
 
-LDFLAGS := -fuse-ld=lld
-
 # Directories
 SRC_DIR := src
 BUILD_DIR := build
@@ -31,6 +29,10 @@ EXE := Clarity
 # Append .exe to the binary name on Windows
 ifeq ($(OS),Windows_NT)
     override EXE := $(EXE).exe
+endif
+
+ifeq ($(CXX), clang)
+	LDFLAGS := -fuse-ld=lld
 endif
 
 # Default target
