@@ -28,7 +28,7 @@ struct Corrhist {
     std::array<std::array<std::array<int32_t, 2>, 2>, size> nonPawnTables;
     inline int correct(int ctm, int pawnHash, int staticEval, std::array<int, 2> nonPawnHashes) {
         int pawn_correction = pawnTable[pawnHash][ctm];
-        int non_pawn_correction = (nonPawnTables[nonPawnHashes[ctm]][ctm][ctm] + nonPawnTables[nonPawnHashes[1 - ctm]][ctm][1 - ctm]) / 2;
+        int non_pawn_correction = nonPawnTables[nonPawnHashes[ctm]][ctm][0] + nonPawnTables[nonPawnHashes[1 - ctm]][ctm][1];
         int correction = pawn_correction + non_pawn_correction;
         return (staticEval + correction / scale);
     }
