@@ -455,8 +455,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // corrections
     const int ctm = board.getColorToMove();
     int chpawnHash = board.getPawnHashIndex() & Corrhist::mask;
-    auto nawnPonHash = board.getNawnPonHash();
-    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nawnPonHash);
+    auto nonPawnHash = board.getNonPawnHash();
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash);
     stack[ply].staticEval = staticEval;
     bool improving = false;
     if(inCheck) {
@@ -721,7 +721,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nawnPonHash);
+        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nonPawnHash);
     }
 
     // push to TT

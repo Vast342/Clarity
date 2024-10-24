@@ -107,8 +107,8 @@ Board::Board(std::string fen) {
     nnueState.reset();
     stateHistory.back().zobristHash = 0;
 	stateHistory.back().pawnHash = 0;
-    stateHistory.back().nawnPonHashes[0] = 0;
-    stateHistory.back().nawnPonHashes[1] = 0;
+    stateHistory.back().nonPawnHashes[0] = 0;
+    stateHistory.back().nonPawnHashes[1] = 0;
     for(int i = 0; i < 64; i++) {
         stateHistory.back().mailbox[i] = None;
     }
@@ -329,7 +329,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
     } else {
-        stateHistory.back().nawnPonHashes[getColor(type)] ^= zobTable[square][type];
+        stateHistory.back().nonPawnHashes[getColor(type)] ^= zobTable[square][type];
     }
 }
 
@@ -347,7 +347,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
     } else {
-        stateHistory.back().nawnPonHashes[getColor(type)] ^= zobTable[square][type];
+        stateHistory.back().nonPawnHashes[getColor(type)] ^= zobTable[square][type];
     }
     assert(pieceAtIndex(square) == None);
 }
@@ -927,8 +927,8 @@ uint64_t Board::getZobristHash() const {
     return stateHistory.back().zobristHash;
 }
 
-std::array<int, 2> Board::getNawnPonHash() {
-    auto hashes = stateHistory.back().nawnPonHashes;
+std::array<int, 2> Board::getNonPawnHash() {
+    auto hashes = stateHistory.back().nonPawnHashes;
     std::array<int, 2> clipped = {int(hashes[0] & Corrhist::mask), int(hashes[1] & Corrhist::mask)};
     return clipped;
 }
