@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "globals.h"
+#include "corrhist.h"
 #include <cstdlib>
 
 template bool Board::makeMove<false>(Move move);
@@ -106,6 +107,8 @@ Board::Board(std::string fen) {
     nnueState.reset();
     stateHistory.back().zobristHash = 0;
 	stateHistory.back().pawnHash = 0;
+    stateHistory.back().nawnPonHashes[0] = 0;
+    stateHistory.back().nawnPonHashes[1] = 0;
     for(int i = 0; i < 64; i++) {
         stateHistory.back().mailbox[i] = None;
     }
@@ -323,7 +326,11 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     assert(pieceAtIndex(square) == type);
     if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
-    if(getType(type) == Pawn) stateHistory.back().pawnHash ^= zobTable[square][type];
+    if(getType(type) == Pawn) {
+        stateHistory.back().pawnHash ^= zobTable[square][type];
+    } else {
+        stateHistory.back().nawnPonHashes[getColor(type)] ^= zobTable[square][type];
+    }
 }
 
 template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
@@ -337,7 +344,11 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().mailbox[square] = None;
     if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
-    if(getType(type) == Pawn) stateHistory.back().pawnHash ^= zobTable[square][type];
+    if(getType(type) == Pawn) {
+        stateHistory.back().pawnHash ^= zobTable[square][type];
+    } else {
+        stateHistory.back().nawnPonHashes[getColor(type)] ^= zobTable[square][type];
+    }
     assert(pieceAtIndex(square) == None);
 }
 
@@ -914,6 +925,12 @@ int Board::getFiftyMoveCount() const {
 
 uint64_t Board::getZobristHash() const {
     return stateHistory.back().zobristHash;
+}
+
+std::array<int, 2> Board::getNawnPonHash() {
+    auto hashes = stateHistory.back().nawnPonHashes;
+    std::array<int, 2> clipped = {int(hashes[0] & Corrhist::mask), int(hashes[1] & Corrhist::mask)};
+    return clipped;
 }
 
 BoardState Board::getBoardState() const {
