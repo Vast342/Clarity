@@ -457,6 +457,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     int chpawnHash = board.getPawnHashIndex() & Corrhist::mask;
     auto nonPawnHash = board.getNonPawnHash();
     staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash);
+    auto correction = staticEval - originalStaticEval;
+    bool corrhistUncertain = std::abs(correction) > 128;
+    
     stack[ply].staticEval = staticEval;
     bool improving = false;
     if(inCheck) {
@@ -617,25 +620,26 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true, false);
         } else {
             // Late Move Reductions (LMR)
-            int depthReduction = 0;
+            int lmr = 0;
             if(depth > lmrDepth.value) {
-                depthReduction = reductions[depth][legalMoves];
-                depthReduction -= isPV;
+                lmr = reductions[depth][legalMoves];
+                lmr -= isPV;
                 if(isQuiet) {
-                    depthReduction -= moveValues[i] / int(hmrDivisor.value);
+                    lmr -= moveValues[i] / int(hmrDivisor.value);
                 } else {
-                    depthReduction -= noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim] / int(cmrDivisor.value);
+                    lmr -= noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim] / int(cmrDivisor.value);
                 }
-                depthReduction += isCutNode * 2;
-                depthReduction -= improving;
-                depthReduction -= !isQuietOrBadCapture;
+                lmr += isCutNode * 2;
+                lmr -= improving;
+                lmr -= !isQuietOrBadCapture;
+                lmr -= corrhistUncertain;
 
-                depthReduction = std::clamp(depthReduction, 0, depth - 1);
+                lmr = std::clamp(lmr, 0, depth - 1);
             }
             // this is more PVS stuff, searching with a reduced margin
-            score = -negamax(board, depth - depthReduction - 1, -alpha - 1, -alpha, ply + 1, true, true);
+            score = -negamax(board, depth - lmr - 1, -alpha - 1, -alpha, ply + 1, true, true);
             // and then if it fails high or low we search again with the original bounds
-            if(score > alpha && (score < beta || depthReduction > 0)) {
+            if(score > alpha && (score < beta || lmr > 0)) {
                 score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, false);
             }
         }
