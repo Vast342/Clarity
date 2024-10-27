@@ -21,6 +21,7 @@
 #include "normalize.h"
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
+#include "tunables.h"
 
 std::atomic<bool> timesUp = false;
 

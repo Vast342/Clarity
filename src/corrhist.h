@@ -20,8 +20,8 @@
 
 struct Corrhist {
     static constexpr int size = 16384;
-    static constexpr int scale = 256;
     static constexpr int mask = size - 1;
+    static constexpr int scale = 256;
     static constexpr int min = -64;
     static constexpr int max = 64;
     std::array<std::array<int32_t, 2>, size> pawnTable;
