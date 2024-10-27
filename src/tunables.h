@@ -15,6 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+// header guards woooooooo
+#pragma once
+
 #include "globals.h"
 
 
@@ -117,6 +120,16 @@ inline Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
 inline Tunable pvTTDepthMargin("PVTT_DepthMargin", 3, 1);
 
 inline Tunable texMargin("TEX_Margin", 67, 1);
+
+// corrhist tunables
+inline Tunable chUncertaintyMargin("CH_Uncertainty_Margin", 128, 1);
+
+inline Tunable chScale("CH_Scale", 256, 1);
+inline Tunable chMin("CH_Min", -64, -1);
+inline Tunable chMax("CH_Max", 64, 1);
+
+inline Tunable pawnChWeight("Pawn_CH_Weight", 512, 1);
+inline Tunable nonpawnChWeight("NonPawn_CH_Weight", 512, 1);
 
 // Declaration of pointers to tunables
 inline std::array<Tunable *, 7> MVV_values = {
@@ -231,7 +244,7 @@ inline void adjustTunable(const std::string &name, const int &value) {
             return;
         }
     }
-    std::cout << "No Such inline Tunable\n";
+    std::cout << "No Such Tunable\n";
 }
 inline void readTunable(const std::string &name) {
     for(Tunable *tunable : tunables) {
@@ -240,7 +253,7 @@ inline void readTunable(const std::string &name) {
             return;
         }
     }
-    std::cout << "No Such inline Tunable\n";
+    std::cout << "No Such Tunable\n";
 }
 inline void readTunables() {
     for(Tunable *tunable : tunables) {
