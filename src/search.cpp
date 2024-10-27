@@ -459,7 +459,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     auto nonPawnHash = board.getNonPawnHash();
     staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash);
     auto correction = staticEval - originalStaticEval;
-    bool corrhistUncertain = std::abs(correction) > 128;
+    bool corrhistUncertain = std::abs(correction) > chUncertaintyMargin.value;
     
     stack[ply].staticEval = staticEval;
     bool improving = false;
