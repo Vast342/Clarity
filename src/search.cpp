@@ -259,6 +259,13 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
         staticEval = board.getEvaluation();
     }
     if(ply > depthLimit - 1) return staticEval;
+
+    // corrections
+    const int ctm = board.getColorToMove();
+    int chpawnHash = board.getPawnHashIndex() & Corrhist::mask;
+    auto nonPawnHash = board.getNonPawnHash();
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash);
+
     int16_t bestScore = staticEval;
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
