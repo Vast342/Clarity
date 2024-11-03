@@ -266,6 +266,16 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     auto nonPawnHash = board.getNonPawnHash();
     staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash);
 
+    // adjust staticEval to TT score if it's good enough
+    if(shrink(hash) == entry->zobristKey && (
+        entry->flag == Exact ||
+        (entry->flag == BetaCutoff && entry->score >= staticEval) ||
+        (entry->flag == FailLow && entry->score <= staticEval)
+    )) {
+        staticEval = entry->score;
+    }
+
+
     int16_t bestScore = staticEval;
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
