@@ -32,17 +32,33 @@ constexpr int inputBucketCount = 6;
 constexpr int layer1Size = 1024;
 constexpr int outputBucketCount = 8;
 
-constexpr std::array<int, 64> inputBuckets = {
-    0, 0, 1, 1, 7, 7, 6, 6,
-    2, 2, 3, 3, 9, 9, 8, 8, 
-    4, 4, 4, 4,10,10,10,10,
-    4, 4, 4, 4,10,10,10,10,
-    5, 5, 5, 5,11,11,11,11,
-    5, 5, 5, 5,11,11,11,11,
-    5, 5, 5, 5,11,11,11,11,
-    5, 5, 5, 5,11,11,11,11,
-};
 
+constexpr std::array<int, 64> inputBuckets = []{
+    constexpr std::array<int, 32> rawInputBuckets = {
+        0, 0, 1, 1,
+        2, 2, 3, 3,
+        4, 4, 4, 4,
+        4, 4, 4, 4,
+        5, 5, 5, 5,
+        5, 5, 5, 5,
+        5, 5, 5, 5,
+        5, 5, 5, 5
+    };
+
+    std::array<int, 64> result = {};
+
+    for(int rank = 0; rank < 8; rank++) {
+        for(int file = 0; file < 4; file++) {
+            const int src = rank * 4 + file;
+            const int dst = rank * 8 + file;
+
+            result[dst] = rawInputBuckets[src];
+            result[dst ^ 7] = rawInputBuckets[src] + inputBucketCount;
+        }
+    }
+
+    return result;
+}();
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
