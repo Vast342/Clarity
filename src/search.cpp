@@ -684,50 +684,49 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                     for (int i = 0; i < stack[ply + 1].pvLength; i++)
                         stack[ply].pvTable[i + 1] = stack[ply + 1].pvTable[i];
                 }
-            }
-
-            // Fail-high
-            if(score >= beta) {
-                flag = BetaCutoff;
-                bestMove = move;
-                bestIsCapture = isCapture;
-                if(ply == 0) rootBestMove = move;
-                const int colorToMove = board.getColorToMove();
-                // testing berserk history bonus
-                int bonus = std::min(hstMaxBonus.value, hstAdder.value * depth - hstSubtractor.value);
-                int hash = board.getPawnHashIndex();
-                if(isQuiet) {
-                    // adds to the move's history and adjusts the killer move accordingly
-                    int start = moveStartSquare;
-                    int end = moveEndSquare;
-                    int piece = getType(board.pieceAtIndex(start));
-                    updateHistory(colorToMove, start, end, piece, bonus, ply, hash, board.squareIsUnderAttack(start), board.squareIsUnderAttack(end));
-                    stack[ply].killer = move;
-                    if(ply > 0) counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()] = move;
-                } else if (move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
-                    const int end = move.getEndSquare();
-                    const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
-                    const int victim = getType(board.pieceAtIndex(end));
-                    updateNoisyHistory(board.getColorToMove(), piece, end, victim, bonus);
-                }
-                bonus = -bonus;
-                // malus!
-                for(int moveNo = 0; moveNo < legalMoves - 1; moveNo++) {
-                    Move maluMove = testedMoves[moveNo];
-                    const int start = maluMove.getStartSquare();
-                    const int end = maluMove.getEndSquare();
-                    const int flag = maluMove.getFlag();
-                    const int piece = getType(board.pieceAtIndex(start));
-                    bool maluIsCapture = ((capturable & (1ULL << end)) != 0) || flag == EnPassant;
-                    bool maluIsQuiet = (!maluIsCapture && (flag <= DoublePawnPush));
-                    if(maluIsQuiet) {
+                // Fail-high
+                if(score >= beta) {
+                    flag = BetaCutoff;
+                    bestMove = move;
+                    bestIsCapture = isCapture;
+                    if(ply == 0) rootBestMove = move;
+                    const int colorToMove = board.getColorToMove();
+                    // testing berserk history bonus
+                    int bonus = std::min(hstMaxBonus.value, hstAdder.value * depth - hstSubtractor.value);
+                    int hash = board.getPawnHashIndex();
+                    if(isQuiet) {
+                        // adds to the move's history and adjusts the killer move accordingly
+                        int start = moveStartSquare;
+                        int end = moveEndSquare;
+                        int piece = getType(board.pieceAtIndex(start));
                         updateHistory(colorToMove, start, end, piece, bonus, ply, hash, board.squareIsUnderAttack(start), board.squareIsUnderAttack(end));
-                    } else if(maluMove.getFlag() < promotions[0] || maluMove.getFlag() == promotions[3]) {
+                        stack[ply].killer = move;
+                        if(ply > 0) counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()] = move;
+                    } else if (move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
+                        const int end = move.getEndSquare();
+                        const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
                         const int victim = getType(board.pieceAtIndex(end));
-                        updateNoisyHistory(colorToMove, piece, end, victim, bonus);
+                        updateNoisyHistory(board.getColorToMove(), piece, end, victim, bonus);
                     }
+                    bonus = -bonus;
+                    // malus!
+                    for(int moveNo = 0; moveNo < legalMoves - 1; moveNo++) {
+                        Move maluMove = testedMoves[moveNo];
+                        const int start = maluMove.getStartSquare();
+                        const int end = maluMove.getEndSquare();
+                        const int flag = maluMove.getFlag();
+                        const int piece = getType(board.pieceAtIndex(start));
+                        bool maluIsCapture = ((capturable & (1ULL << end)) != 0) || flag == EnPassant;
+                        bool maluIsQuiet = (!maluIsCapture && (flag <= DoublePawnPush));
+                        if(maluIsQuiet) {
+                            updateHistory(colorToMove, start, end, piece, bonus, ply, hash, board.squareIsUnderAttack(start), board.squareIsUnderAttack(end));
+                        } else if(maluMove.getFlag() < promotions[0] || maluMove.getFlag() == promotions[3]) {
+                            const int victim = getType(board.pieceAtIndex(end));
+                            updateNoisyHistory(colorToMove, piece, end, victim, bonus);
+                        }
+                    }
+                    break;
                 }
-                break;
             }
         }
     }
