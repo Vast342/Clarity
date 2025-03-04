@@ -38,7 +38,8 @@ struct NetworkUpdates {
     NetworkUpdates() {
         numAdds = 0;
         numSubs = 0;
-        bucketChange = false;
+        valueBucketChange = false;
+        policyBucketChange = false;
     }
     void pushAdd(int square, int piece) {
         adds[numAdds] = NetworkUpdate(square, piece);
@@ -48,14 +49,20 @@ struct NetworkUpdates {
         subs[numSubs] = NetworkUpdate(square, piece);
         numSubs++;
     }
-    void pushBucket(int square, int color) {
-        bucketChange = true;
-        bucketUpdate = NetworkUpdate(square, color);
+    void pushValueBucket(int square, int color) {
+        valueBucketChange = true;
+        valueBucketUpdate = NetworkUpdate(square, color);
+    }
+    void pushPolicyBucket(int square, int color) {
+        valueBucketChange = true;
+        valueBucketUpdate = NetworkUpdate(square, color);
     }
     std::array<NetworkUpdate, 2> adds;
     int numAdds;
     std::array<NetworkUpdate, 2> subs;
     int numSubs;
-    bool bucketChange;
-    NetworkUpdate bucketUpdate;
+    bool valueBucketChange;
+    NetworkUpdate valueBucketUpdate;
+    bool policyBucketChange;
+    NetworkUpdate policyBucketUpdate;
 };

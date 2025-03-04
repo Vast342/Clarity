@@ -239,6 +239,15 @@ void stopOtherThreads() {
     }
 }
 
+void policy() {
+    std::array<Move, 256> moves;
+    const int totalMoves = board.getMoves(moves);
+    const auto policies = board.labelMoves(moves, totalMoves);
+    for(int i = 0; i < totalMoves; i++) {
+        //std::cout << toLongAlgebraic(moves[i]) << " : " << policies[i] << std::endl;
+    }
+}
+
 // interprets the command
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
@@ -300,6 +309,8 @@ void interpretCommand(std::string command) {
         std::cout << board.getThreats() << std::endl; 
     } else if(bits[0] == "calcthreats") {
         std::cout << board.calculateThreats() << std::endl;   
+    } else if(bits[0] == "policy") {
+        policy();
     } else {
         std::cout << "invalid or unsupported command\n";
     }

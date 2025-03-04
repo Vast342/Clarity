@@ -15,7 +15,7 @@ src/eval.cpp
 src/search.cpp
 src/tests.cpp
 src/tt.cpp
-src/tunables.cpp
+src/policy.cpp
 src/external/fathom/tbprobe.cpp)
 
 # Builds for V1 through V4, each with different featuresets.

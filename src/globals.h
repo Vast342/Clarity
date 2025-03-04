@@ -100,6 +100,7 @@ struct Move {
 };
 
 #include "eval.h"
+#include "policy.h"
 
 // the board itself
 struct Board {
@@ -141,11 +142,13 @@ struct Board {
         int getPawnHashIndex() const;
         uint64_t getThreats() const;
         uint64_t calculateThreats();
+        std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount) const;
     private:
         int plyCount;
         uint8_t colorToMove;
         std::vector<BoardState> stateHistory;
-        NetworkState nnueState;
+        ValueNetworkState nnueState;
+        PolicyNetworkState policyState;
         template <bool UpdateNNUE> void addPiece(int square, int type);
         template <bool UpdateNNUE> void removePiece(int square, int type);
         template <bool UpdateNNUE> void movePiece(int square1, int type1, int square2, int type2);

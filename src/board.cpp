@@ -105,6 +105,7 @@ Board::Board(std::string fen) {
     stateHistory.reserve(256);
     stateHistory.push_back(BoardState());
     nnueState.reset();
+    policyState.reset();
     stateHistory.back().zobristHash = 0;
 	stateHistory.back().pawnHash = 0;
     stateHistory.back().nonPawnHashes[0] = 0;
@@ -220,6 +221,8 @@ Board::Board(std::string fen) {
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
     nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
     nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
+    policyState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
+    policyState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
     stateHistory.back().threats = calculateThreats();
 }
 
@@ -325,6 +328,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     stateHistory.back().mailbox[square] = type;
     assert(pieceAtIndex(square) == type);
     if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) policyState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -343,6 +347,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = None;
     if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) policyState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -642,6 +647,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     // push to vectors
     stateHistory.push_back(stateHistory.back());
     NetworkUpdates updates;
+    
     stateHistory.back().threats = 0;
 
     // get information
@@ -662,7 +668,8 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
 
     // king square updates
     if(movedPieceType == King) {
-        if(refreshRequired(colorToMove, start, end)) updates.pushBucket(end, colorToMove);
+        if(valueRefreshRequired(colorToMove, start, end)) updates.pushValueBucket(end, colorToMove);
+        if(policyRefreshRequired(colorToMove, start, end)) updates.pushPolicyBucket(end, colorToMove);
         stateHistory.back().kingSquares[colorToMove] = end;
     }
 
@@ -781,8 +788,10 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     } else {
         if constexpr(PushNNUE) {
             nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+            policyState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         } else {
             nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+            policyState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
@@ -797,6 +806,7 @@ template <bool PushNNUE> void Board::undoMove() {
     //std::cout << "undomove\n";
     stateHistory.pop_back();
     if constexpr(PushNNUE) nnueState.pop();
+    if constexpr(PushNNUE) policyState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
     //std::cout << "position fen " << getFenString() << std::endl;
@@ -811,6 +821,7 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 void Board::changeColor() {
     stateHistory.push_back(stateHistory.back());
     nnueState.push();
+    policyState.push();
     stateHistory.back().enPassantIndex = 64;
     stateHistory.back().hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
@@ -821,6 +832,7 @@ void Board::changeColor() {
 void Board::undoChangeColor() {
     stateHistory.pop_back();
     nnueState.pop();
+    policyState.pop();
     colorToMove = 1 - colorToMove;
 }
 
@@ -1020,4 +1032,8 @@ uint64_t Board::calculateThreats() {
 
 uint64_t Board::getThreats() const {
     return stateHistory.back().threats;
+}
+
+std::array<float, 256> Board::labelMoves(const std::array<Move, 256> &moves, int moveCount) const {
+    return policyState.labelMoves(moves, moveCount, colorToMove, *this);
 }

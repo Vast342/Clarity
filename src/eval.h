@@ -62,22 +62,22 @@ constexpr std::array<int, 64> inputBuckets = []{
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
-struct Network {
+struct ValueNetwork {
     alignas(64) std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
     alignas(64) std::array<std::int16_t, layer1Size> featureBiases;
     alignas(64) std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
     alignas(64) std::array<std::int16_t, outputBucketCount> outputBiases;
 };
 
-struct Accumulator {
+struct ValueAccumulator {
     alignas(64) std::array<std::int16_t, layer1Size> black;
     alignas(64) std::array<std::int16_t, layer1Size> white;
     void initialize(std::span<const std::int16_t, layer1Size> bias);
     void initHalf(std::span<const std::int16_t, layer1Size> bias, int color);
 };
 
-struct RefreshTableEntry {
-    Accumulator accumulator;
+struct ValueRefreshTableEntry {
+    ValueAccumulator accumulator;
     std::array<BoardState, 2> boards{};
 
     BoardState &colorBoards(int c) {
@@ -85,15 +85,15 @@ struct RefreshTableEntry {
     }
 };
 
-struct RefreshTable {
-    std::vector<RefreshTableEntry> table;
+struct ValueRefreshTable {
+    std::vector<ValueRefreshTableEntry> table;
 
     void init();
 };
 
-class NetworkState {
+class ValueNetworkState {
     public:
-        NetworkState() {
+        ValueNetworkState() {
             stack.resize(128);
             reset();
         }
@@ -117,15 +117,15 @@ class NetworkState {
         void fullRefresh(const BoardState &state, int blackKing, int whiteKing);
         void halfRefresh(int color, const BoardState &state, int king);
     private:
-        RefreshTable refreshTable;
+        ValueRefreshTable refreshTable;
         int current;
-        std::vector<Accumulator> stack;
+        std::vector<ValueAccumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type, int blackKing, int whiteKing);
         static int getFeatureIndex(int square, int type, int color, int king);
         int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::span<const std::int16_t, layer1Size * 2 * outputBucketCount> weights);
 };
 
-constexpr bool refreshRequired(int color, int oldKingSquare, int newKingSquare) {
+constexpr bool valueRefreshRequired(int color, int oldKingSquare, int newKingSquare) {
     if(color == 0) {
         oldKingSquare ^= 56;
         newKingSquare ^= 56;

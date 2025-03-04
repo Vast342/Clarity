@@ -34,10 +34,10 @@
 
 namespace {
     INCBIN(network, NetworkFile);
-    const Network *network = reinterpret_cast<const Network *>(g_networkData);
+    const ValueNetwork *network = reinterpret_cast<const ValueNetwork *>(g_networkData);
 }
 
-void NetworkState::reset() {
+void ValueNetworkState::reset() {
     std::memset(stack.data(), 0, sizeof(stack));
     current = 0;
     refreshTable.init();
@@ -45,17 +45,17 @@ void NetworkState::reset() {
     stack[current].initialize(network->featureBiases);
 }
 
-void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
+void ValueNetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
-    if(updates.bucketChange) {
+    if(updates.valueBucketChange) {
         for(int i = 0; i < updates.numAdds; i++) {
-            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.valueBucketUpdate.piece, updates.valueBucketUpdate.piece == 1 ? blackKing : whiteKing);
         }
         for(int i = 0; i < updates.numSubs; i++) {
-            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.valueBucketUpdate.piece, updates.valueBucketUpdate.piece == 1 ? blackKing : whiteKing);
         }
-        refreshAccumulator(updates.bucketUpdate.piece /*being used here to store color*/, state, updates.bucketUpdate.piece == 0 ? blackKing : whiteKing);
+        refreshAccumulator(updates.valueBucketUpdate.piece /*being used here to store color*/, state, updates.valueBucketUpdate.piece == 0 ? blackKing : whiteKing);
     } else {
         for(int i = 0; i < updates.numAdds; i++) {
             activateFeature(updates.adds[i].square, updates.adds[i].piece, blackKing, whiteKing);
@@ -65,23 +65,23 @@ void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whi
         }
     }
 }
-void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
+void ValueNetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
     assert(updates.numAdds <= 2);
     assert(updates.numSubs <= 2);
-    if(updates.bucketChange) {
-        if(updates.bucketUpdate.piece == 0) {
+    if(updates.valueBucketChange) {
+        if(updates.valueBucketUpdate.piece == 0) {
             stack[current + 1].white = stack[current].white; 
         } else {
             stack[current + 1].black = stack[current].black;
         }
         current++;
         for(int i = 0; i < updates.numAdds; i++) {
-            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+            activateFeatureSingle(updates.adds[i].square, updates.adds[i].piece, 1 - updates.valueBucketUpdate.piece, updates.valueBucketUpdate.piece == 1 ? blackKing : whiteKing);
         }
         for(int i = 0; i < updates.numSubs; i++) {
-            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.bucketUpdate.piece, updates.bucketUpdate.piece == 1 ? blackKing : whiteKing);
+            disableFeatureSingle(updates.subs[i].square, updates.subs[i].piece, 1 - updates.valueBucketUpdate.piece, updates.valueBucketUpdate.piece == 1 ? blackKing : whiteKing);
         }
-        refreshAccumulator(updates.bucketUpdate.piece /*being used here to store color*/, state, updates.bucketUpdate.piece == 0 ? blackKing : whiteKing);
+        refreshAccumulator(updates.valueBucketUpdate.piece /*being used here to store color*/, state, updates.valueBucketUpdate.piece == 0 ? blackKing : whiteKing);
     } else {
         activateFeatureAndPush(updates.adds[0].square, updates.adds[0].piece, blackKing, whiteKing);
         for(int i = 1; i < updates.numAdds; i++) {
@@ -93,11 +93,11 @@ void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, 
     }
 }
 
-void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
+void ValueAccumulator::initialize(std::span<const int16_t, layer1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());
 }
-void Accumulator::initHalf(std::span<const int16_t, layer1Size> bias, int color) {
+void ValueAccumulator::initHalf(std::span<const int16_t, layer1Size> bias, int color) {
     std::copy(bias.begin(), bias.end(), color == 0 ? black.begin() : white.begin());
 }
 
@@ -108,10 +108,10 @@ int getIBucket(int color, int king) {
     return inputBuckets[king];
 }
 
-void NetworkState::refreshAccumulator(int color, const BoardState &state, int king) {
+void ValueNetworkState::refreshAccumulator(int color, const BoardState &state, int king) {
     const int bucket = getIBucket(color, king);
 
-    RefreshTableEntry &entry = refreshTable.table[bucket];
+    ValueRefreshTableEntry &entry = refreshTable.table[bucket];
     BoardState &prevBoards = entry.colorBoards(color);
 
     for(int piece = 0; piece < None; ++piece) {
@@ -165,12 +165,12 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
     std::memcpy(&prevBoards, &state, sizeof(BoardState));
 }
 
-void NetworkState::fullRefresh(const BoardState &state, int blackKing, int whiteKing) {
+void ValueNetworkState::fullRefresh(const BoardState &state, int blackKing, int whiteKing) {
     halfRefresh(0, state, blackKing);
     halfRefresh(1, state, whiteKing);
 }
 
-void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
+void ValueNetworkState::halfRefresh(int color, const BoardState &state, int king) {
     stack[current].initHalf(network->featureBiases, color);
 
     for(int c = 0; c < 2; c++) {
@@ -186,7 +186,7 @@ void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
     }
 }
 
-void RefreshTable::init() {
+void ValueRefreshTable::init() {
     table.clear();
     table.resize(inputBucketCount * 2);
     for(int i = 0; i < inputBucketCount * 2; i++) {
@@ -203,11 +203,11 @@ constexpr int Qb = 64;
 constexpr int Qab = Qa * Qb;
 
 
-std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int piece, int blackKing, int whiteKing) {
+std::pair<uint32_t, uint32_t> ValueNetworkState::getFeatureIndices(int square, int piece, int blackKing, int whiteKing) {
     return {getFeatureIndex(square, piece, 0, blackKing), getFeatureIndex(square, piece, 1, whiteKing)};
 }
 
-int NetworkState::getFeatureIndex(int square, int piece, int color, int king) {
+int ValueNetworkState::getFeatureIndex(int square, int piece, int color, int king) {
     int c = getColor(piece) == color ? 0 : 1;
     if(color == 0) {
         square ^= 56;
@@ -237,7 +237,7 @@ int getBucket(int pieceCount) {
 using Vector = __m512i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
+int ValueNetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm512_setzero_si512();
     Vector vector0, vector1;
     const int bucketIncrement = 2 * layer1Size * bucket;
@@ -264,7 +264,7 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 using Vector = __m256i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
+int ValueNetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm256_setzero_si256();
     Vector vector0, vector1;
     const int bucketIncrement = 2 * layer1Size * bucket;
@@ -306,7 +306,7 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 using Vector = __m128i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
 // SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
+int ValueNetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
     Vector sum = _mm_setzero_si128();
     Vector vector0, vector1;
     const int bucketIncrement = 2 * layer1Size * bucket;
@@ -336,12 +336,12 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
 }
 
 #endif
-void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
+void ValueNetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
     activateFeatureSingle(square, piece, 0, blackKing);
     activateFeatureSingle(square, piece, 1, whiteKing);
 }
 
-void NetworkState::activateFeatureSingle(int square, int piece, int color, int king){ 
+void ValueNetworkState::activateFeatureSingle(int square, int piece, int color, int king){ 
     const int index = getFeatureIndex(square, piece, color, king);
 
     // change values for all of them
@@ -356,7 +356,7 @@ void NetworkState::activateFeatureSingle(int square, int piece, int color, int k
     }
 }
 
-void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing){ 
+void ValueNetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing){ 
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece, blackKing, whiteKing);
 
     // change values for all of them
@@ -367,11 +367,11 @@ void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, 
     current++;
 }
 
-void NetworkState::disableFeature(int square, int piece, int blackKing, int whiteKing) {
+void ValueNetworkState::disableFeature(int square, int piece, int blackKing, int whiteKing) {
     disableFeatureSingle(square, piece, 0, blackKing);
     disableFeatureSingle(square, piece, 1, whiteKing);
 }
-void NetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
+void ValueNetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
     const int index = getFeatureIndex(square, piece, color, king);
 
     // change values for all of them
@@ -386,7 +386,7 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
     }
 }
 
-int NetworkState::evaluate(int colorToMove, int materialCount) {
+int ValueNetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
     const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network->outputWeights) : forward(bucket, stack[current].white, stack[current].black, network->outputWeights);
     return (output / Qa + network->outputBiases[bucket]) * Scale / Qab;

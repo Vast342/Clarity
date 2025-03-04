@@ -83,8 +83,6 @@ struct Engine {
 
         std::chrono::steady_clock::time_point begin;
         void clearHistory();
-        int estimateMoveValue(const Board& board, const int end, const int flag);
-        bool see(const Board& board, Move move, int threshold);
         void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply);
         void scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove);
         int16_t qSearch(Board &board, int alpha, int beta, int16_t ply);
