@@ -54,8 +54,8 @@ struct NetworkUpdates {
         valueBucketUpdate = NetworkUpdate(square, color);
     }
     void pushPolicyBucket(int square, int color) {
-        valueBucketChange = true;
-        valueBucketUpdate = NetworkUpdate(square, color);
+        policyBucketChange = true;
+        policyBucketUpdate = NetworkUpdate(square, color);
     }
     std::array<NetworkUpdate, 2> adds;
     int numAdds;
