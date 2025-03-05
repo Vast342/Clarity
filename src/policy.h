@@ -88,11 +88,6 @@ class PolicyNetworkState {
         float forward(const int move_idx, const std::span<float, p_l1Size / 2> us, const std::span<float, p_l1Size / 2> them, const std::span<const float, p_l1Size * p_outputCount> weights) const;
 };
 
-constexpr bool policyRefreshRequired(int color, int oldKingSquare, int newKingSquare) {
-    if(color == 0) {
-        oldKingSquare ^= 56;
-        newKingSquare ^= 56;
-    }
-
+constexpr bool policyRefreshRequired(int oldKingSquare, int newKingSquare) {
     return (oldKingSquare % 8 > 3) != (newKingSquare % 8 > 3);
 }

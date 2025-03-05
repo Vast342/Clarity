@@ -304,13 +304,13 @@ float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l
     for(int i = 0; i < p_l1Size / 2; ++i)
     {
         float activated = std::clamp(us[i], 0.0f, 1.0f);
-        sum += activated * weights[i * p_l1Size + move_offset];
+        sum += activated * weights[i * p_l1Size + move_idx];
     }
 
     for(int i = 0; i < p_l1Size / 2; ++i)
     {
         float activated = std::clamp(them[i], 0.0f, 1.0f);
-        sum += activated * weights[i * p_l1Size + p_l1Size / 2 + move_offset];
+        sum += activated * weights[i * p_l1Size + p_l1Size / 2 + move_idx];
     }
 
     return sum;
