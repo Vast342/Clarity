@@ -221,8 +221,7 @@ Board::Board(std::string fen) {
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
     nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
     nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
-    policyState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
-    policyState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
+    policyState.fullRefresh(stateHistory.back());
     stateHistory.back().threats = calculateThreats();
 }
 
@@ -328,7 +327,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     stateHistory.back().mailbox[square] = type;
     assert(pieceAtIndex(square) == type);
     if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
-    if constexpr(UpdateNNUE) policyState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) policyState.activateFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -347,7 +346,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = None;
     if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
-    if constexpr(UpdateNNUE) policyState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) policyState.disableFeature(square, type);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -669,7 +668,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     // king square updates
     if(movedPieceType == King) {
         if(valueRefreshRequired(colorToMove, start, end)) updates.pushValueBucket(end, colorToMove);
-        if(policyRefreshRequired(start, end)) updates.pushPolicyBucket(end, colorToMove);
+        if(policyRefreshRequired()) updates.pushPolicyBucket(end, colorToMove);
         stateHistory.back().kingSquares[colorToMove] = end;
     }
 
@@ -788,10 +787,10 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     } else {
         if constexpr(PushNNUE) {
             nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
-            policyState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+            policyState.performUpdatesAndPush(updates);
         } else {
             nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
-            policyState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+            policyState.performUpdates(updates);
         }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;
