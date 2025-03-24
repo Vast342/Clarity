@@ -1,5 +1,4 @@
 #include "globals.h"
-#include "see.h"
 
 constexpr std::array<size_t, 65> OFFSETS = {
     0, 
@@ -145,7 +144,6 @@ inline size_t map_move_to_index(const Board& pos, const Move& mov) {
     int king = pos.getBoardState().kingSquares[ctm];
     int flag = mov.getFlag();
     int hm = (king % 8 > 3) ? 7 : 0;
-    size_t good_see = (OFFSETS[64] + PROMOS) * see(pos, mov, -108);
 
     size_t idx;
     // promotion
@@ -163,5 +161,5 @@ inline size_t map_move_to_index(const Board& pos, const Move& mov) {
         idx = OFFSETS[from] + __builtin_popcountll(below);
     }
 
-    return good_see + idx;
+    return idx;
 }

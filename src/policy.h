@@ -22,7 +22,7 @@
 
 constexpr int p_inputSize = 768;
 constexpr int p_l1Size = 128;
-constexpr int p_outputCount = 3760;
+constexpr int p_outputCount = 1880;
 
 struct PolicyNetwork {
     alignas(64) std::array<float, p_l1Size * p_inputSize> featureWeights;
