@@ -489,6 +489,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     } else {
         improving = true;
     }
+    bool opponent_worsening = false;
+    if(!inCheck) {
+        opponent_worsening = stack[ply].staticEval + stack[ply - 1].staticEval > 1;
+    }
 
     // adjust staticEval to TT score if it's good enough
     if(!inCheck && !inSingularSearch && shrink(hash) == entry->zobristKey && (
@@ -505,6 +509,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         if(score < alpha) {
             return score;
         }
+    }
+
+    if(!isPV && !inCheck && stack[ply - 1].reduction >= 3 && !opponent_worsening) {
+        ++depth;
     }
 
     // Reverse Futility Pruning
@@ -654,8 +662,11 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
                 lmr = std::clamp(lmr, 0, depth - 1);
             }
+
+            stack[ply].reduction = lmr;
             // this is more PVS stuff, searching with a reduced margin
             score = -negamax(board, depth - lmr - 1, -alpha - 1, -alpha, ply + 1, true, true);
+            stack[ply].reduction = 0;
             // and then if it fails high or low we search again with the original bounds
             if(score > alpha && (score < beta || lmr > 0)) {
                 score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, false);
