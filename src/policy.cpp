@@ -72,17 +72,9 @@ void PolicyAccumulator::initialize(std::span<const float, p_l1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());
 }
-void PolicyAccumulator::initHalf(std::span<const float, p_l1Size> bias, int color) {
-    std::copy(bias.begin(), bias.end(), color == 0 ? black.begin() : white.begin());
-}
 
 void PolicyNetworkState::fullRefresh(const BoardState &state) {
-    halfRefresh(0, state);
-    halfRefresh(1, state);
-}
-
-void PolicyNetworkState::halfRefresh(int color, const BoardState &state) {
-    stack[current].initHalf(p_network->featureBiases, color);
+    stack[current].initialize(p_network->featureBiases);
 
     for(int c = 0; c < 2; c++) {
         for(int piece = 0; piece < 6; piece++) {
@@ -91,7 +83,7 @@ void PolicyNetworkState::halfRefresh(int color, const BoardState &state) {
             while(bitboard != 0) {
                 int index = popLSB(bitboard);
                 int totalPiece = 8 * c + piece;
-                activateFeatureSingle(index, totalPiece, color);
+                activateFeature(index, totalPiece);
             }
         }
     }
@@ -110,26 +102,16 @@ int PolicyNetworkState::getFeatureIndex(int square, int piece, int color) {
     if(color == 0) {
         square ^= 56;
     }
+    
     return c * ColorStride + getType(piece) * PieceStride + square;
 }
 
-void PolicyNetworkState::activateFeature(int square, int piece){ 
-    activateFeatureSingle(square, piece, 0);
-    activateFeatureSingle(square, piece, 1);
-}
+void PolicyNetworkState::activateFeature(int square, int piece){
+    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece);
 
-void PolicyNetworkState::activateFeatureSingle(int square, int piece, int color){ 
-    const int index = getFeatureIndex(square, piece, color);
-
-    // change values for all of them
-    if(color == 0) {
-        for(int i = 0; i < p_l1Size; ++i) {
-            stack[current].black[i] += p_network->featureWeights[index * p_l1Size + i];
-        }
-    } else {
-        for(int i = 0; i < p_l1Size; ++i) {
-            stack[current].white[i] += p_network->featureWeights[index * p_l1Size + i];
-        }
+    for(int i = 0; i < p_l1Size; ++i) {
+        stack[current].black[i] += p_network->featureWeights[blackIdx * p_l1Size + i];
+        stack[current].white[i] += p_network->featureWeights[whiteIdx * p_l1Size + i];
     }
 }
 
@@ -141,25 +123,17 @@ void PolicyNetworkState::activateFeatureAndPush(int square, int piece){
         stack[current + 1].black[i] = stack[current].black[i] + p_network->featureWeights[blackIdx * p_l1Size + i];
         stack[current + 1].white[i] = stack[current].white[i] + p_network->featureWeights[whiteIdx * p_l1Size + i];
     }
+
     current++;
 }
 
 void PolicyNetworkState::disableFeature(int square, int piece) {
-    disableFeatureSingle(square, piece, 0);
-    disableFeatureSingle(square, piece, 1);
-}
-void PolicyNetworkState::disableFeatureSingle(int square, int piece, int color) {
-    const int index = getFeatureIndex(square, piece, color);
+    const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece);
 
     // change values for all of them
-    if(color == 0) {
-        for(int i = 0; i < p_l1Size; ++i) {
-            stack[current].black[i] -= p_network->featureWeights[index * p_l1Size + i];
-        }
-    } else {
-        for(int i = 0; i < p_l1Size; ++i) {
-            stack[current].white[i] -= p_network->featureWeights[index * p_l1Size + i];
-        }
+    for(int i = 0; i < p_l1Size; ++i) {
+        stack[current].black[i] -= p_network->featureWeights[blackIdx * p_l1Size + i];
+        stack[current].white[i] -= p_network->featureWeights[whiteIdx * p_l1Size + i];
     }
 }
 
@@ -187,18 +161,17 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
 
 float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them, const std::span<const float, p_l1Size * p_outputCount * 2> weights) const {
     float sum = 0;
-    int move_offset = p_l1Size * move_idx;
 
     for(int i = 0; i < p_l1Size; ++i)
     {
         float activated = std::clamp(us[i], 0.0f, 1.0f);
-        sum += activated * weights[move_offset + i];
+        sum += activated * weights[i * p_outputCount + move_idx];
     }
 
     for(int i = 0; i < p_l1Size; ++i)
     {
         float activated = std::clamp(them[i], 0.0f, 1.0f);
-        sum += activated * weights[move_offset + p_l1Size + i];
+        sum += activated * weights[(p_l1Size * p_outputCount) + i * p_outputCount + move_idx];
     }
 
     return sum;

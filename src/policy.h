@@ -35,7 +35,6 @@ struct PolicyAccumulator {
     alignas(64) std::array<float, p_l1Size> black;
     alignas(64) std::array<float, p_l1Size> white;
     void initialize(std::span<const float, p_l1Size> bias);
-    void initHalf(std::span<const float, p_l1Size> bias, int color);
 };
 
 class PolicyNetworkState {
@@ -55,13 +54,10 @@ class PolicyNetworkState {
         }
         void reset();
         void activateFeature(int square, int type);
-        void activateFeatureSingle(int square, int type, int color);
         void activateFeatureAndPush(int square, int type);
         void disableFeature(int square, int type);
-        void disableFeatureSingle(int square, int type, int color);
         float evaluateMove(Move move, const Board &board, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them) const;
         void fullRefresh(const BoardState &state);
-        void halfRefresh(int color, const BoardState &state);
         std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board) const;
     private:
         int current;
