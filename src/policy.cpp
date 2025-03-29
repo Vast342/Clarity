@@ -161,17 +161,18 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
 
 float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them, const std::span<const float, p_l1Size * p_outputCount * 2> weights) const {
     float sum = 0;
+    int move_offset = p_l1Size * move_idx;
 
     for(int i = 0; i < p_l1Size; ++i)
     {
         float activated = std::clamp(us[i], 0.0f, 1.0f);
-        sum += activated * weights[i * p_outputCount + move_idx];
+        sum += activated * weights[move_offset + i];
     }
 
     for(int i = 0; i < p_l1Size; ++i)
     {
         float activated = std::clamp(them[i], 0.0f, 1.0f);
-        sum += activated * weights[(p_l1Size * p_outputCount) + i * p_outputCount + move_idx];
+        sum += activated * weights[(p_l1Size * p_outputCount) + move_offset + i];
     }
 
     return sum;
