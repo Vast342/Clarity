@@ -143,13 +143,14 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     std::array<float, p_l1Size> us = (ctm == 0) ? stack[current].black : stack[current].white;
     std::array<float, p_l1Size> them = (ctm == 0) ? stack[current].white : stack[current].black;
     // pairwise multiply them
-    auto pairwise_us = pairwiseMultiplication(us);
-    auto pairwise_them = pairwiseMultiplication(them);
+    auto pairwise_us = pairwise_and_activate(us);
+    auto pairwise_them = pairwise_and_activate(them);
     
     // get each move scores
     float sum = 0;
     for(int i = 0; i < moveCount; i++) {
         const auto moveScore = evaluateMove(moves[i], board, std::span(pairwise_us), std::span(pairwise_them));
+        // output raw for debugging
         //std::cout << toLongAlgebraic(moves[i]) << " : " << moveScore << std::endl;
         result[i] = exp(moveScore);
         sum += result[i];
@@ -167,14 +168,8 @@ float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l
 
     for(int i = 0; i < p_l1Size / 2; ++i)
     {
-        float activated = std::clamp(us[i], 0.0f, 1.0f);
-        sum += activated * weights[move_offset + i];
-    }
-
-    for(int i = 0; i < p_l1Size / 2; ++i)
-    {
-        float activated = std::clamp(them[i], 0.0f, 1.0f);
-        sum += activated * weights[move_offset + p_l1Size / 2 + i];
+        sum += us[i] * weights[move_offset + i];
+        sum += them[i] * weights[move_offset + (p_l1Size / 2) + i];
     }
 
     return sum;

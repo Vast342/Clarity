@@ -67,12 +67,16 @@ class PolicyNetworkState {
         float forward(const int move_idx, const std::span<float, p_l1Size / 2> us, const std::span<float, p_l1Size / 2> them, const std::span<const float, p_l1Size * p_outputCount> weights) const;
 };
 
-inline std::array<float, p_l1Size / 2> pairwiseMultiplication(const std::array<float, p_l1Size>& input) {
+constexpr float activate(const float x) {
+    return std::clamp(x, 0.0f, 1.0f);
+}
+
+inline std::array<float, p_l1Size / 2> pairwise_and_activate(const std::array<float, p_l1Size>& input) {
     std::array<float, p_l1Size / 2> result = {};
     constexpr size_t half = p_l1Size / 2;
 
     for (size_t i = 0; i < half; ++i) {
-        result[i] = input[i] * input[i + half];
+        result[i] = activate(input[i]) * activate(input[i + half]);
     }
 
     return result;
