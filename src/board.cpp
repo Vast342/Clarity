@@ -668,7 +668,6 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
     // king square updates
     if(movedPieceType == King) {
         if(valueRefreshRequired(colorToMove, start, end)) updates.pushValueBucket(end, colorToMove);
-        if(policyRefreshRequired()) updates.pushPolicyBucket(end, colorToMove);
         stateHistory.back().kingSquares[colorToMove] = end;
     }
 

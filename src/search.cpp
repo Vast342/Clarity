@@ -32,9 +32,11 @@ uint64_t hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
 
+constexpr float policyWeight = float(historyCap) * 2;
+
 // Tunable Values
-constexpr int killerScore = 81922;
-constexpr int counterScore = 81921;
+constexpr int killerScore = 114690;
+constexpr int counterScore = 114689;
 
 constexpr int goodCaptureBonus= 500000;
 // The main search functions
@@ -70,7 +72,7 @@ void Engine::resetEngine() {
     5: Bad captures: captures that result in bad exchanges.
 */
 void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply) {
-    //const auto policies = board.labelMoves(moves, numMoves);
+    const auto policies = board.labelMoves(moves, numMoves);
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
@@ -107,6 +109,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                     + pawnHistoryTable[hash][colorToMove][piece][end];
             }
         }
+        values[i] += int(policies[i] * policyWeight);
     }
 }
 
@@ -483,7 +486,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         int moveFlag = move.getFlag();
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
-        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 5);
+        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 7);
 
         // move loop prunings:
         // futility pruning

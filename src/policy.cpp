@@ -147,8 +147,6 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     // get each move scores
     float sum = 0;
     for(int i = 0; i < moveCount; i++) {
-        float thing = evaluateMove(moves[i], board, std::span(us), std::span(them));
-        std::cout << toLongAlgebraic(moves[i]) << " : " << thing << std::endl;
         result[i] = exp(evaluateMove(moves[i], board, std::span(us), std::span(them)));
         sum += result[i];
     }
@@ -161,7 +159,7 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
 
 float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them, const std::span<const float, p_l1Size * p_outputCount * 2> weights) const {
     float sum = 0;
-    int move_offset = p_l1Size * move_idx;
+    int move_offset = (p_l1Size * 2) * move_idx;
 
     for(int i = 0; i < p_l1Size; ++i)
     {
@@ -172,7 +170,7 @@ float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l
     for(int i = 0; i < p_l1Size; ++i)
     {
         float activated = std::clamp(them[i], 0.0f, 1.0f);
-        sum += activated * weights[(p_l1Size * p_outputCount) + move_offset + i];
+        sum += activated * weights[move_offset + p_l1Size + i];
     }
 
     return sum;

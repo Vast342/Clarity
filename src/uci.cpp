@@ -244,7 +244,7 @@ void policy() {
     const int totalMoves = board.getMoves(moves);
     const auto policies = board.labelMoves(moves, totalMoves);
     for(int i = 0; i < totalMoves; i++) {
-        //std::cout << toLongAlgebraic(moves[i]) << " : " << policies[i] << std::endl;
+        std::cout << toLongAlgebraic(moves[i]) << " : " << policies[i] << std::endl;
     }
 }
 

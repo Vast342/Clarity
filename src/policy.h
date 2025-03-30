@@ -25,15 +25,15 @@ constexpr int p_l1Size = 128;
 constexpr int p_outputCount = 1880;
 
 struct PolicyNetwork {
-    alignas(64) std::array<float, p_l1Size * p_inputSize> featureWeights;
-    alignas(64) std::array<float, p_l1Size> featureBiases;
-    alignas(64) std::array<float, p_outputCount * p_l1Size * 2> outputWeights;
-    alignas(64) std::array<float, p_outputCount> outputBiases;
+    alignas(32) std::array<float, p_l1Size * p_inputSize> featureWeights;
+    alignas(32) std::array<float, p_l1Size> featureBiases;
+    alignas(32) std::array<float, p_outputCount * p_l1Size * 2> outputWeights;
+    alignas(32) std::array<float, p_outputCount> outputBiases;
 };
 
 struct PolicyAccumulator {
-    alignas(64) std::array<float, p_l1Size> black;
-    alignas(64) std::array<float, p_l1Size> white;
+    alignas(32) std::array<float, p_l1Size> black;
+    alignas(32) std::array<float, p_l1Size> white;
     void initialize(std::span<const float, p_l1Size> bias);
 };
 
@@ -66,7 +66,3 @@ class PolicyNetworkState {
         static int getFeatureIndex(int square, int type, int color);
         float forward(const int move_idx, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them, const std::span<const float, p_l1Size * p_outputCount * 2> weights) const;
 };
-
-constexpr bool policyRefreshRequired() {
-    return false;
-}

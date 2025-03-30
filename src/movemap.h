@@ -141,22 +141,20 @@ constexpr size_t PROMOS = 4 * 22;
 
 inline size_t map_move_to_index(const Board& pos, const Move& mov) {
     int ctm = pos.getColorToMove();
-    int king = pos.getBoardState().kingSquares[ctm];
     int flag = mov.getFlag();
-    int hm = (king % 8 > 3) ? 7 : 0;
 
     size_t idx;
     // promotion
     if(flag > DoublePawnPush) {
-        int ffile = (mov.getStartSquare() ^ hm) % 8;
-        int tfile = (mov.getEndSquare() ^ hm) % 8;
+        int ffile = (mov.getStartSquare()) % 8;
+        int tfile = (mov.getEndSquare()) % 8;
         int promo_id = 2 * ffile + tfile;
 
         idx = OFFSETS[64] + 22 * (flag - promotions[0]) + promo_id;
     } else {
         int flip = (ctm == 0) ? 56 : 0;
-        size_t from = mov.getStartSquare() ^ flip ^ hm;
-        size_t dest = mov.getEndSquare() ^ flip ^ hm;
+        size_t from = mov.getStartSquare() ^ flip;
+        size_t dest = mov.getEndSquare() ^ flip;
         uint64_t below = ALL_DESTINATIONS[from] & ((1ULL << dest) - 1);
         idx = OFFSETS[from] + __builtin_popcountll(below);
     }
