@@ -41,6 +41,7 @@ struct StackEntry {
     // excluded move
     Move excluded;
     int doubleExtensions;
+    int reduction;
 };
 
 struct Engine {
