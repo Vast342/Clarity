@@ -35,7 +35,7 @@
 #endif
 
 namespace {
-    INCBIN(networkTwo, "src/policy/cpn_001q.pn");
+    INCBIN(networkTwo, "src/policy/cpn_001.pn");
     const PolicyNetwork *p_network = reinterpret_cast<const PolicyNetwork *>(g_networkTwoData);
 }
 
@@ -68,7 +68,7 @@ void PolicyNetworkState::performUpdatesAndPush(NetworkUpdates updates) {
     }
 }
 
-void PolicyAccumulator::initialize(std::span<const int16_t, p_l1Size> bias) {
+void PolicyAccumulator::initialize(std::span<const float, p_l1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());
 }
@@ -91,9 +91,6 @@ void PolicyNetworkState::fullRefresh(const BoardState &state) {
 
 constexpr uint32_t ColorStride = 64 * 6;
 constexpr uint32_t PieceStride = 64;
-constexpr float QA = 256.0;
-constexpr float QB = 256.0;
-constexpr int QAB = QA * QB;
 
 
 std::pair<uint32_t, uint32_t> PolicyNetworkState::getFeatureIndices(int square, int piece) {
@@ -144,8 +141,8 @@ void PolicyNetworkState::disableFeature(int square, int piece) {
 std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board) const {
     std::array<float, 256> result = {};
     // pairwise multiply both perspective HLs
-    std::array<int16_t, p_l1Size> us = (ctm == 0) ? stack[current].black : stack[current].white;
-    std::array<int16_t, p_l1Size> them = (ctm == 0) ? stack[current].white : stack[current].black;
+    std::array<float, p_l1Size> us = (ctm == 0) ? stack[current].black : stack[current].white;
+    std::array<float, p_l1Size> them = (ctm == 0) ? stack[current].white : stack[current].black;
 
     // get each move scores
     float sum = 0;
@@ -160,29 +157,29 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     return result;
 }
 
-int32_t PolicyNetworkState::forward(const int move_idx, const std::span<int16_t, p_l1Size> us, const std::span<int16_t, p_l1Size> them, const std::span<const int16_t, p_l1Size * p_outputCount * 2> weights) const {
-    int32_t sum = 0;
+float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them, const std::span<const float, p_l1Size * p_outputCount * 2> weights) const {
+    float sum = 0;
     int move_offset = (p_l1Size * 2) * move_idx;
 
     for(int i = 0; i < p_l1Size; ++i)
     {
-        int32_t activated = std::clamp(us[i], int16_t(0), int16_t(QA));
+        float activated = std::clamp(us[i], 0.0f, 1.0f);
         sum += activated * weights[move_offset + i];
     }
 
     for(int i = 0; i < p_l1Size; ++i)
     {
-        int32_t activated = std::clamp(them[i], int16_t(0), int16_t(QA));
+        float activated = std::clamp(them[i], 0.0f, 1.0f);
         sum += activated * weights[move_offset + p_l1Size + i];
     }
 
     return sum;
 }
 
-float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<int16_t, p_l1Size> us, const std::span<int16_t, p_l1Size> them) const {
+float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them) const {
     int move_idx = map_move_to_index(board, move);
     const auto output = forward(move_idx, us, them, p_network->outputWeights);
-    return float(output + p_network->outputBiases[move_idx]) / QAB;
+    return output + p_network->outputBiases[move_idx];
 }
 
 

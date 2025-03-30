@@ -25,16 +25,16 @@ constexpr int p_l1Size = 128;
 constexpr int p_outputCount = 1880;
 
 struct PolicyNetwork {
-    alignas(32) std::array<int16_t, p_l1Size * p_inputSize> featureWeights;
-    alignas(32) std::array<int16_t, p_l1Size> featureBiases;
-    alignas(32) std::array<int16_t, p_outputCount * p_l1Size * 2> outputWeights;
-    alignas(32) std::array<int32_t, p_outputCount> outputBiases;
+    alignas(32) std::array<float, p_l1Size * p_inputSize> featureWeights;
+    alignas(32) std::array<float, p_l1Size> featureBiases;
+    alignas(32) std::array<float, p_outputCount * p_l1Size * 2> outputWeights;
+    alignas(32) std::array<float, p_outputCount> outputBiases;
 };
 
 struct PolicyAccumulator {
-    alignas(32) std::array<int16_t, p_l1Size> black;
-    alignas(32) std::array<int16_t, p_l1Size> white;
-    void initialize(std::span<const int16_t, p_l1Size> bias);
+    alignas(32) std::array<float, p_l1Size> black;
+    alignas(32) std::array<float, p_l1Size> white;
+    void initialize(std::span<const float, p_l1Size> bias);
 };
 
 class PolicyNetworkState {
@@ -56,7 +56,7 @@ class PolicyNetworkState {
         void activateFeature(int square, int type);
         void activateFeatureAndPush(int square, int type);
         void disableFeature(int square, int type);
-        float evaluateMove(Move move, const Board &board, const std::span<int16_t, p_l1Size> us, const std::span<int16_t, p_l1Size> them) const;
+        float evaluateMove(Move move, const Board &board, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them) const;
         void fullRefresh(const BoardState &state);
         std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board) const;
     private:
@@ -64,5 +64,5 @@ class PolicyNetworkState {
         std::vector<PolicyAccumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
         static int getFeatureIndex(int square, int type, int color);
-        int forward(const int move_idx, const std::span<int16_t, p_l1Size> us, const std::span<int16_t, p_l1Size> them, const std::span<const int16_t, p_l1Size * p_outputCount * 2> weights) const;
+        float forward(const int move_idx, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them, const std::span<const float, p_l1Size * p_outputCount * 2> weights) const;
 };
