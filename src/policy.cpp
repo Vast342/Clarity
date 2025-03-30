@@ -35,7 +35,7 @@
 #endif
 
 namespace {
-    INCBIN(networkTwo, "src/policy/cpn_001.pn");
+    INCBIN(networkTwo, "src/policy/cpn_002.pn");
     const PolicyNetwork *p_network = reinterpret_cast<const PolicyNetwork *>(g_networkTwoData);
 }
 
@@ -145,11 +145,13 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     // pairwise multiply them
     auto pairwise_us = pairwiseMultiplication(us);
     auto pairwise_them = pairwiseMultiplication(them);
-
+    
     // get each move scores
     float sum = 0;
     for(int i = 0; i < moveCount; i++) {
-        result[i] = exp(evaluateMove(moves[i], board, std::span(pairwise_us), std::span(pairwise_them)));
+        const auto moveScore = evaluateMove(moves[i], board, std::span(pairwise_us), std::span(pairwise_them));
+        //std::cout << toLongAlgebraic(moves[i]) << " : " << moveScore << std::endl;
+        result[i] = exp(moveScore);
         sum += result[i];
     }
     // softmax
