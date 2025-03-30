@@ -140,14 +140,16 @@ void PolicyNetworkState::disableFeature(int square, int piece) {
 // woooo softmax yayyyy
 std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board) const {
     std::array<float, 256> result = {};
-    // pairwise multiply both perspective HLs
     std::array<float, p_l1Size> us = (ctm == 0) ? stack[current].black : stack[current].white;
     std::array<float, p_l1Size> them = (ctm == 0) ? stack[current].white : stack[current].black;
+    // pairwise multiply them
+    auto pairwise_us = pairwiseMultiplication(us);
+    auto pairwise_them = pairwiseMultiplication(them);
 
     // get each move scores
     float sum = 0;
     for(int i = 0; i < moveCount; i++) {
-        result[i] = exp(evaluateMove(moves[i], board, std::span(us), std::span(them)));
+        result[i] = exp(evaluateMove(moves[i], board, std::span(pairwise_us), std::span(pairwise_them)));
         sum += result[i];
     }
     // softmax
@@ -157,26 +159,26 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     return result;
 }
 
-float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them, const std::span<const float, p_l1Size * p_outputCount * 2> weights) const {
+float PolicyNetworkState::forward(const int move_idx, const std::span<float, p_l1Size / 2> us, const std::span<float, p_l1Size / 2> them, const std::span<const float, p_l1Size * p_outputCount> weights) const {
     float sum = 0;
-    int move_offset = (p_l1Size * 2) * move_idx;
+    int move_offset = p_l1Size * move_idx;
 
-    for(int i = 0; i < p_l1Size; ++i)
+    for(int i = 0; i < p_l1Size / 2; ++i)
     {
         float activated = std::clamp(us[i], 0.0f, 1.0f);
         sum += activated * weights[move_offset + i];
     }
 
-    for(int i = 0; i < p_l1Size; ++i)
+    for(int i = 0; i < p_l1Size / 2; ++i)
     {
         float activated = std::clamp(them[i], 0.0f, 1.0f);
-        sum += activated * weights[move_offset + p_l1Size + i];
+        sum += activated * weights[move_offset + p_l1Size / 2 + i];
     }
 
     return sum;
 }
 
-float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<float, p_l1Size> us, const std::span<float, p_l1Size> them) const {
+float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<float, p_l1Size / 2> us, const std::span<float, p_l1Size / 2> them) const {
     int move_idx = map_move_to_index(board, move);
     const auto output = forward(move_idx, us, them, p_network->outputWeights);
     return output + p_network->outputBiases[move_idx];
