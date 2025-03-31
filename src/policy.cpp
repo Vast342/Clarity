@@ -147,7 +147,7 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     auto pairwise_them = pairwise_and_activate(them);
     
     // get each move scores
-    float temp = 1.3;
+    float temp = 0.7;
     float sum = 0;
     for(int i = 0; i < moveCount; i++) {
         const auto moveScore = evaluateMove(moves[i], board, std::span(pairwise_us), std::span(pairwise_them));
