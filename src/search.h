@@ -84,7 +84,7 @@ struct Engine {
 
         std::chrono::steady_clock::time_point begin;
         void clearHistory();
-        void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply);
+        void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply, int depth);
         void scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove);
         int16_t qSearch(Board &board, int alpha, int beta, int16_t ply);
         void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int16_t ply, const int hash, const bool startAttack, const bool endAttack);
