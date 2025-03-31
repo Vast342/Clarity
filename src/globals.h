@@ -142,7 +142,7 @@ struct Board {
         int getPawnHashIndex() const;
         uint64_t getThreats() const;
         uint64_t calculateThreats();
-        std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount) const;
+        std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount, const bool is_root) const;
     private:
         int plyCount;
         uint8_t colorToMove;

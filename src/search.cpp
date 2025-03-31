@@ -70,9 +70,9 @@ void Engine::resetEngine() {
     5: Bad captures: captures that result in bad exchanges.
 */
 void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply, int depth) {
-    std::array<float, 256> policies = {};
+    std::array<float, 256> policies;
     if(depth > 2) {
-        policies = board.labelMoves(moves, numMoves);
+        policies = board.labelMoves(moves, numMoves, ply == 1);
     }
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
@@ -94,7 +94,9 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                 // good captures
                 values[i] += goodCaptureBonus;
             }
-            values[i] += int(policies[i] * polWeight.value);
+            if(depth > 2) {
+                values[i] += int(policies[i] * polWeight.value);
+            }
         } else {
             // if not in qsearch, killers
             if(move == stack[ply].killer) {
@@ -110,7 +112,9 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                     + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
                     + pawnHistoryTable[hash][colorToMove][piece][end];
             }
-            values[i] += int(policies[i] * polWeight.value);
+            if(depth > 2) {
+                values[i] += int(policies[i] * polWeight.value);
+            }
         }
     }
 }

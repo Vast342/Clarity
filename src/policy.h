@@ -62,7 +62,7 @@ class PolicyNetworkState {
         void disableFeature(int square, int type);
         float evaluateMove(Move move, const Board &board, const std::span<int, p_l1Size / 2> us, const std::span<int, p_l1Size / 2> them) const;
         void fullRefresh(const BoardState &state);
-        std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board) const;
+        std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board, const bool is_root) const;
     private:
         int current;
         std::vector<PolicyAccumulator> stack;

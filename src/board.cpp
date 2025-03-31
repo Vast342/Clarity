@@ -1032,6 +1032,6 @@ uint64_t Board::getThreats() const {
     return stateHistory.back().threats;
 }
 
-std::array<float, 256> Board::labelMoves(const std::array<Move, 256> &moves, int moveCount) const {
-    return policyState.labelMoves(moves, moveCount, colorToMove, *this);
+std::array<float, 256> Board::labelMoves(const std::array<Move, 256> &moves, int moveCount, const bool is_root) const {
+    return policyState.labelMoves(moves, moveCount, colorToMove, *this, is_root);
 }

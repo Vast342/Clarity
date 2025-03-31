@@ -242,7 +242,7 @@ void stopOtherThreads() {
 void policy() {
     std::array<Move, 256> moves;
     const int totalMoves = board.getMoves(moves);
-    const auto policies = board.labelMoves(moves, totalMoves);
+    const auto policies = board.labelMoves(moves, totalMoves, false);
     for(int i = 0; i < totalMoves; i++) {
         std::cout << toLongAlgebraic(moves[i]) << " : " << policies[i] << std::endl;
     }
