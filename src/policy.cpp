@@ -151,7 +151,7 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     for(int i = 0; i < moveCount; i++) {
         const auto moveScore = evaluateMove(moves[i], board, std::span(pairwise_us), std::span(pairwise_them));
         // output raw for debugging
-        //std::cout << toLongAlgebraic(moves[i]) << " : " << moveScore << std::endl;
+        std::cout << toLongAlgebraic(moves[i]) << " : " << moveScore << std::endl;
         result[i] = exp(moveScore);
         sum += result[i];
     }

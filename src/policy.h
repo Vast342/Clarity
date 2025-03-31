@@ -87,9 +87,8 @@ inline std::array<int, p_l1Size / 4> pairwise_and_activate(const std::array<int1
     constexpr size_t quarter = p_l1Size / 4;
 
     for (size_t i = 0; i < quarter; ++i) {
-        result2[i] = activate(input[i]) * activate(input[i + quarter]);
+        result2[i] = activate(result1[i]) * activate(result1[i + quarter]);
     }
-
 
     return result2;
 }
