@@ -69,8 +69,11 @@ void Engine::resetEngine() {
     4: History: scores of how many times a move has caused a beta cutoff
     5: Bad captures: captures that result in bad exchanges.
 */
-void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply) {
-    const auto policies = board.labelMoves(moves, numMoves);
+void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply, int depth) {
+    std::array<float, 256> policies = {};
+    if(depth > 2) {
+        policies = board.labelMoves(moves, numMoves);
+    }
     const uint64_t occupied = board.getOccupiedBitboard();
     const int colorToMove = board.getColorToMove();
     for(int i = 0; i < numMoves; i++) {
@@ -452,7 +455,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     std::array<Move, 256> testedMoves;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, inSingularSearch ? Move() : entry->bestMove, ply);
+    scoreMoves(board, moves, moveValues, totalMoves, inSingularSearch ? Move() : entry->bestMove, ply, depth);
 
     // values useful for writing to TT later
     int bestScore = matedScore;
@@ -776,7 +779,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
@@ -905,7 +908,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
@@ -991,7 +994,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
@@ -1066,7 +1069,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
