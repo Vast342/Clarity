@@ -32,8 +32,6 @@ uint64_t hardNodeCap = 400000;
 
 constexpr int historyCap = 16384;
 
-constexpr float policyWeight = float(historyCap) * 2;
-
 // Tunable Values
 constexpr int killerScore = 114690;
 constexpr int counterScore = 114689;
@@ -93,7 +91,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                 // good captures
                 values[i] += goodCaptureBonus;
             }
-            values[i] += int(policies[i] * policyWeight);
+            values[i] += int(policies[i] * polWeight.value);
         } else {
             // if not in qsearch, killers
             if(move == stack[ply].killer) {
@@ -109,7 +107,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                     + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
                     + pawnHistoryTable[hash][colorToMove][piece][end];
             }
-            values[i] += int(policies[i] * policyWeight);
+            values[i] += int(policies[i] * polWeight.value);
         }
     }
 }

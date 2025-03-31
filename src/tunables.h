@@ -121,6 +121,8 @@ inline Tunable pvTTDepthMargin("PVTT_DepthMargin", 3, 1);
 
 inline Tunable texMargin("TEX_Margin", 67, 1);
 
+inline Tunable polWeight("POL_Weight", 32768, 1);
+
 // corrhist tunables
 inline Tunable chUncertaintyMargin("CH_Uncertainty_Margin", 128, 1);
 
@@ -208,7 +210,15 @@ inline std::vector<Tunable *> tunables = {
     &tmsNumerator,
     &tmsDenominator,
     &tmsMultiplier,
-    &pvTTDepthMargin
+    &pvTTDepthMargin,
+    &polWeight,
+    &texMargin,
+    &chUncertaintyMargin,
+    &chScale,
+    &chMin,
+    &chMax,
+    &pawnChWeight,
+    &nonpawnChWeight,
 };
 
 
