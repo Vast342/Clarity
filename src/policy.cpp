@@ -35,7 +35,7 @@
 #endif
 
 namespace {
-    INCBIN(networkTwo, "src/policy/cpn_002q.pn");
+    INCBIN(networkTwo, "src/policy/cpn_003q.pn");
     const PolicyNetwork *p_network = reinterpret_cast<const PolicyNetwork *>(g_networkTwoData);
 }
 
@@ -162,19 +162,19 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     return result;
 }
 
-int PolicyNetworkState::forward(const int move_idx, const std::span<int, p_l1Size / 2> us, const std::span<int, p_l1Size / 2> them, const std::span<const int16_t, p_l1Size * p_outputCount> weights) const {
+int PolicyNetworkState::forward(const int move_idx, const std::span<int, p_l1Size / 4> us, const std::span<int, p_l1Size / 4> them, const std::span<const int16_t, p_l1Size * p_outputCount / 2> weights) const {
     int sum = 0;
-    int move_offset = p_l1Size * move_idx;
+    int move_offset = (p_l1Size / 2) * move_idx;
 
-    for(int i = 0; i < p_l1Size / 2; ++i) {
+    for(int i = 0; i < p_l1Size / 4; ++i) {
         sum += us[i] * weights[move_offset + i];
-        sum += them[i] * weights[move_offset + (p_l1Size / 2) + i];
+        sum += them[i] * weights[move_offset + (p_l1Size / 4) + i];
     }
 
     return sum;
 }
 
-float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<int, p_l1Size / 2> us, const std::span<int, p_l1Size / 2> them) const {
+float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<int, p_l1Size / 4> us, const std::span<int, p_l1Size / 4> them) const {
     int move_idx = map_move_to_index(board, move);
     const auto output = forward(move_idx, us, them, p_network->outputWeights);
     return float(output / QA + p_network->outputBiases[move_idx]) / QAB;
