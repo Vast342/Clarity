@@ -98,7 +98,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                 values[i] += int(policies[i] * polWeight.value);
                 // if passes test malus
                 if(policies[i] > polHistBonusMin.value) {
-                    updateNoisyHistory(colorToMove, piece, end, victim, polHistBonusNoisy.value);
+                    updateNoisyHistory(colorToMove, piece, end, victim, (policies[i] - 0.10) * polHistBonusNoisy.value);
                 }
             }
         } else {
@@ -120,7 +120,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                 values[i] += int(policies[i] * polWeight.value);
                 // if passes test malus
                 if(policies[i] > polHistBonusMin.value) {
-                    updateHistory(board.getColorToMove(), start, end, piece, polHistBonus.value, ply, board.getPawnHashIndex(), board.squareIsUnderAttack(start), board.squareIsUnderAttack(end));
+                    updateHistory(board.getColorToMove(), start, end, piece, (policies[i] - 0.10) * polHistBonus.value, ply, board.getPawnHashIndex(), board.squareIsUnderAttack(start), board.squareIsUnderAttack(end));
                 }
             }
         }
