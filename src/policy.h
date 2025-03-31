@@ -24,12 +24,12 @@ constexpr int p_inputSize = 768;
 constexpr int p_l1Size = 128;
 constexpr int p_outputCount = 1880;
 
-constexpr float QA = 128;
-constexpr float QB = 128;
+constexpr float QA = 256;
+constexpr float QB = 256;
 constexpr float QAB = QA * QB;
 
 struct PolicyNetwork {
-    alignas(32) std::array<int8_t, p_l1Size * p_inputSize> featureWeights;
+    alignas(32) std::array<int16_t, p_l1Size * p_inputSize> featureWeights;
     alignas(32) std::array<int16_t, p_l1Size> featureBiases;
     alignas(32) std::array<int16_t, p_outputCount * p_l1Size> outputWeights;
     alignas(32) std::array<int, p_outputCount> outputBiases;
