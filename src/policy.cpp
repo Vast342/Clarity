@@ -139,7 +139,7 @@ void PolicyNetworkState::disableFeature(int square, int piece) {
 
 // woooo softmax yayyyy
 std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board) const {
-    std::array<float, 256> result = {};
+    std::array<float, 256> result;
     std::array<int16_t, p_l1Size> us = (ctm == 0) ? stack[current].black : stack[current].white;
     std::array<int16_t, p_l1Size> them = (ctm == 0) ? stack[current].white : stack[current].black;
     // pairwise multiply them

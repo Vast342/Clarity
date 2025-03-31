@@ -76,7 +76,7 @@ constexpr int16_t activate(const int16_t x) {
 }
 
 inline std::array<int, p_l1Size / 2> pairwise_and_activate(const std::array<int16_t, p_l1Size>& input) {
-    std::array<int, p_l1Size / 2> result = {};
+    std::array<int, p_l1Size / 2> result;
     constexpr size_t half = p_l1Size / 2;
 
     for (size_t i = 0; i < half; ++i) {
