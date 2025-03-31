@@ -18,6 +18,7 @@
 
 #include "globals.h"
 #include "movemap.h"
+#include "tunables.h"
 #include <filesystem>
 
 #ifdef _MSC_VER
@@ -152,7 +153,7 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
         const auto moveScore = evaluateMove(moves[i], board, std::span(pairwise_us), std::span(pairwise_them));
         // output raw for debugging
         //std::cout << toLongAlgebraic(moves[i]) << " : " << moveScore << std::endl;
-        result[i] = exp(moveScore);
+        result[i] = exp(moveScore / polBaseTemp.value);
         sum += result[i];
     }
     // softmax
