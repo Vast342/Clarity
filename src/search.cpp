@@ -96,6 +96,10 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             }
             if(depth > polMinDepth.value) {
                 values[i] += int(policies[i] * polWeight.value);
+                // if passes test malus
+                if(policies[i] > polHistBonusMin.value) {
+                    updateNoisyHistory(colorToMove, piece, end, victim, polHistBonusNoisy.value);
+                }
             }
         } else {
             // if not in qsearch, killers
@@ -114,6 +118,10 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             }
             if(depth > polMinDepth.value) {
                 values[i] += int(policies[i] * polWeight.value);
+                // if passes test malus
+                if(policies[i] > polHistBonusMin.value) {
+                    updateHistory(board.getColorToMove(), start, end, piece, polHistBonus.value, ply, board.getPawnHashIndex(), board.squareIsUnderAttack(start), board.squareIsUnderAttack(end));
+                }
             }
         }
     }

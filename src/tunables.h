@@ -124,6 +124,9 @@ inline Tunable texMargin("TEX_Margin", 67, 1);
 inline Tunable polWeight("POL_Weight", 32768, 1);
 inline Tunable polBaseTemp("POL_BaseTemp", 1, 100);
 inline Tunable polMinDepth("POL_MinDepth", 2, 1);
+inline Tunable polHistBonusMin("POL_HistBonusMin", 0.25, 100);
+inline Tunable polHistBonus("POL_HistBonus", 30, 1);
+inline Tunable polHistBonusNoisy("POL_HistBonus", 30, 1);
 
 // corrhist tunables
 inline Tunable chUncertaintyMargin("CH_Uncertainty_Margin", 128, 1);
