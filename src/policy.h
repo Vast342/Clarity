@@ -21,7 +21,7 @@
 
 
 constexpr int p_inputSize = 768;
-constexpr int p_l1Size = 128;
+constexpr int p_l1Size = 64;
 constexpr int p_outputCount = 1880;
 
 constexpr float QA = 128;

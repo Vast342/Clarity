@@ -36,7 +36,7 @@
 #endif
 
 namespace {
-    INCBIN(networkTwo, "src/policy/cpn_002q.pn");
+    INCBIN(networkTwo, "src/policy/cpn_003q.pn");
     const PolicyNetwork *p_network = reinterpret_cast<const PolicyNetwork *>(g_networkTwoData);
 }
 
