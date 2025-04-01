@@ -163,7 +163,7 @@ std::array<float, 256> PolicyNetworkState::labelMoves(const std::array<Move, 256
     return result;
 }
 
-int PolicyNetworkState::forward(const int move_idx, const std::span<int, p_l1Size / 2> us, const std::span<int, p_l1Size / 2> them, const std::span<const int16_t, p_l1Size * p_outputCount> weights) const {
+int PolicyNetworkState::forward(const int move_idx, const std::span<int16_t, p_l1Size / 2> us, const std::span<int16_t, p_l1Size / 2> them, const std::span<const int16_t, p_l1Size * p_outputCount> weights) const {
     int sum = 0;
     int move_offset = p_l1Size * move_idx;
 
@@ -175,7 +175,7 @@ int PolicyNetworkState::forward(const int move_idx, const std::span<int, p_l1Siz
     return sum;
 }
 
-float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<int, p_l1Size / 2> us, const std::span<int, p_l1Size / 2> them) const {
+float PolicyNetworkState::evaluateMove(Move move, const Board &board, const std::span<int16_t, p_l1Size / 2> us, const std::span<int16_t, p_l1Size / 2> them) const {
     int move_idx = map_move_to_index(board, move);
     const auto output = forward(move_idx, us, them, p_network->outputWeights);
     return float(output / QA + p_network->outputBiases[move_idx]) / QAB;

@@ -60,7 +60,7 @@ class PolicyNetworkState {
         void activateFeature(int square, int type);
         void activateFeatureAndPush(int square, int type);
         void disableFeature(int square, int type);
-        float evaluateMove(Move move, const Board &board, const std::span<int, p_l1Size / 2> us, const std::span<int, p_l1Size / 2> them) const;
+        float evaluateMove(Move move, const Board &board, const std::span<int16_t, p_l1Size / 2> us, const std::span<int16_t, p_l1Size / 2> them) const;
         void fullRefresh(const BoardState &state);
         std::array<float, 256> labelMoves(const std::array<Move, 256> &moves, int moveCount, int ctm, const Board &board) const;
     private:
@@ -68,15 +68,15 @@ class PolicyNetworkState {
         std::vector<PolicyAccumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type);
         static int getFeatureIndex(int square, int type, int color);
-        int forward(const int move_idx, const std::span<int, p_l1Size / 2> us, const std::span<int, p_l1Size / 2> them, const std::span<const int16_t, p_l1Size * p_outputCount> weights) const;
+        int forward(const int move_idx, const std::span<int16_t, p_l1Size / 2> us, const std::span<int16_t, p_l1Size / 2> them, const std::span<const int16_t, p_l1Size * p_outputCount> weights) const;
 };
 
 constexpr int16_t activate(const int16_t x) {
     return std::clamp(x, int16_t(0), int16_t(QA));
 }
 
-inline std::array<int, p_l1Size / 2> pairwise_and_activate(const std::array<int16_t, p_l1Size>& input) {
-    std::array<int, p_l1Size / 2> result;
+inline std::array<int16_t, p_l1Size / 2> pairwise_and_activate(const std::array<int16_t, p_l1Size>& input) {
+    std::array<int16_t, p_l1Size / 2> result;
     constexpr size_t half = p_l1Size / 2;
 
     for (size_t i = 0; i < half; ++i) {
