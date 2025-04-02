@@ -69,9 +69,9 @@ void Engine::resetEngine() {
     4: History: scores of how many times a move has caused a beta cutoff
     5: Bad captures: captures that result in bad exchanges.
 */
-void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply, int depth) {
+void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply, int depth, bool isPV) {
     std::array<float, 256> policies;
-    if(depth > polMinDepth.value) {
+    if(depth > polMinDepth.value || isPV) {
         policies = board.labelMoves(moves, numMoves);
     }
     const uint64_t occupied = board.getOccupiedBitboard();
@@ -94,7 +94,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                 // good captures
                 values[i] += goodCaptureBonus;
             }
-            if(depth > polMinDepth.value) {
+            if(depth > polMinDepth.value || isPV) {
                 values[i] += int(policies[i] * polWeight.value);
             }
         } else {
@@ -112,7 +112,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                     + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
                     + pawnHistoryTable[hash][colorToMove][piece][end];
             }
-            if(depth > polMinDepth.value) {
+            if(depth > polMinDepth.value || isPV) {
                 values[i] += int(policies[i] * polWeight.value);
             }
         }
@@ -459,7 +459,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     std::array<Move, 256> testedMoves;
     const int totalMoves = board.getMoves(moves);
     std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, inSingularSearch ? Move() : entry->bestMove, ply, depth);
+    scoreMoves(board, moves, moveValues, totalMoves, inSingularSearch ? Move() : entry->bestMove, ply, depth, isPV);
 
     // values useful for writing to TT later
     int bestScore = matedScore;
@@ -783,7 +783,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10, true);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
@@ -912,7 +912,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10, true);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
@@ -998,7 +998,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10, true);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
@@ -1073,7 +1073,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         int totalMoves = board.getMoves(moves);
         std::array<int, 256> moveValues;
         Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10);
+        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0, 10, true);
 
         for(int i = 0; i < totalMoves; i++) {
             for(int j = i + 1; j < totalMoves; j++) {
