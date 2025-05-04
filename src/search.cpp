@@ -222,6 +222,8 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
+    const bool isPV = beta > alpha + 1;
+
     stack[ply].pvLength = 0;
     //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
@@ -243,7 +245,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     // TT check
     Transposition* entry = TT->getEntry(hash);
 
-    if(entry->zobristKey == shrink(hash) && (
+    if(!isPV && entry->zobristKey == shrink(hash) && (
         entry->flag == Exact // exact score
             || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
             || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
