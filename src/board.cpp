@@ -109,6 +109,7 @@ Board::Board(std::string fen) {
 	stateHistory.back().pawnHash = 0;
     stateHistory.back().nonPawnHashes[0] = 0;
     stateHistory.back().nonPawnHashes[1] = 0;
+    stateHistory.back().majorHash = 0;
     for(int i = 0; i < 64; i++) {
         stateHistory.back().mailbox[i] = None;
     }
@@ -330,6 +331,9 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
     } else {
         stateHistory.back().nonPawnHashes[getColor(type)] ^= zobTable[square][type];
+        if(getType(type) == Queen || getType(type) == Rook) {
+            stateHistory.back().majorHash ^= zobTable[square][type];
+        }
     }
 }
 
@@ -348,6 +352,9 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
     } else {
         stateHistory.back().nonPawnHashes[getColor(type)] ^= zobTable[square][type];
+        if(getType(type) == Queen || getType(type) == Rook) {
+            stateHistory.back().majorHash ^= zobTable[square][type];
+        }
     }
     assert(pieceAtIndex(square) == None);
 }
@@ -979,7 +986,7 @@ bool Board::isPKEndgame() const {
 
 int Board::getPawnHashIndex() const {
 	// last 15 bits
-    return stateHistory.back().pawnHash & 0b111111111111111;
+    return stateHistory.back().pawnHash & Corrhist::mask;
 }
 
 uint64_t Board::calculateThreats() {
@@ -1020,4 +1027,8 @@ uint64_t Board::calculateThreats() {
 
 uint64_t Board::getThreats() const {
     return stateHistory.back().threats;
+}
+
+uint64_t Board::getMajorHash() const {
+    return stateHistory.back().majorHash & Corrhist::mask;
 }

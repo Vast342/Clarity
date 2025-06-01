@@ -24,31 +24,36 @@ struct Corrhist {
     static constexpr int mask = size - 1;
     std::array<std::array<int32_t, 2>, size> pawnTable;
     std::array<std::array<std::array<int32_t, 2>, 2>, size> nonPawnTables;
-    inline int correct(int ctm, int pawnHash, int staticEval, std::array<int, 2> nonPawnHashes) {
+    std::array<std::array<int32_t, 2>, size> majorTable;
+    inline int correct(int ctm, int pawnHash, int staticEval, std::array<int, 2> nonPawnHashes, int majorHash) {
         int pawn_correction = (pawnTable[pawnHash][ctm] * pawnChWeight.value) / 512;
         int non_pawn_correction = (nonPawnTables[nonPawnHashes[ctm]][ctm][ctm] + nonPawnTables[nonPawnHashes[1 - ctm]][ctm][1 - ctm] * nonpawnChWeight.value) / 512;
-        int correction = pawn_correction + non_pawn_correction;
+        int major_correction = (majorTable[majorHash][ctm] * majorChWeight.value) / 512;
+        int correction = pawn_correction + non_pawn_correction + major_correction;
         return (staticEval + correction / chScale.value);
     }
     inline void clear() {
         std::memset(pawnTable.data(), 0, sizeof(pawnTable));
         std::memset(nonPawnTables.data(), 0, sizeof(nonPawnTables));
     }
-    inline void push(int pawnHash, int ctm, int bestScore, int staticEval, int depth, std::array<int, 2> nonPawnHashes) {
-        // don't worry about it gents, i'll make this tunable soon:tm:
+    inline void push(int pawnHash, int ctm, int bestScore, int staticEval, int depth, std::array<int, 2> nonPawnHashes, int majorHash) {
         int error = bestScore - staticEval;
         int scaled_bonus = error * chScale.value;
         const int weight = std::min(depth - 1, 16);
 
-        auto &score = pawnTable[pawnHash][ctm];
-        score = (score * (chScale.value - weight) + scaled_bonus * weight) / chScale.value;
-        score = std::clamp(score, int(chMin.value * chScale.value), int(chMax.value * chScale.value));
+        auto &pawnScore = pawnTable[pawnHash][ctm];
+        pawnScore = (pawnScore * (chScale.value - weight) + scaled_bonus * weight) / chScale.value;
+        pawnScore = std::clamp(pawnScore, int(chMin.value * chScale.value), int(chMax.value * chScale.value));
         
         for(int color = 0; color < 2; color++) {
-            auto &score = nonPawnTables[nonPawnHashes[color]][ctm][color];
-            score = (score * (chScale.value - weight) + scaled_bonus * weight) / chScale.value;
-            score = std::clamp(score, int(chMin.value * chScale.value), int(chMax.value * chScale.value));
+            auto &nonPawnScore = nonPawnTables[nonPawnHashes[color]][ctm][color];
+            nonPawnScore = (nonPawnScore * (chScale.value - weight) + scaled_bonus * weight) / chScale.value;
+            nonPawnScore = std::clamp(nonPawnScore, int(chMin.value * chScale.value), int(chMax.value * chScale.value));
         }
+
+        auto &majorScore = majorTable[majorHash][ctm];
+        majorScore = (majorScore * (chScale.value - weight) + scaled_bonus * weight) / chScale.value;
+        majorScore = std::clamp(majorScore, int(chMin.value * chScale.value), int(chMax.value * chScale.value));
     }
 };
 
