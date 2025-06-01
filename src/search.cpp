@@ -193,7 +193,6 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
                     + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
                     + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
                     + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 5 ? (*stack[ply - 6].ch_entry)[colorToMove][piece][end] : 0)
                     + pawnHistoryTable[hash][colorToMove][piece][end];
             }
         }
@@ -395,11 +394,6 @@ void Engine::updateHistory(const int colorToMove, const int start, const int end
     if(ply > 3) {
         thingToAdd = bonus - (*stack[ply - 4].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
         (*stack[ply - 4].ch_entry)[colorToMove][piece][end] += thingToAdd;
-    }
-
-    if(ply > 5) {
-        thingToAdd = bonus - (*stack[ply - 6].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
-        (*stack[ply - 6].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
     thingToAdd = bonus - pawnHistoryTable[hash][colorToMove][piece][end] * std::abs(bonus) / historyCap;
