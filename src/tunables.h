@@ -208,7 +208,14 @@ inline std::vector<Tunable *> tunables = {
     &tmsNumerator,
     &tmsDenominator,
     &tmsMultiplier,
-    &pvTTDepthMargin
+    &pvTTDepthMargin,
+    &texMargin,
+    &chUncertaintyMargin,
+    &chScale,
+    &chMin,
+    &chMax,
+    &pawnChWeight,
+    &nonpawnChWeight,
 };
 
 
