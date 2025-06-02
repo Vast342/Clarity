@@ -264,7 +264,8 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     const int ctm = board.getColorToMove();
     int chpawnHash = board.getPawnHashIndex() & Corrhist::mask;
     auto nonPawnHash = board.getNonPawnHash();
-    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash);
+    auto majorHash = board.getMajorHash();
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash);
 
     // adjust staticEval to TT score if it's good enough
     if(shrink(hash) == entry->zobristKey && (
@@ -474,7 +475,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     const int ctm = board.getColorToMove();
     int chpawnHash = board.getPawnHashIndex() & Corrhist::mask;
     auto nonPawnHash = board.getNonPawnHash();
-    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash);
+    auto majorHash = board.getMajorHash();
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash);
     auto correction = staticEval - originalStaticEval;
     bool corrhistUncertain = std::abs(correction) > chUncertaintyMargin.value;
     
@@ -753,7 +755,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nonPawnHash);
+        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nonPawnHash, majorHash);
     }
 
     // push to TT

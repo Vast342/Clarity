@@ -130,6 +130,7 @@ inline Tunable chMax("CH_Max", 64, 1);
 
 inline Tunable pawnChWeight("Pawn_CH_Weight", 512, 1);
 inline Tunable nonpawnChWeight("NonPawn_CH_Weight", 512, 1);
+inline Tunable majorChWeight("Major_CH_Weight", 512, 1);
 
 // Declaration of pointers to tunables
 inline std::array<Tunable *, 7> MVV_values = {
@@ -216,6 +217,7 @@ inline std::vector<Tunable *> tunables = {
     &chMax,
     &pawnChWeight,
     &nonpawnChWeight,
+    &majorChWeight,
 };
 
 
