@@ -35,6 +35,7 @@ struct Corrhist {
     inline void clear() {
         std::memset(pawnTable.data(), 0, sizeof(pawnTable));
         std::memset(nonPawnTables.data(), 0, sizeof(nonPawnTables));
+        std::memset(majorTable.data(), 0, sizeof(majorTable));
     }
     inline void push(int pawnHash, int ctm, int bestScore, int staticEval, int depth, std::array<int, 2> nonPawnHashes, int majorHash) {
         int error = bestScore - staticEval;
