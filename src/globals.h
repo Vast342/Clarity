@@ -82,6 +82,7 @@ struct BoardState {
     uint64_t pawnHash;
     std::array<uint64_t, 2> nonPawnHashes;
     uint64_t majorHash;
+    uint64_t minorHash;
     uint64_t threats;
 };
 
@@ -135,7 +136,8 @@ struct Board {
         int getFiftyMoveCount() const;
         uint64_t getZobristHash() const;
         std::array<int, 2> getNonPawnHash();
-        uint64_t getMajorHash() const;
+        int getMajorHash() const;
+        int getMinorHash() const;
         BoardState getBoardState() const;
         uint64_t keyAfter(const Move move) const;
         int getPlyCount() const;
