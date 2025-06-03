@@ -25,19 +25,22 @@ struct Corrhist {
     std::array<std::array<int32_t, 2>, size> pawnTable;
     std::array<std::array<std::array<int32_t, 2>, 2>, size> nonPawnTables;
     std::array<std::array<int32_t, 2>, size> majorTable;
-    inline int correct(int ctm, int pawnHash, int staticEval, std::array<int, 2> nonPawnHashes, int majorHash) {
+    std::array<std::array<int32_t, 2>, size> minorTable;
+    inline int correct(int ctm, int pawnHash, int staticEval, std::array<int, 2> nonPawnHashes, int majorHash, int minorHash) {
         int pawn_correction = (pawnTable[pawnHash][ctm] * pawnChWeight.value) / 512;
         int non_pawn_correction = (nonPawnTables[nonPawnHashes[ctm]][ctm][ctm] + nonPawnTables[nonPawnHashes[1 - ctm]][ctm][1 - ctm] * nonpawnChWeight.value) / 512;
         int major_correction = (majorTable[majorHash][ctm] * majorChWeight.value) / 512;
-        int correction = pawn_correction + non_pawn_correction + major_correction;
+        int minor_correction = (minorTable[minorHash][ctm] * minorChWeight.value) / 512;
+        int correction = pawn_correction + non_pawn_correction + major_correction + minor_correction;
         return (staticEval + correction / chScale.value);
     }
     inline void clear() {
         std::memset(pawnTable.data(), 0, sizeof(pawnTable));
         std::memset(nonPawnTables.data(), 0, sizeof(nonPawnTables));
         std::memset(majorTable.data(), 0, sizeof(majorTable));
+        std::memset(minorTable.data(), 0, sizeof(minorTable));
     }
-    inline void push(int pawnHash, int ctm, int bestScore, int staticEval, int depth, std::array<int, 2> nonPawnHashes, int majorHash) {
+    inline void push(int pawnHash, int ctm, int bestScore, int staticEval, int depth, std::array<int, 2> nonPawnHashes, int majorHash, int minorHash) {
         int error = bestScore - staticEval;
         int scaled_bonus = error * chScale.value;
         const int weight = std::min(depth - 1, 16);
@@ -55,6 +58,10 @@ struct Corrhist {
         auto &majorScore = majorTable[majorHash][ctm];
         majorScore = (majorScore * (chScale.value - weight) + scaled_bonus * weight) / chScale.value;
         majorScore = std::clamp(majorScore, int(chMin.value * chScale.value), int(chMax.value * chScale.value));
+
+        auto &minorScore = minorTable[minorHash][ctm];
+        minorScore = (minorScore * (chScale.value - weight) + scaled_bonus * weight) / chScale.value;
+        minorScore = std::clamp(minorScore, int(chMin.value * chScale.value), int(chMax.value * chScale.value));
     }
 };
 
