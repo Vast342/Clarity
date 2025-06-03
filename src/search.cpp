@@ -581,7 +581,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         int moveStartSquare = move.getStartSquare();
         int movedPiece = board.pieceAtIndex(moveStartSquare);
         int moveEndSquare = move.getEndSquare();
-        bool moveEndAttacked = board.squareIsUnderAttack(moveEndSquare);
+        bool moveEndAttack = board.squareIsUnderAttack(moveEndSquare);
         int moveFlag = move.getFlag();
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
