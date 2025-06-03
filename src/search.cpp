@@ -658,7 +658,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 if(isQuiet) {
                     lmr -= moveValues[i] / int(hmrDivisor.value);
                 } else {
-                    lmr -= noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim][] / int(cmrDivisor.value);
+                    lmr -= noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack] / int(cmrDivisor.value);
                 }
                 lmr += isCutNode * 2;
                 lmr -= improving;
