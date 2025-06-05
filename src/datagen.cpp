@@ -34,6 +34,7 @@ std::string directory;
 uint64_t totalPositions = 0;
 std::chrono::steady_clock::time_point beginTime;
 std::vector<uint64_t> gamesPerThread;
+int games = 0;
 
 // run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games* *number of threads*
 int main([[maybe_unused]]int argc, char** argv) {
@@ -55,9 +56,17 @@ int main([[maybe_unused]]int argc, char** argv) {
     beginTime = std::chrono::steady_clock::now();
     std::cout << "Beginning data generation\n";
     generateData(numGames, numThreads);
-    std::string response = "";
-    std::cout << "Close thread? Y/N\n";
-    std::cin >> response;
+    std::cout << "datagen done\n";
+    std::cout << "Total Positions: " << totalPositions << '\n';
+    const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime).count();
+    std::cout << "Time: " << (elapsedTime / 1000) << " seconds " << '\n';
+    std::cout << "Positions per second: " << (totalPositions / (elapsedTime / 1000)) << '\n';
+    std::cout << "Positions per game: " << (totalPositions / games) << '\n';
+    std::cout << "Games Per Thread: [";
+    for(const uint64_t gameCount : gamesPerThread) {
+        std::cout << gameCount << ", ";
+    }
+    std::cout << "]" << std::endl;
     return 0;
 }
 
@@ -208,7 +217,6 @@ double runGame(Engine &engine, std::vector<std::string>& fenVector, Board board)
     return 2;
 }
 
-int games = 0;
 int outputFrequency = 100;
 int infoOutputFrequency = 1000;
 void dumpToArray(std::ofstream &output, double result, std::vector<std::string>& fenVector) {
