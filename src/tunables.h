@@ -131,6 +131,8 @@ inline Tunable nonpawnChWeight("NonPawn_CH_Weight", 512, 1);
 inline Tunable majorChWeight("Major_CH_Weight", 512, 1);
 inline Tunable minorChWeight("Minor_CH_Weight", 512, 1);
 
+inline Tunable seeThreshold("SEE_Threshold", -100, -1);
+
 // Declaration of pointers to tunables
 inline std::array<Tunable *, 7> MVV_values = {
     &mvvPawn,
@@ -217,6 +219,7 @@ inline std::vector<Tunable *> tunables = {
     &nonpawnChWeight,
     &majorChWeight,
     &minorChWeight,
+    &seeThreshold,
 };
 
 
