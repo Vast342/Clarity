@@ -117,8 +117,6 @@ inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
 inline Tunable tmsDenominator("TMS_Denominator", 4, 1);
 inline Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
 
-inline Tunable pvTTDepthMargin("PVTT_DepthMargin", 3, 1);
-
 inline Tunable texMargin("TEX_Margin", 67, 1);
 
 // corrhist tunables
@@ -210,7 +208,6 @@ inline std::vector<Tunable *> tunables = {
     &tmsNumerator,
     &tmsDenominator,
     &tmsMultiplier,
-    &pvTTDepthMargin,
     &texMargin,
     &chUncertaintyMargin,
     &chScale,

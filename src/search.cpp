@@ -446,7 +446,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // if it meets these criteria, it's done the search exactly the same way before, if not more throuroughly in the past and you can skip it
     // it would make sense to add !isPV here, however from my testing that makes it about 80 elo worse
     // turns out that score above was complete bs lol, my isPV was broken
-    if(!inSingularSearch && ply > 0 && entry->zobristKey == shrink(hash) && entry->depth >= depth + pvTTDepthMargin.value * isPV && (
+    if(!isPV && !inSingularSearch && ply > 0 && entry->zobristKey == shrink(hash) && entry->depth >= depth && (
             entry->flag == Exact // exact score
                 || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
                 || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
