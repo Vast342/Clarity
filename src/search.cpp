@@ -176,7 +176,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             values[i] = MVV_values[victim]->value + noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
             // see!
             // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-            if(see(board, move, 0)) {
+            if(see(board, move, seeThreshold.value)) {
                 // good captures
                 values[i] += goodCaptureBonus;
             }
