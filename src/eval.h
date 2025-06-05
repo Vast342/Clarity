@@ -29,7 +29,7 @@ Special Details:
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 6;
-constexpr int layer1Size = 1024;
+constexpr int layer1Size = 64;
 constexpr int outputBucketCount = 8;
 
 
