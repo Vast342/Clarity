@@ -46,6 +46,7 @@ inline Tunable aspDepthCondition("ASP_DepthCondition", 5, 1);
 
 inline Tunable rfpDepthCondition("RFP_DepthCondition", 9, 1);
 inline Tunable rfpMultiplier("RFP_Multiplier", 85, 1);
+inline Tunable rfpHitWeight("RFP_HitWeight", 15, 1);
 
 inline Tunable iirDepthCondition("IIR_DepthCondition", 2, 1);
 
@@ -217,6 +218,7 @@ inline std::vector<Tunable *> tunables = {
     &nonpawnChWeight,
     &majorChWeight,
     &minorChWeight,
+    &rfpHitWeight,
 };
 
 
