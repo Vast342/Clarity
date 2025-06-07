@@ -266,7 +266,8 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     auto nonPawnHash = board.getNonPawnHash();
     auto majorHash = board.getMajorHash();
     auto minorHash = board.getMinorHash();
-    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash);
+    // try contcorr here later
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash, false, 0, 0, 0, 0);
 
     // adjust staticEval to TT score if it's good enough
     if(shrink(hash) == entry->zobristKey && (
@@ -478,7 +479,14 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     auto nonPawnHash = board.getNonPawnHash();
     auto majorHash = board.getMajorHash();
     auto minorHash = board.getMinorHash();
-    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash);
+    auto useCont = ply >= 2;
+    auto prevMovePiece = useCont ? getType(stack[ply-1].piece) : 0;
+    auto prevMoveTo = useCont ? stack[ply-1].to : 0;
+    auto prevPrevMovePiece = useCont ? getType(stack[ply-2].piece) : 0;
+    auto prevPrevMoveTo = useCont ? stack[ply-2].to : 0;
+
+    useCont = useCont && prevMovePiece != None && prevPrevMovePiece != None;
+    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash, useCont, prevPrevMovePiece, prevPrevMoveTo, prevMovePiece, prevMoveTo);
     auto correction = staticEval - originalStaticEval;
     bool corrhistUncertain = std::abs(correction) > chUncertaintyMargin.value;
     
@@ -528,6 +536,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     if(!isPV && !inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta && staticEval >= beta + 175 - 25 * depth) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0][0];
         stack[ply].move = Move();
+        stack[ply].to = 0;
+        stack[ply].piece = None;
         board.changeColor();
         const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, !isCutNode);
         board.undoChangeColor();
@@ -640,6 +650,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
         stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare][moveVictim];
         stack[ply].move = move;
+        stack[ply].piece = movedPiece;
+        stack[ply].to = moveEndSquare;
         testedMoves[legalMoves] = move;
         legalMoves++;
         nodes++;
@@ -758,7 +770,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nonPawnHash, majorHash, minorHash);
+        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nonPawnHash, majorHash, minorHash, useCont, prevPrevMovePiece, prevPrevMoveTo, prevMovePiece, prevMoveTo);
     }
 
     // push to TT

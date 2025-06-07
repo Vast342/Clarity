@@ -33,6 +33,8 @@ struct StackEntry {
     // conthist!
     CHEntry *ch_entry;
     Move move;
+    int piece;
+    int to;
     // killer move
     Move killer;
     // static eval used for improving
