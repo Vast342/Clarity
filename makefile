@@ -23,7 +23,13 @@ BUILD_TYPE ?= uci
 CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -pthread
 _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 _ROOT     := $(_THIS)
-EVALFILE   = $(_ROOT)/src/cn_030.nnue
+DEFAULT_NET_NAME := $(file < network.txt)
+
+ifndef EVALFILE
+    EVALFILE = $(DEFAULT_NET_NAME).nnue
+    NO_EVALFILE_SET = true
+
+endif
 
 CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\"
 
@@ -71,7 +77,15 @@ endif
 
 # Default target
 all: CXXFLAGS += $(BUILD_CXXFLAGS)
-all: $(EXE) 
+all: $(EVALFILE) $(EXE) 
+
+# i hate this indentation it makes me sad
+ifdef NO_EVALFILE_SET
+$(EVALFILE):
+	curl -sOL https://github.com/Vast342/Clarity-nets/releases/download/$(DEFAULT_NET_NAME)/$(DEFAULT_NET_NAME).nnue
+
+download-net: $(EVALFILE)
+endif
 
 # Rule to build the target binary
 $(EXE): $(OBJS)
@@ -89,7 +103,7 @@ $(BUILD_DIR):
 
 # Debug target
 debug: CXXFLAGS += $(DEBUG_CXXFLAGS)
-debug: $(EXE)
+debug: $(EVALFILE) $(EXE)
 
 # Convenience targets
 uci:
