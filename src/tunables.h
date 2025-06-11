@@ -22,7 +22,7 @@
 
 
 struct Tunable {
-    constexpr explicit Tunable(std::string _name, double _value, int _divisor)
+    explicit Tunable(std::string _name, double _value, int _divisor)
         : name(std::move(_name)),
           value(_value),
           max(value * _divisor * 2),
