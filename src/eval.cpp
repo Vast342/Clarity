@@ -198,7 +198,7 @@ void RefreshTable::init() {
 constexpr uint32_t ColorStride = 64 * 6;
 constexpr uint32_t PieceStride = 64;
 constexpr int Scale = 400;
-constexpr int Qa = 256;
+constexpr int Qa = 255;
 constexpr int Qb = 64;
 constexpr int Qab = Qa * Qb;
 

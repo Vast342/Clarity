@@ -20,16 +20,15 @@
 #include "globals.h"
 
 /*
-Current Net: cn_028
-Arch: (768x6->1024)x2->1x8
+Current Net: cn_031-att1
+Arch: (768x6->1280)x2->1x8
 Activation: SCReLU
 Special Details: 
  - Horizontal Mirroring
- - Few more buckets, let's see if we can get some improvement from finny tables now
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 6;
-constexpr int layer1Size = 1024;
+constexpr int layer1Size = 1280;
 constexpr int outputBucketCount = 8;
 
 
