@@ -32,10 +32,10 @@ uint32_t getAgeDelta(const int age, const Transposition *entry) {
 Transposition* TranspositionTable::getEntry(uint64_t zkey) {
     auto bucket = &table[index(zkey, size)];
     auto entryToReplace = &bucket->entries[0];
-    if(entryToReplace->zobristKey != 0 && zkey != entryToReplace->zobristKey) {
+    if(entryToReplace->zobristKey != 0 && shrink(zkey) != entryToReplace->zobristKey) {
         for(int i = 1; i < 3; i += 1) {
             auto entry = &bucket->entries[i];
-            if(entry->zobristKey == 0 || zkey == entry->zobristKey) {
+            if(entry->zobristKey == 0 || shrink(zkey) == entry->zobristKey) {
                 return entry;
             }
             const int lowest_quality = entryToReplace->depth - 8 * getAgeDelta(age, entryToReplace);
