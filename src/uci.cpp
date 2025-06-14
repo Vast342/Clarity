@@ -49,7 +49,7 @@ void newGame() {
         engines.emplace_back(&TT);
         engines[i].resetEngine();
     }
-    TT.clearTable();
+    TT.clearTable(threadCount);
     board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
 }
 
@@ -72,7 +72,7 @@ void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
     if(name == "Hash") {
         uint64_t newSizeMB = std::stoi(bits[4]);
-        TT.resize(newSizeMB);
+        TT.resize(newSizeMB, threadCount);
     } else if(name == "Threads") {
         //clock_t start = clock();
         threadCount = std::stoi(bits[4]);
