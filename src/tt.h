@@ -64,13 +64,14 @@ struct Transposition {
         age =  _age;
     }
 };
-#pragma pack(pop)
-
 constexpr int MAX_AGE = 64;
 
 struct TTBucket {
     std::array<Transposition, 3> entries;
+    uint16_t padding;
 };
+
+#pragma pack(pop)
 
 struct TranspositionTable {
     public:
