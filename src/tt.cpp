@@ -38,9 +38,9 @@ Transposition* TranspositionTable::getEntry(uint64_t zkey) {
             if(entry->zobristKey == 0 || shrink(zkey) == entry->zobristKey) {
                 return entry;
             }
-            const int lowest_quality = entryToReplace->depth - 8 * getAgeDelta(age, entryToReplace);
-            const int current_quality = entry->depth - 8 * getAgeDelta(age, entry);
-            if(lowest_quality > current_quality) {
+            const int lowestQuality = entryToReplace->depth - 8 * getAgeDelta(age, entryToReplace);
+            const int currentQuality = entry->depth - 8 * getAgeDelta(age, entry);
+            if(lowestQuality > currentQuality) {
                 entryToReplace = entry;
             }
         }
