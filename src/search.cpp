@@ -371,8 +371,8 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     }
 
     // push to TT
-    Transposition entryToWrite = Transposition(hash, bestMove, flag, staticEval, bestScore, 0);
-    TT->setEntry(hash, entryToWrite);
+    Transposition entryToWrite = Transposition(hash, bestMove, flag, staticEval, bestScore, 0, TT->age);
+    TT->setEntry(entryToWrite, entry);
 
     return bestScore;
 }
@@ -465,8 +465,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     } else {
         staticEval = board.getEvaluation();
         if(!inSingularSearch && entry->zobristKey == 0) {
-            Transposition entryToWrite = Transposition(hash, Move(), 0, staticEval, 0, 0);
-            TT->setEntry(hash, entryToWrite);
+            Transposition entryToWrite = Transposition(hash, Move(), 0, staticEval, 0, 0, TT->age);
+            TT->setEntry(entryToWrite, entry);
         }
     }
     originalStaticEval = staticEval;
@@ -764,8 +764,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // push to TT
     if(!inSingularSearch) {
         if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-        Transposition entryToWrite = Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth);
-        TT->setEntry(hash, entryToWrite);
+        Transposition entryToWrite = Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth, TT->age);
+        TT->setEntry(entryToWrite, entry);
     }
 
     return bestScore;
@@ -862,6 +862,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
             //if(elapsedTime > softBound) break;
         }
     }
+    TT->raiseAge();
 
     if(rootBestMove == Move()) {
         std::array<Move, 256> moves;
@@ -939,6 +940,7 @@ int Engine::benchSearch(Board board, int depthToSearch) {
         // outputs info which is picked up by the user
         //outputInfo(board, score, depth, elapsedTime);
     }
+    TT->raiseAge();
     if(rootBestMove == Move()) std::cout << "bench returned null move" << std::endl;
     return nodes;
 }
@@ -991,6 +993,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         if(info) outputInfo(board, score, depth, elapsedTime);
         previousBest = rootBestMove;
     }
+    TT->raiseAge();
 
     if(rootBestMove == Move()) {
         std::array<Move, 256> moves;
@@ -1077,6 +1080,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         //outputInfo(board, score, depth, elapsedTime);
         if(nodes > nodeCap) break;
     }
+    TT->raiseAge();
 
     if(rootBestMove == Move()) {
         std::array<Move, 256> moves;
@@ -1152,6 +1156,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
             break;
         }
     }
+    TT->raiseAge();
 
     if(rootBestMove == Move()) {
         std::array<Move, 256> moves;

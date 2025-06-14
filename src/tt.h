@@ -38,8 +38,14 @@ struct Transposition {
     Move bestMove;
     uint16_t zobristKey;
     int16_t staticEval;
-    uint8_t flag;
     uint8_t depth;
+    union {
+        struct {
+            uint8_t age : 6;
+            uint8_t flag : 2;
+        };
+        uint8_t extra_bits;
+    };
     Transposition() {
         zobristKey = 0;
         bestMove = Move();
@@ -48,27 +54,38 @@ struct Transposition {
         depth = 0;
         staticEval = 0;
     }
-    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _staticEval, int _score, uint8_t _depth) {
+    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _staticEval, int _score, uint8_t _depth, uint8_t _age) {
         zobristKey = shrink(_zobristKey);
         bestMove = _bestMove;
         flag = _flag;
         score = _score;
         depth = _depth;
         staticEval = _staticEval;
+        age =  _age;
     }
 };
 #pragma pack(pop)
 
+constexpr int MAX_AGE = 64;
+
+struct TTBucket {
+    std::array<Transposition, 3> entries;
+};
+
 struct TranspositionTable {
     public:
         Transposition* getEntry(uint64_t zkey);
-        void setEntry(uint64_t zkey, Transposition &entry);
-        void clearTable();
-        void resize(size_t newSizeMB);
+        void setEntry(Transposition &entry, Transposition* oldEntry);
+        void clearTable(int numThreads);
+        void resize(size_t newSizeMB, int threadCount);
         TranspositionTable(uint64_t initSize = defaultSize) {
-            resize(initSize);
+            resize(initSize, 1);
+        }
+        inline void raiseAge() {
+            age = (age + 1) % MAX_AGE;
         }
         size_t size;
+        uint8_t age;
     private:
-        std::vector<Transposition> table;
+        std::vector<TTBucket> table;
 };
