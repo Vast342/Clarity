@@ -33,7 +33,7 @@ Transposition* TranspositionTable::getEntry(uint64_t zkey) {
     auto bucket = &table[index(zkey, size)];
     auto entryToReplace = &bucket->entries[0];
     if(entryToReplace->zobristKey != 0 && shrink(zkey) != entryToReplace->zobristKey) {
-        for(int i = 1; i < 3; i += 1) {
+        for(int i = 1; i < BUCKET_SIZE; i += 1) {
             auto entry = &bucket->entries[i];
             if(entry->zobristKey == 0 || shrink(zkey) == entry->zobristKey) {
                 return entry;
@@ -77,7 +77,7 @@ void TranspositionTable::clearTable(int threadCount) {
 void TranspositionTable::resize(size_t newSizeMB, int threadCount) {
     size_t newSizeB = newSizeMB * 1024 * 1024;
     size_t newSizeEntries = newSizeB / sizeof(TTBucket);
-    size = newSizeEntries / 3;
+    size = newSizeEntries;
     table.resize(size, TTBucket());
     clearTable(threadCount);
 }
