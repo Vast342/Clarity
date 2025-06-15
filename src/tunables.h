@@ -59,8 +59,6 @@ inline Tunable sprDepthCondition("SPR_DepthCondition", 1, 1);
 inline Tunable sprCaptureThreshold("SPR_CaptureThreshold", -97, -1);
 inline Tunable sprQuietThreshold("SPR_QuietThreshold", -36, -1);
 
-inline Tunable nmpDivisor("NMP_Divisor", 131, 1);
-inline Tunable nmpSubtractor("NMP_Subtractor", 4, 1);
 inline Tunable nmpDepthCondition("NMP_DepthCondition", 1, 1); // I need to fix this before next tune, it's locked at 0
 
 inline Tunable hmrDivisor("HMR_Divisor", 8711, 1); 
@@ -166,8 +164,6 @@ inline std::vector<Tunable *> tunables = {
     &sprDepthCondition,
     &sprCaptureThreshold,
     &sprQuietThreshold,
-    &nmpDivisor,
-    &nmpSubtractor,
     &nmpDepthCondition,
     &hmrDivisor,
     &cmrDivisor,

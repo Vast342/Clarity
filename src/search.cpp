@@ -528,8 +528,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     if(!isPV && !inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta && staticEval >= beta + 175 - 25 * depth) {
         stack[ply].ch_entry = &(*conthistTable)[0][0][0][0];
         stack[ply].move = Move();
+        auto newDepth = depth - 6 - depth / 3;
         board.changeColor();
-        const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, !isCutNode);
+        const int score = -negamax(board, newDepth, 0-beta, 1-beta, ply + 1, false, !isCutNode);
         board.undoChangeColor();
         if(score >= beta) {
             return score;
