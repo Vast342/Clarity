@@ -646,7 +646,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         int score = 0;
         // Principal Variation Search
         int presearchNodeCount = nodes;
-        if(legalMoves == 1) {
+        if(legalMoves < 2 + (2 * (ply == 0))) {
             // searches the first move at full depth
             score = -negamax(board, depth - 1 + TTExtensions, -beta, -alpha, ply + 1, true, false);
         } else {
