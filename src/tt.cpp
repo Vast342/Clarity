@@ -35,12 +35,12 @@ Transposition* TranspositionTable::getEntry(uint64_t zkey) {
     if(entryToReplace->score != 0 && entryToReplace->flag != Undefined && shrink(zkey) != entryToReplace->zobristKey) {
         for(int i = 1; i < BUCKET_SIZE; i += 1) {
             auto entry = &bucket->entries[i];
-            if(entryToReplace->score == 0 || entryToReplace->flag == Undefined || shrink(zkey) == entry->zobristKey) {
+            if((entryToReplace->score == 0 && entryToReplace->flag == Undefined) || shrink(zkey) == entry->zobristKey) {
                 return entry;
             }
             const int lowestQuality = entryToReplace->depth - 8 * getAgeDelta(age, entryToReplace);
             const int currentQuality = entry->depth - 8 * getAgeDelta(age, entry);
-            if(currentQuality > lowestQuality) {
+            if(currentQuality < lowestQuality) {
                 entryToReplace = entry;
             }
         }
