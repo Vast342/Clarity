@@ -38,6 +38,7 @@ TranspositionTable TT;
 std::vector<Engine> engines;
 std::vector<std::jthread> threads;
 int threadCount = 1;
+int64_t moveOverhead = 10;
 
 int rootColorToMove;
 
@@ -79,6 +80,8 @@ void setOption(const std::vector<std::string>& bits) {
         newGame();
         //clock_t end = clock();
         //std::cout << "operation took " << std::to_string((end-start)/static_cast<double>(1000)) << std::endl;
+    } else if(name == "MoveOverhead") {
+        moveOverhead = std::stoi(bits[4]);
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
         useSyzygy = initSuccess;
@@ -116,6 +119,7 @@ void identify() {
     std::cout << "id author Vast" << std::endl;
     std::cout << "option name Hash type spin default 64 min 1 max 524288" << std::endl;
     std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
+    std::cout << "option name MoveOverhead type spin default 10 min 1 max 100000" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     //outputTunables();
     std::cout << "uciok" << std::endl;
@@ -206,6 +210,7 @@ void go(std::vector<std::string> bits) {
     } else {
         // go wtime x btime x
         // the formulas here are former formulas from Stormphrax
+        time -= moveOverhead;
         const int softBound = tmsMultiplier.value * (time / movestogo + inc * tmsNumerator.value / tmsDenominator.value);
         const int hardBound = time / tmhDivisor.value;
         for(int i = 0; i < threadCount; i++) {
