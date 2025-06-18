@@ -709,7 +709,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                     const int colorToMove = board.getColorToMove();
                     // testing berserk history bonus
                     int bonus = std::min(hstMaxBonus.value, hstAdder.value * depth - hstSubtractor.value);
-                    int hash = board.getPawnHashIndex();
+                    int hash = board.getPawnHashIndex() & 0b1111111111;
                     if(isQuiet) {
                         // adds to the move's history and adjusts the killer move accordingly
                         int start = moveStartSquare;
