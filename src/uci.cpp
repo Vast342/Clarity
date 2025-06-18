@@ -23,6 +23,7 @@
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
 #include "tunables.h"
+#include "eval.h"
 
 bool useSyzygy = false;
 
@@ -312,6 +313,7 @@ void interpretCommand(std::string command) {
 
 int main(int argc, char* argv[]) {
     initialize();
+    initNetwork();
     newGame();
     std::cout << std::boolalpha;
     if(argc > 1 && std::string(argv[1]) == "bench") {

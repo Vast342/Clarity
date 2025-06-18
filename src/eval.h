@@ -62,11 +62,11 @@ constexpr std::array<int, 64> inputBuckets = []{
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
 
-struct Network {
-    alignas(64) std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
-    alignas(64) std::array<std::int16_t, layer1Size> featureBiases;
-    alignas(64) std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
-    alignas(64) std::array<std::int16_t, outputBucketCount> outputBiases;
+struct alignas(64) Network {
+    std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
+    std::array<std::int16_t, layer1Size> featureBiases;
+    std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
+    std::array<std::int16_t, outputBucketCount> outputBiases;
 };
 
 struct Accumulator {
@@ -133,3 +133,5 @@ constexpr bool refreshRequired(int color, int oldKingSquare, int newKingSquare) 
 
     return inputBuckets[oldKingSquare] != inputBuckets[newKingSquare];
 }
+
+void initNetwork();

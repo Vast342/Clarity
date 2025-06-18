@@ -494,7 +494,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         improving = true;
     }
     bool opponent_worsening = false;
-    if(!inCheck) {
+    if(!inCheck && ply > 0) {
         opponent_worsening = stack[ply].staticEval + stack[ply - 1].staticEval > 1;
     }
 
@@ -515,7 +515,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         }
     }
 
-    if(!isPV && !inCheck && stack[ply - 1].reduction >= 3 && !opponent_worsening) {
+    if(!isPV && !inCheck && ply > 0 && stack[ply - 1].reduction >= 3 && !opponent_worsening) {
         ++depth;
     }
 
