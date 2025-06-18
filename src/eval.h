@@ -61,8 +61,13 @@ constexpr std::array<int, 64> inputBuckets = []{
 }();
 
 // organizing this somewhat similarly to code I've seen, mostly from clarity_sp_nnue, made by Ciekce.
+#if defined(__AVX512F__) && defined(__AVX512BW__)
+constexpr int alignmentAmount = 64;
+#else 
+constexpr int alignmentAmount = 32;
+#endif
 
-struct alignas(64) Network {
+struct alignas(alignmentAmount) Network {
     std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
     std::array<std::int16_t, layer1Size> featureBiases;
     std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
@@ -70,8 +75,8 @@ struct alignas(64) Network {
 };
 
 struct Accumulator {
-    alignas(64) std::array<std::int16_t, layer1Size> black;
-    alignas(64) std::array<std::int16_t, layer1Size> white;
+    alignas(alignmentAmount) std::array<std::int16_t, layer1Size> black;
+    alignas(alignmentAmount) std::array<std::int16_t, layer1Size> white;
     void initialize(std::span<const std::int16_t, layer1Size> bias);
     void initHalf(std::span<const std::int16_t, layer1Size> bias, int color);
 };
@@ -133,5 +138,3 @@ constexpr bool refreshRequired(int color, int oldKingSquare, int newKingSquare) 
 
     return inputBuckets[oldKingSquare] != inputBuckets[newKingSquare];
 }
-
-void initNetwork();

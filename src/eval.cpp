@@ -34,12 +34,7 @@
 
 namespace {
     INCBIN(network, NetworkFile);
-    
-    static Network network;
-}
-
-void initNetwork() {
-    std::memcpy(&network, g_networkData, sizeof(Network));
+    const Network *network = reinterpret_cast<const Network *>(g_networkData);
 }
 
 void NetworkState::reset() {
@@ -47,7 +42,7 @@ void NetworkState::reset() {
     current = 0;
     refreshTable.init();
 
-    stack[current].initialize(network.featureBiases);
+    stack[current].initialize(network->featureBiases);
 }
 
 void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
@@ -136,11 +131,11 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
                 // change values for all of them
                 if(color == 0) {
                     for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.black[i] += network.featureWeights[index * layer1Size + i];
+                        entry.accumulator.black[i] += network->featureWeights[index * layer1Size + i];
                     }
                 } else {
                     for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.white[i] += network.featureWeights[index * layer1Size + i];
+                        entry.accumulator.white[i] += network->featureWeights[index * layer1Size + i];
                     }
                 }
             }
@@ -152,11 +147,11 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
                 // change values for all of them
                 if(color == 0) {
                     for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.black[i] -= network.featureWeights[index * layer1Size + i];
+                        entry.accumulator.black[i] -= network->featureWeights[index * layer1Size + i];
                     }
                 } else {
                     for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.white[i] -= network.featureWeights[index * layer1Size + i];
+                        entry.accumulator.white[i] -= network->featureWeights[index * layer1Size + i];
                     }
                 }
             }
@@ -176,7 +171,7 @@ void NetworkState::fullRefresh(const BoardState &state, int blackKing, int white
 }
 
 void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
-    stack[current].initHalf(network.featureBiases, color);
+    stack[current].initHalf(network->featureBiases, color);
 
     for(int c = 0; c < 2; c++) {
         for(int piece = 0; piece < 6; piece++) {
@@ -195,7 +190,7 @@ void RefreshTable::init() {
     table.clear();
     table.resize(inputBucketCount * 2);
     for(int i = 0; i < inputBucketCount * 2; i++) {
-        table[i].accumulator.initialize(network.featureBiases);
+        table[i].accumulator.initialize(network->featureBiases);
         std::memset(table[i].boards.data(), 0, sizeof(BoardState) * 2);
     }
 }
@@ -352,11 +347,11 @@ void NetworkState::activateFeatureSingle(int square, int piece, int color, int k
     // change values for all of them
     if(color == 0) {
         for(int i = 0; i < layer1Size; ++i) {
-            stack[current].black[i] += network.featureWeights[index * layer1Size + i];
+            stack[current].black[i] += network->featureWeights[index * layer1Size + i];
         }
     } else {
         for(int i = 0; i < layer1Size; ++i) {
-            stack[current].white[i] += network.featureWeights[index * layer1Size + i];
+            stack[current].white[i] += network->featureWeights[index * layer1Size + i];
         }
     }
 }
@@ -366,8 +361,8 @@ void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, 
 
     // change values for all of them
     for(int i = 0; i < layer1Size; ++i) {
-        stack[current + 1].black[i] = stack[current].black[i] + network.featureWeights[blackIdx * layer1Size + i];
-        stack[current + 1].white[i] = stack[current].white[i] + network.featureWeights[whiteIdx * layer1Size + i];
+        stack[current + 1].black[i] = stack[current].black[i] + network->featureWeights[blackIdx * layer1Size + i];
+        stack[current + 1].white[i] = stack[current].white[i] + network->featureWeights[whiteIdx * layer1Size + i];
     }
     current++;
 }
@@ -382,17 +377,17 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
     // change values for all of them
     if(color == 0) {
         for(int i = 0; i < layer1Size; ++i) {
-            stack[current].black[i] -= network.featureWeights[index * layer1Size + i];
+            stack[current].black[i] -= network->featureWeights[index * layer1Size + i];
         }
     } else {
         for(int i = 0; i < layer1Size; ++i) {
-            stack[current].white[i] -= network.featureWeights[index * layer1Size + i];
+            stack[current].white[i] -= network->featureWeights[index * layer1Size + i];
         }
     }
 }
 
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
-    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network.outputWeights) : forward(bucket, stack[current].white, stack[current].black, network.outputWeights);
-    return (output / Qa + network.outputBiases[bucket]) * Scale / Qab;
+    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network->outputWeights) : forward(bucket, stack[current].white, stack[current].black, network->outputWeights);
+    return (output / Qa + network->outputBiases[bucket]) * Scale / Qab;
 }
