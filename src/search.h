@@ -73,9 +73,9 @@ struct Engine {
         TranspositionTable* TT;
 
         std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 64>, 2>, 64>, 2> historyTable;
-        std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 7>, 64>, 7>, 2> noisyHistoryTable;
-        std::array<std::array<std::array<std::array<int16_t, 7>, 64>, 7>, 2> qsHistoryTable;
-        std::array<std::array<std::array<std::array<int16_t, 64>, 7>, 2>, 32768> pawnHistoryTable;
+        std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 7>, 64>, 6>, 2> noisyHistoryTable;
+        std::array<std::array<std::array<std::array<int16_t, 7>, 64>, 6>, 2> qsHistoryTable;
+        std::array<std::array<std::array<std::array<int16_t, 64>, 6>, 2>, 32768> pawnHistoryTable;
         Corrhist corrhist;
         std::unique_ptr<CHTable> conthistTable;
         std::array<std::array<Move, 64>, 64> counterMoves;

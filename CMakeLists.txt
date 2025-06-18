@@ -8,14 +8,13 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 # all of the main typical files, used for all builds
 set(Common_SRC_Files 
 src/board.cpp 
+src/eval.cpp
 src/globals.cpp 
 src/move.cpp 
 src/movegen.cpp 
-src/eval.cpp
 src/search.cpp
 src/tests.cpp
 src/tt.cpp
-src/tunables.cpp
 src/external/fathom/tbprobe.cpp)
 
 # Builds for V1 through V4, each with different featuresets.
