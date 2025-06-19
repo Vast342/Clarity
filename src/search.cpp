@@ -19,16 +19,16 @@
 #include "normalize.h"
 
 void Searcher::newGame() {
-    // nothing really to reset here yet, so placeholder until i get a TT or histories
+    // nothing really to reset here yet, so placeholder until I get a TT or histories
 }
 
-int16_t Searcher::negamax(Board &board, int depth, int ply, Limiters limiters) {
+int16_t Searcher::negamax(Board &board, const int depth, const int ply, const Limiters &limiters) {
     // repetition check
     //if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // ply limit & depth check, soon to be separated because of qsearch call
     if(depth <= 0 || ply > 256) return board.getEvaluation();
     // time manager
-    if((nodes % 4096 == 0 || limiters.use_nodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
+    if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
         endSearch = true;
         return 0;
     }
@@ -77,7 +77,7 @@ int16_t Searcher::negamax(Board &board, int depth, int ply, Limiters limiters) {
     return bestScore;
 }
 
-void Searcher::outputInfo(const Board& board, int score, int depth, int elapsedTime) {
+void Searcher::outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const {
     //std::cout << "root pv length: " << stack[0].pvLength << std::endl;
     std::string scoreString = " score ";
     if(abs(score) < abs(mateScore + 256)) {
@@ -87,14 +87,14 @@ void Searcher::outputInfo(const Board& board, int score, int depth, int elapsedT
         // score is checkmate in score - matedScore ply
         // position fen rn1q2rk/pp3p1p/2p4Q/3p4/7P/2NP2R1/PPP3P1/4RK2 w - - 0 1
         // ^^ mate in 3 test position
-        int colorMultiplier = score > 0 ? 1 : -1;
+        const int colorMultiplier = score > 0 ? 1 : -1;
         scoreString += "mate ";
         scoreString += std::to_string((abs(abs(score) - mateScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
     std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << std::endl;
 }
 
-void Searcher::think(Board board, Limiters limiters, bool info) {
+void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     // reset things
     rootBestMove = Move();
     endSearch = false;

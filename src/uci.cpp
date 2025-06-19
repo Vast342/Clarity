@@ -65,7 +65,11 @@ void runBench(int depth = benchDepth) {
 // sets options, need to add `Hash` and `Threads` back when i do those things
 void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
-    if(name == "MoveOverhead") {
+    if(name == "Hash") {
+        
+    } else if(name == "Threads") {
+        
+    } else if(name == "MoveOverhead") {
         moveOverhead = std::stoull(bits[4]);
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
@@ -101,8 +105,8 @@ void loadPosition(const std::vector<std::string>& bits) {
 void identify() {
     std::cout << "id name Clarity V7.2.0" << std::endl;
     std::cout << "id author Vast" << std::endl;
-    //std::cout << "option name Hash type spin default 64 min 1 max 524288" << std::endl;
-    //std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
+    std::cout << "option name Hash type spin default 64 min 1 max 524288" << std::endl;
+    std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
     std::cout << "option name MoveOverhead type spin default 10 min 1 max 100000" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     //outputTunables();
@@ -146,10 +150,10 @@ void go(std::vector<std::string> bits) {
     uint64_t movetime = 0;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
-            time = std::stoll(bits[i+1]);
+            time = std::max(std::stoll(bits[i+1]), 0ll);
         }
         if(bits[i] == "btime" && board.getColorToMove() == 0) {
-            time = std::stoll(bits[i+1]);
+            time = std::max(std::stoll(bits[i+1]), 0ll);
         }
         if(bits[i] == "depth") {
             depth = std::stoll(bits[i+1]);
@@ -158,10 +162,10 @@ void go(std::vector<std::string> bits) {
             movestogo = std::stoll(bits[i+1]);
         }
         if(bits[i] == "winc" && board.getColorToMove() == 1) {
-            inc = std::stoll(bits[i+1]);
+            inc = std::max(std::stoll(bits[i+1]), 0ll);
         }
         if(bits[i] == "binc" && board.getColorToMove() == 0) {
-            inc = std::stoll(bits[i+1]);
+            inc = std::max(std::stoll(bits[i+1]), 0ll);
         }
         if(bits[i] == "nodes") {
             nodes = std::stoll(bits[i+1]);

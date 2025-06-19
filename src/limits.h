@@ -20,7 +20,6 @@
 
 #include "tunables.h"
 #include <cstdint>
-#include <algorithm>
 
 class Limiters {
     private:
@@ -28,7 +27,7 @@ class Limiters {
         uint64_t time;
         uint64_t increment;
         uint64_t nodeLimit;
-        bool use_depth;
+        bool useDepth;
         uint32_t depthLimit;
         bool useMoveTime;
         uint64_t moveTime;
@@ -45,15 +44,15 @@ class Limiters {
         }
 
     public:
-        bool use_nodes;
+        bool useNodes;
         Limiters() : useTime(false), time(0), increment(0), 
-                    nodeLimit(0), use_depth(false), depthLimit(0), 
-                    useMoveTime(false), moveTime(0), movesToGo(20), use_nodes(false) {}
+                    nodeLimit(0), useDepth(false), depthLimit(0), 
+                    useMoveTime(false), moveTime(0), movesToGo(20), softCap(0), hardCap(0), useNodes(false) {}
 
         void load_values(uint64_t tim, uint64_t inc, uint64_t nodes, uint32_t depth, uint64_t movetime, uint64_t mtg) {
             useTime = (tim != 0);
-            use_nodes = (nodes != 0);
-            use_depth = (depth != 0);
+            useNodes = (nodes != 0);
+            useDepth = (depth != 0);
             useMoveTime = (movetime != 0);
             
             time = tim;
@@ -71,10 +70,10 @@ class Limiters {
             if (useTime && tim >= softCap) {
                 return false;
             }
-            if (use_nodes && nodes >= nodeLimit) {
+            if (useNodes && nodes >= nodeLimit) {
                 return false;
             }
-            if (use_depth && depth > depthLimit) {
+            if (useDepth && depth > depthLimit) {
                 return false;
             }
             if (useMoveTime && tim >= moveTime) {
@@ -86,7 +85,7 @@ class Limiters {
             if (useTime && tim >= hardCap) {
                 return false;
             }
-            if (use_nodes && nodes >= nodeLimit) {
+            if (useNodes && nodes >= nodeLimit) {
                 return false;
             }
             if (useMoveTime && tim >= moveTime) {

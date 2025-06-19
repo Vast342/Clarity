@@ -17,7 +17,7 @@
 */
 
 // keeping this code during the search rewrite because it's actually good as far as this codebase goes.
-// Will re-SPRT each and every one of these tables though.
+// Will re-SPRT each one of these tables though.
 
 #include "globals.h"
 #include "tunables.h"

@@ -24,20 +24,21 @@ constexpr int16_t mateScore = 32000;
 
 struct Searcher {
     public:
-        void think(Board board, Limiters limiters, bool info);
+        void think(Board board, const Limiters &limiters, const bool info);
         void newGame();
-        uint64_t getNodes() {
+        uint64_t getNodes() const {
             return nodes;
         }
+        Searcher() : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false) {}
     private:
         Move rootBestMove;
         uint64_t nodes;
         int seldepth;
         bool endSearch;
         std::chrono::steady_clock::time_point startTime;
-        void outputInfo(const Board& board, int score, int depth, int elapsedTime);
-        int16_t negamax(Board &board, int depth, int ply, Limiters limiters);
-        int getTimeElapsed() {
+        void outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const;
+        int16_t negamax(Board &board, const int depth, const int ply, const Limiters &limiters);
+        int getTimeElapsed() const {
             return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
         }
 };
