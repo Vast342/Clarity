@@ -114,5 +114,22 @@ void Searcher::think(Board board, Limiters limiters, bool info) {
         depth++;
     }
 
+    if(rootBestMove == Move()) {
+        std::array<Move, 256> moves;
+        const int totalMoves = board.getMoves(moves);
+        for(uint8_t moveIndex = 0; moveIndex < totalMoves; moveIndex++) {
+            // information gathering
+            const Move move = moves[moveIndex];
+
+            // make the move
+            if(!board.makeMove<true>(move)) {
+                continue;
+            }
+
+            rootBestMove = move;
+            break;
+        }
+    }
+
     if(info) std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
 }
