@@ -18,12 +18,10 @@
 #include "globals.h"
 #include "testessentials.h"
 #include "search.h"
-#include "tt.h"
 #include "bench.h"
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
 #include "tunables.h"
-#include "eval.h"
 #include "limits.h"
 
 bool useSyzygy = false;

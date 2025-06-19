@@ -106,7 +106,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     int depth = 1;
     while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
         const Move previousBest = rootBestMove;
-        int16_t score = negamax(board, depth, 0, limiters);
+        const int16_t score = negamax(board, depth, 0, limiters);
         if(endSearch) {
             rootBestMove = previousBest;
         }
@@ -125,6 +125,8 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
             if(!board.makeMove<true>(move)) {
                 continue;
             }
+
+            board.undoMove<false>();
 
             rootBestMove = move;
             break;
