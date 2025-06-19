@@ -24,7 +24,9 @@ void Searcher::newGame() {
 
 int16_t Searcher::negamax(Board &board, int depth, int ply, Limiters limiters) {
     if(depth <= 0 || ply > 256) return board.getEvaluation();
-    if((nodes % 4096 == 0 || limiters.use_nodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) return 0;
+    if((nodes % 4096 == 0 || limiters.use_nodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
+        return 0;
+    }
     if(ply > seldepth) seldepth = ply;
     // get moves (don't worry)
     std::array<Move, 256> moves;
@@ -47,6 +49,8 @@ int16_t Searcher::negamax(Board &board, int depth, int ply, Limiters limiters) {
         const int newDepth = depth - 1;
         const int score = -negamax(board, newDepth, ply + 1, limiters);
         board.undoMove<true>();
+
+        if(endSearch) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -85,6 +89,7 @@ void Searcher::outputInfo(const Board& board, int score, int depth, int elapsedT
 void Searcher::think(Board board, Limiters limiters, bool info) {
     // reset things
     rootBestMove = Move();
+    endSearch = false;
     nodes = 0;
     seldepth = 0;
     startTime = std::chrono::steady_clock::now();
@@ -94,7 +99,7 @@ void Searcher::think(Board board, Limiters limiters, bool info) {
     while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
         const Move previousBest = rootBestMove;
         int16_t score = negamax(board, depth, 0, limiters);
-        if(!limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
+        if(endSearch) {
             rootBestMove = previousBest;
         }
         if(info) outputInfo(board, score, depth, getTimeElapsed());

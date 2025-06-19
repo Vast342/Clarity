@@ -33,6 +33,7 @@ struct Searcher {
         Move rootBestMove;
         uint64_t nodes;
         int seldepth;
+        bool endSearch;
         std::chrono::steady_clock::time_point startTime;
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);
         int16_t negamax(Board &board, int depth, int ply, Limiters limiters);
