@@ -23,13 +23,18 @@ void Searcher::newGame() {
 }
 
 int16_t Searcher::negamax(Board &board, int depth, int ply, Limiters limiters) {
+    // repetition check
+    //if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
+    // ply limit & depth check, soon to be separated because of qsearch call
     if(depth <= 0 || ply > 256) return board.getEvaluation();
+    // time manager
     if((nodes % 4096 == 0 || limiters.use_nodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
         endSearch = true;
         return 0;
     }
-    if(ply > seldepth) seldepth = ply;
-    // get moves (don't worry)
+    // update seldepth
+    if(ply > seldepth) seldepth = ply + 1;
+    // get moves (don't worry, ill stage it soon)
     std::array<Move, 256> moves;
     const int totalMoves = board.getMoves(moves);
 
@@ -46,11 +51,13 @@ int16_t Searcher::negamax(Board &board, int depth, int ply, Limiters limiters) {
         }
         legalMoves++;
         nodes++;
+
         // Recursion:tm:
         const int newDepth = depth - 1;
         const int score = -negamax(board, newDepth, ply + 1, limiters);
         board.undoMove<true>();
 
+        // time check
         if(endSearch) return 0;
 
         if(score > bestScore) {

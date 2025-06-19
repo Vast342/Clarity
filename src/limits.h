@@ -33,6 +33,8 @@ class Limiters {
         bool useMoveTime;
         uint64_t moveTime;
         uint64_t movesToGo;
+        uint64_t softCap;
+        uint64_t hardCap;
 
         uint64_t time_allocated_soft() const {
             return tmsMultiplier.value * (time / movesToGo + increment * tmsNumerator.value / tmsDenominator.value);
@@ -60,10 +62,13 @@ class Limiters {
             depthLimit = depth;
             moveTime = movetime;
             movesToGo = mtg;
+            
+            softCap = time_allocated_soft();
+            hardCap = time_allocated_hard();
         }
 
         bool keep_searching_soft(uint64_t tim, uint64_t nodes, uint32_t depth) const {
-            if (useTime && tim >= time_allocated_soft()) {
+            if (useTime && tim >= softCap) {
                 return false;
             }
             if (use_nodes && nodes >= nodeLimit) {
@@ -78,7 +83,7 @@ class Limiters {
             return true;
         }
         bool keep_searching_hard(uint64_t tim, uint64_t nodes) const {
-            if (useTime && tim >= time_allocated_hard()) {
+            if (useTime && tim >= hardCap) {
                 return false;
             }
             if (use_nodes && nodes >= nodeLimit) {
