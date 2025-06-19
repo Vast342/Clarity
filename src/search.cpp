@@ -25,6 +25,7 @@ void Searcher::newGame() {
 int16_t Searcher::negamax(Board &board, int depth, int ply, Limiters limiters) {
     if(depth <= 0 || ply > 256) return board.getEvaluation();
     if((nodes % 4096 == 0 || limiters.use_nodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
+        endSearch = true;
         return 0;
     }
     if(ply > seldepth) seldepth = ply;
