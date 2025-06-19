@@ -138,12 +138,12 @@ void go(std::vector<std::string> bits) {
             }
         }
     }
-    uint64_t time = 0;
+    int64_t time = 0;
     int depth = 0;
-    uint64_t inc = 0;
+    int64_t inc = 0;
     int movestogo = defaultMovesToGo;
-    uint64_t nodes = 0;
-    uint64_t movetime = 0;
+    int64_t nodes = 0;
+    int64_t movetime = 0;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
             time = std::stoll(bits[i+1]);
