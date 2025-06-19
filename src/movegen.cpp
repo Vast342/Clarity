@@ -37,9 +37,9 @@ uint64_t getBishopAttacksOld(int square, uint64_t occupiedBitboard) {
 	for(int direction = 4; direction < 8; direction++) {
 		uint64_t currentAttack = slideyPieceRays[direction][square];
 		if((direction & 1) == 0) {
-			currentAttack ^= slideyPieceRays[direction][std::countr_zero(currentAttack & occupiedBitboard)];
+			currentAttack ^= slideyPieceRays[direction][std::clamp(std::countr_zero(currentAttack & occupiedBitboard), 0, 63)];
 		} else {
-			currentAttack ^= slideyPieceRays[direction][63 - std::countl_zero(currentAttack & occupiedBitboard)];
+			currentAttack ^= slideyPieceRays[direction][std::clamp(63 - std::countl_zero(currentAttack & occupiedBitboard), 0, 63)];
 		}
 		attacks |= currentAttack;
     }

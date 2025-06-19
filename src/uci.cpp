@@ -23,6 +23,7 @@
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
 #include "tunables.h"
+#include "eval.h"
 
 bool useSyzygy = false;
 

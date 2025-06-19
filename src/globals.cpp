@@ -77,7 +77,11 @@ std::array<std::array<uint8_t, 218>, 150> reductions;
 void calculateReductions() {
     for(int depth = 0; depth < 150; depth++) {
         for(int move = 0; move < 218; move++) {
-            reductions[depth][move] = uint8_t(std::clamp(lmrBase.value + log(depth) * log(move) * lmrMultiplier.value, -32678.0, 32678.0));
+            if (depth == 0 || move == 0) {
+                reductions[depth][move] = 0;
+                continue;
+            }
+            reductions[depth][move] = uint8_t(lmrBase.value + log(depth) * log(move) * lmrMultiplier.value);
         }
     }
 }
@@ -143,15 +147,4 @@ void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int n
 // flips the index vertically, used for indexing the psqts
 int flipIndex(int index) {
     return index ^ 56;
-}
-
-// thanks z5
-// also I completely misunderstood how this was supposed to work, this isn't it lol
-void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves, int i) {
-    for(int j = i + 1; j < numMoves; j++) {
-        if(values[j] > values[i]) {
-            std::swap(values[j], values[i]);
-            std::swap(moves[j], moves[i]);
-        }
-    }
 }
