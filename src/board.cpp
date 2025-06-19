@@ -1,6 +1,6 @@
 /*
     Clarity
-    Copyright (C) 2024 Joseph Pasfield
+    Copyright (C) 2025 Joseph Pasfield
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -905,15 +905,6 @@ bool Board::isRepeatedPosition() {
     return false;
 }
 
-bool Board::isLegalMove(const Move& move) {
-    std::array<Move, 256> moves;
-    const int totalMoves = getMoves(moves);
-    for(int i = 0; i < totalMoves; i++) {
-        if(moves[i] == move) return true;
-    }
-    return false;
-}
-
 uint64_t Board::getAttackers(int square) const {
     uint64_t occupied = getOccupiedBitboard();
     return (getPawnAttacks(square, 0) & getColoredPieceBitboard(1, Pawn))
@@ -1040,4 +1031,10 @@ int Board::getMajorHash() const {
 
 int Board::getMinorHash() const {
     return stateHistory.back().minorHash & Corrhist::mask;
+}
+
+bool Board::isLegal(Move move) {
+
+
+    return false;
 }

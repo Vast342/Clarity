@@ -1,6 +1,6 @@
 /*
     Clarity
-    Copyright (C) 2024 Joseph Pasfield
+    Copyright (C) 2025 Joseph Pasfield
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -129,7 +129,6 @@ struct Board {
         int getEnPassantIndex() const;
         uint64_t fullZobristRegen();
         bool isRepeatedPosition();
-        bool isLegalMove(const Move& move);
         uint64_t getAttackers(int square) const;
         uint64_t getColoredBitboard(int color) const;
         uint64_t getPieceBitboard(int piece) const;
@@ -145,6 +144,7 @@ struct Board {
         int getPawnHashIndex() const;
         uint64_t getThreats() const;
         uint64_t calculateThreats();
+        bool isLegal(Move move);
     private:
         int plyCount;
         uint8_t colorToMove;

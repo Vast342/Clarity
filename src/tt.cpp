@@ -1,6 +1,6 @@
 /*
     Clarity
-    Copyright (C) 2024 Joseph Pasfield
+    Copyright (C) 2025 Joseph Pasfield
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #include "tt.h"
 
 // all the functions for the transposition table
+// keeping this code during the search rewrite because I did it so badly last time I'm not repeating that
 
 uint64_t index(uint64_t key, size_t size) {
     // this emits a single mul on both x64 and arm64

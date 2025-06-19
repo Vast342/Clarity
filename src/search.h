@@ -1,6 +1,6 @@
 /*
     Clarity
-    Copyright (C) 2024 Joseph Pasfield
+    Copyright (C) 2025 Joseph Pasfield
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,81 +18,25 @@
 #pragma once
 
 #include "globals.h"
-#include "tt.h"
-#include "corrhist.h"
+#include "limits.h"
 
-extern std::atomic<bool> timesUp;
+constexpr int16_t mateScore = 32000;
 
-constexpr int depthLimit = 120;
-
-constexpr int16_t matedScore = -32000;
-
-struct StackEntry {
-    std::array<Move, depthLimit> pvTable;
-    int pvLength;
-    // conthist!
-    CHEntry *ch_entry;
-    Move move;
-    // killer move
-    Move killer;
-    // static eval used for improving
-    int staticEval;
-    bool inCheck;
-    // excluded move
-    Move excluded;
-    int doubleExtensions;
-    int reduction;
-};
-
-struct Engine {
-    public: 
-        void resetEngine();
-        Move think(Board board, int softBound, int hardBound, bool info);
-        Move getBestMove();
-        int benchSearch(Board board, int depthToSearch);
-        Move fixedDepthSearch(Board board, int depthToSearch, bool info);
-        std::pair<Move, int> dataGenSearch(Board board, uint64_t nodeCap);
-        Move fixedNodesSearch(Board board, int nodeCount, bool info);
-        Engine(TranspositionTable *tt) {
-            conthistTable = std::make_unique<CHTable>();
-            TT = tt;
+struct Searcher {
+    public:
+        void think(Board board, Limiters limiters, bool info);
+        void newGame();
+        uint64_t getNodes() {
+            return nodes;
         }
-
-        uint64_t nodes = 0;
     private:
-        bool useNodeCap = false;
-
-        Move rootBestMove = Move();
-
-        int hardLimit = 0;
-
-        int seldepth = 0;
-
-        std::array<StackEntry, depthLimit> stack;
-
-        TranspositionTable* TT;
-
-        std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 64>, 2>, 64>, 2> historyTable;
-        std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 7>, 64>, 6>, 2> noisyHistoryTable;
-        std::array<std::array<std::array<std::array<int16_t, 7>, 64>, 6>, 2> qsHistoryTable;
-        std::array<std::array<std::array<std::array<int16_t, 64>, 6>, 2>, 32768> pawnHistoryTable;
-        Corrhist corrhist;
-        std::unique_ptr<CHTable> conthistTable;
-        std::array<std::array<Move, 64>, 64> counterMoves;
-
-        std::array<std::array<int, 64>, 64> nodeTMTable;
-
-        std::chrono::steady_clock::time_point begin;
-        void clearHistory();
-        int estimateMoveValue(const Board& board, const int end, const int flag);
-        bool see(const Board& board, Move move, int threshold);
-        void scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply);
-        void scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove);
-        int16_t qSearch(Board &board, int alpha, int beta, int16_t ply);
-        void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int16_t ply, const int hash, const bool startAttack, const bool endAttack);
-        void updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus, const bool endAttack);
-        void updateQSHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus);
-        int16_t negamax(Board &board, int depth, int alpha, int beta, int16_t ply, bool nmpAllowed, bool isCutNode);
-        std::string getPV();
+        Move rootBestMove;
+        uint64_t nodes;
+        int seldepth;
+        std::chrono::steady_clock::time_point startTime;
         void outputInfo(const Board& board, int score, int depth, int elapsedTime);
+        int16_t negamax(Board &board, int depth, int ply, Limiters limiters);
+        int getTimeElapsed() {
+            return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
+        }
 };

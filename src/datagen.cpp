@@ -1,6 +1,6 @@
 /*
     Clarity
-    Copyright (C) 2024 Joseph Pasfield
+    Copyright (C) 2025 Joseph Pasfield
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -15,6 +15,9 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+/*
+
+Redoing this after the search rewrite, nets will simply remain for a bit
 #include "globals.h"
 #include "datagen.h"
 #include "uci.h"
@@ -93,7 +96,6 @@ void generateData(int numGames, int numThreads) {
 void threadFunction(int numGames, int threadID) {
     //std::cout << "Thread Function called on thread " << std::to_string(threadID) << '\n';
     Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    TranspositionTable TT;
     std::unique_ptr<Engine> engine = std::make_unique<Engine>(&TT);
     std::ofstream output;
     output.open(directory + "thread" + std::to_string(threadID) + ".txt");
@@ -240,3 +242,4 @@ void dumpToArray(std::ofstream &output, double result, std::vector<std::string>&
         std::cout << "]" << std::endl;
     }
 }
+*/
