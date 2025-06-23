@@ -389,7 +389,7 @@ uint64_t Board::getOccupiedBitboard() const {
 }
 
 // fills up the array and then returns the number of moves to be looped through later.
-int Board::getMoves(std::array<Move, 256> &moves) {
+int Board::getMoves(std::array<Move, 256> &moves) const {
     uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     // castling
@@ -517,7 +517,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     return totalMoves;
 }
 
-int Board::getMovesQSearch(std::array<Move, 256> &moves) {
+int Board::getMovesQSearch(std::array<Move, 256> &moves) const {
     const uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     uint64_t mask = stateHistory.back().coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
@@ -611,7 +611,7 @@ uint8_t Board::getColorToMove() const {
     return colorToMove;
 }
 
-bool Board::isInCheck() {
+bool Board::isInCheck() const {
     return squareIsUnderAttack(stateHistory.back().kingSquares[colorToMove]);
 }
 
