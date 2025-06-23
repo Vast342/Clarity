@@ -25,13 +25,13 @@ void Searcher::newGame() {
 int16_t Searcher::negamax(Board &board, const int depth, const int ply, const Limiters &limiters) {
     // repetition check
     //if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
-    // ply limit & depth check, soon to be separated because of qsearch call
-    if(depth <= 0 || ply > 256) return board.getEvaluation();
     // time manager
     if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
         endSearch = true;
         return 0;
     }
+    // ply limit & depth check, soon to be separated because of qsearch call
+    if(depth <= 0 || ply > 256) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
     // get moves (don't worry, ill stage it soon)

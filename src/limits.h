@@ -36,11 +36,11 @@ class Limiters {
         uint64_t hardCap;
 
         uint64_t time_allocated_soft() const {
-            return time / 30 + increment / 2;
+            return tmsMultiplier.value * (time / movesToGo + increment * tmsNumerator.value / tmsDenominator.value);
         }
 
         uint64_t time_allocated_hard() const {
-            return time / 2;
+            return time / tmhDivisor.value;
         }
 
     public:

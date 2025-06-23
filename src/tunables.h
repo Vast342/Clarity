@@ -42,6 +42,11 @@ struct Tunable {
 
 // leaving only these tunables because funnies
 
+inline Tunable tmhDivisor("TMH_Divisor", 2, 1);
+inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
+inline Tunable tmsDenominator("TMS_Denominator", 4, 1);
+inline Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
+
 inline Tunable mvvPawn("MVV_Pawn", 95, 1);
 inline Tunable mvvKnight("MVV_Knight", 462, 1);
 inline Tunable mvvBishop("MVV_Bishop", 498, 1);
@@ -89,6 +94,10 @@ inline std::array<Tunable *, 7> SEE_values = {
 };
 
 inline std::vector<Tunable *> tunables = {
+    &tmhDivisor,
+    &tmsNumerator,
+    &tmsDenominator,
+    &tmsMultiplier,
     &mvvPawn,
     &mvvKnight,
     &mvvBishop,
