@@ -54,7 +54,7 @@ int16_t Searcher::negamax(Board &board, const int depth, const int ply, const Li
 
         // Recursion:tm:
         const int newDepth = depth - 1;
-        const int score = -negamax(board, newDepth, ply + 1, limiters);
+        const int16_t score = -negamax(board, newDepth, ply + 1, limiters);
         board.undoMove<true>();
 
         // time check
@@ -78,7 +78,6 @@ int16_t Searcher::negamax(Board &board, const int depth, const int ply, const Li
 }
 
 void Searcher::outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const {
-    //std::cout << "root pv length: " << stack[0].pvLength << std::endl;
     std::string scoreString = " score ";
     if(abs(score) < abs(mateScore + 256)) {
         scoreString += "cp ";

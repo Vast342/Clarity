@@ -39,9 +39,6 @@
 #include <atomic>
 #include <span>
 
-// nicknaming std::views because funny and also toanth
-namespace views = std::views;
-
 extern bool useSyzygy;
 
 // declaring things i guess
@@ -173,11 +170,8 @@ struct Board {
 [[nodiscard]]uint64_t getKingAttacks(int square);
 void initializeZobrist();
 void initialize();
-std::vector<std::string> split(const std::string string, const char seperator);
-void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves);
-void incrementalSort(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves, int i);
+std::vector<std::string> split(const std::string &string, const char seperator);
 int flipIndex(int index);
-void calculateReductions();
 uint64_t getPassedPawnMask(int square, int colorToMove);
 extern std::array<uint64_t, 64> squareToBitboard;
 

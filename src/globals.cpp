@@ -15,7 +15,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include "tunables.h"
 #include "globals.h"
 #include "slidey.h"
 
@@ -71,21 +70,6 @@ std::string toLongAlgebraic(Move move) {
     return longAlgebraic;
 }
 
-// calculates the reductions used for LMR, ran on startup
-std::array<std::array<uint8_t, 218>, 150> reductions;
-
-void calculateReductions() {
-    for(int depth = 0; depth < 150; depth++) {
-        for(int move = 0; move < 218; move++) {
-            if (depth == 0 || move == 0) {
-                reductions[depth][move] = 0;
-                continue;
-            }
-            reductions[depth][move] = uint8_t(lmrBase.value + log(depth) * log(move) * lmrMultiplier.value);
-        }
-    }
-}
-
 std::array<uint64_t, 64> squareToBitboard;
 
 void generateSquareToBitboard() {
@@ -104,11 +88,10 @@ void initialize() {
     generateSquareToBitboard();
     generateLookups();
     initializeZobrist();
-    calculateReductions();
 }
 
 // splits a string into segments based on the seperator
-std::vector<std::string> split(const std::string string, const char seperator) {
+std::vector<std::string> split(const std::string &string, const char seperator) {
     std::stringstream stream(string);
     std::string segment;
     std::vector<std::string> list;
@@ -120,28 +103,6 @@ std::vector<std::string> split(const std::string string, const char seperator) {
     }
     
     return list;
-}
-
-// sorts the moves all at once
-void sortMoves(std::array<int, 256> &values, std::array<Move, 256> &moves, int numMoves) {
-    int lowestIndex;
- 
-    // for each value
-    for(int i = 0; i < numMoves - 1; i++) {
- 
-        // find the lowest number that hasn't been sorted yet
-        lowestIndex = i;
-        for(int j = i + 1; j < numMoves; j++) {
-            if(values[j] < values[lowestIndex])
-                lowestIndex = j;
-        }
- 
-        // swap the elements
-        if(lowestIndex != i) {
-            std::swap(values[lowestIndex], values[i]);
-            std::swap(moves[lowestIndex], moves[i]);
-        }
-    }
 }
 
 // flips the index vertically, used for indexing the psqts

@@ -40,64 +40,7 @@ struct Tunable {
     int step;
 };
 
-inline Tunable aspBaseDelta("ASP_BaseDelta", 13, 1);
-inline Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.22, 10);
-inline Tunable aspDepthCondition("ASP_DepthCondition", 5, 1);
-
-inline Tunable rfpDepthCondition("RFP_DepthCondition", 9, 1);
-inline Tunable rfpMultiplier("RFP_Multiplier", 85, 1);
-
-inline Tunable iirDepthCondition("IIR_DepthCondition", 2, 1);
-
-inline Tunable fpDepthCondition("FP_DepthCondition", 0, 1);
-inline Tunable fpBase("FP_Base", 347, 1);
-inline Tunable fpMultiplier("FP_Multiplier", 44, 1);
-
-inline Tunable lmpBase("LMP_Base", 3, 1);
-
-inline Tunable sprDepthCondition("SPR_DepthCondition", 1, 1);
-inline Tunable sprCaptureThreshold("SPR_CaptureThreshold", -97, -1);
-inline Tunable sprQuietThreshold("SPR_QuietThreshold", -36, -1);
-
-inline Tunable nmpDivisor("NMP_Divisor", 131, 1);
-inline Tunable nmpSubtractor("NMP_Subtractor", 4, 1);
-inline Tunable nmpDepthCondition("NMP_DepthCondition", 1, 1); // I need to fix this before next tune, it's locked at 0
-
-inline Tunable hmrDivisor("HMR_Divisor", 8711, 1); 
-inline Tunable cmrDivisor("CMR_Divisor", 4677, 1);
-
-inline Tunable lmrBase("LMR_Base", 0.97, 100);
-inline Tunable lmrMultiplier("LMR_Multiplier", 0.54, 100);
-
-inline Tunable hstMaxBonus("HST_MaxBonus", 1632, 1);
-inline Tunable hstAdder("HST_Adder", 276, 1);
-inline Tunable hstSubtractor("HST_Subtractor", 119, 1);
-
-inline Tunable sinDepthCondition("SIN_DepthCondition", 7, 1);
-inline Tunable sinDepthMargin("SIN_DepthMargin", 3, 1);
-inline Tunable sinDepthScale("SIN_DepthScale", 30, 1);
-
-inline Tunable razDepthMultiplier("RAZ_DepthMultiplier", 436, 1);
-
-inline Tunable ntmDepthCondition("NTM_DepthCondition", 9, 1);
-inline Tunable ntmSubtractor("NTM_Subtractor", 1.51, 100);
-inline Tunable ntmMultiplier("NTM_Multiplier", 1.44, 100);
-inline Tunable ntmDefault("NTM_Default", 1.25, 100);
-
-inline Tunable hipDepthCondition("HIP_DepthCondition", 9, 1);
-inline Tunable hipDepthMultiplier("HIP_DepthMultiplier", -2335, -1);
-
-inline Tunable qhsMaxBonus("QHS_MaxBonus", 1525, 1);
-inline Tunable qhsMultiplier("QHS_Multiplier", 6, 1);
-inline Tunable qhsAdder("QHS_Adder", 79, 1);
-inline Tunable qhsSubtractor("QHS_Subtractor", 92, 1);
-
-inline Tunable dexMargin("DEX_Margin", 33, 1);
-inline Tunable dexLimit("DEX_Limit", 21, 1);
-
-inline Tunable deiDepth("DEI_Depth", 14, 1);
-
-inline Tunable lmrDepth("LMR_Depth", 1, 1);
+// leaving only these tunables because funnies
 
 inline Tunable mvvPawn("MVV_Pawn", 95, 1);
 inline Tunable mvvKnight("MVV_Knight", 462, 1);
@@ -111,13 +54,6 @@ inline Tunable seeKnight("SEE_Knight", 370, 1);
 inline Tunable seeBishop("SEE_Bishop", 422, 1);
 inline Tunable seeRook("SEE_Rook", 606, 1);
 inline Tunable seeQueen("SEE_Queen", 1127, 1);
-
-inline Tunable tmhDivisor("TMH_Divisor", 2, 1);
-inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
-inline Tunable tmsDenominator("TMS_Denominator", 4, 1);
-inline Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
-
-inline Tunable texMargin("TEX_Margin", 67, 1);
 
 // corrhist tunables
 inline Tunable chUncertaintyMargin("CH_Uncertainty_Margin", 128, 1);
@@ -153,47 +89,6 @@ inline std::array<Tunable *, 7> SEE_values = {
 };
 
 inline std::vector<Tunable *> tunables = {
-    &aspBaseDelta,
-    &aspDeltaMultiplier,
-    &aspDepthCondition,
-    &rfpDepthCondition,
-    &rfpMultiplier,
-    &iirDepthCondition,
-    &fpDepthCondition,
-    &fpBase,
-    &fpMultiplier,
-    &lmpBase,
-    &sprDepthCondition,
-    &sprCaptureThreshold,
-    &sprQuietThreshold,
-    &nmpDivisor,
-    &nmpSubtractor,
-    &nmpDepthCondition,
-    &hmrDivisor,
-    &cmrDivisor,
-    &lmrBase,
-    &lmrMultiplier,
-    &hstMaxBonus,
-    &hstAdder,
-    &hstSubtractor,
-    &sinDepthCondition,
-    &sinDepthMargin,
-    &sinDepthScale,
-    &razDepthMultiplier,
-    &ntmDepthCondition,
-    &ntmSubtractor,
-    &ntmMultiplier,
-    &ntmDefault,
-    &hipDepthCondition,
-    &hipDepthMultiplier,
-    &qhsMaxBonus,
-    &qhsMultiplier,
-    &qhsAdder,
-    &qhsSubtractor,
-    &dexMargin,
-    &dexLimit,
-    &deiDepth,
-    &lmrDepth,
     &mvvPawn,
     &mvvKnight,
     &mvvBishop,
@@ -204,11 +99,6 @@ inline std::vector<Tunable *> tunables = {
     &seeBishop,
     &seeRook,
     &seeQueen,
-    &tmhDivisor,
-    &tmsNumerator,
-    &tmsDenominator,
-    &tmsMultiplier,
-    &texMargin,
     &chUncertaintyMargin,
     &chScale,
     &chMin,
@@ -246,9 +136,6 @@ inline void adjustTunable(const std::string &name, const int &value) {
     for(Tunable *tunable : tunables) {
         if(tunable->name == name) {
             tunable->updateValue(value);
-            if(name == "LMR_Base" || name == "LMR_Multiplier") {
-                calculateReductions();
-            }
             return;
         }
     }
