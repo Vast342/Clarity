@@ -26,7 +26,7 @@ void Searcher::newGame() {
 
 int16_t Searcher::ab(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
     // repetition check
-    //if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
+    if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time manager
     if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
         endSearch = true;
