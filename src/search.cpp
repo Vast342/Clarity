@@ -16,6 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "search.h"
+
+#include "movepick.h"
 #include "normalize.h"
 
 void Searcher::newGame() {
@@ -34,17 +36,14 @@ int16_t Searcher::ab(Board &board, const int depth, int16_t alpha, int16_t beta,
     if(depth <= 0 || ply > 256) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
-    // get moves (don't worry, ill stage it soon)
-    std::array<Move, 256> moves;
-    const int totalMoves = board.getMoves(moves);
+
+    // movepicker lets goooo
+    auto picker = MovePicker(board);
 
     // move loop
     int16_t bestScore = -mateScore;
     uint8_t legalMoves = 0;
-    for(uint8_t moveIndex = 0; moveIndex < totalMoves; moveIndex++) {
-        // information gathering
-        const Move move = moves[moveIndex];
-
+    while(const auto move = picker.next()) {
         // make the move
         if(!board.makeMove<true>(move)) {
             continue;
