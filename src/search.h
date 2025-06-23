@@ -37,7 +37,7 @@ struct Searcher {
         bool endSearch;
         std::chrono::steady_clock::time_point startTime;
         void outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const;
-        int16_t negamax(Board &board, const int depth, const int ply, const Limiters &limiters);
+        int16_t ab(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters);
         int getTimeElapsed() const {
             return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
         }

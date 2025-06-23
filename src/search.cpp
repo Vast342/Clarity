@@ -22,7 +22,7 @@ void Searcher::newGame() {
     // nothing really to reset here yet, so placeholder until I get a TT or histories
 }
 
-int16_t Searcher::negamax(Board &board, const int depth, const int ply, const Limiters &limiters) {
+int16_t Searcher::ab(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
     // repetition check
     //if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time manager
@@ -54,7 +54,7 @@ int16_t Searcher::negamax(Board &board, const int depth, const int ply, const Li
 
         // Recursion:tm:
         const int newDepth = depth - 1;
-        const int16_t score = -negamax(board, newDepth, ply + 1, limiters);
+        const int16_t score = -ab(board, newDepth, -beta, -alpha, ply + 1, limiters);
         board.undoMove<true>();
 
         // time check
@@ -62,7 +62,13 @@ int16_t Searcher::negamax(Board &board, const int depth, const int ply, const Li
 
         if(score > bestScore) {
             bestScore = score;
-            if(ply == 0) rootBestMove = move;
+            if(score > alpha) {
+                alpha = score;
+                if(ply == 0) rootBestMove = move;
+            }
+            if(score >= beta) {
+                break;
+            }
         }
 
     }
@@ -105,7 +111,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     int depth = 1;
     while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
         const Move previousBest = rootBestMove;
-        const int16_t score = negamax(board, depth, 0, limiters);
+        const int16_t score = ab(board, depth, -mateScore, mateScore, 0, limiters);
         if(endSearch) {
             rootBestMove = previousBest;
         }
