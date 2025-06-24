@@ -1032,9 +1032,3 @@ int Board::getMajorHash() const {
 int Board::getMinorHash() const {
     return stateHistory.back().minorHash & Corrhist::mask;
 }
-
-bool Board::isLegal(Move move) {
-
-
-    return false;
-}
