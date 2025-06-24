@@ -144,7 +144,6 @@ struct Board {
         int getPawnHashIndex() const;
         uint64_t getThreats() const;
         uint64_t calculateThreats();
-        bool isLegal(Move move);
     private:
         int plyCount;
         uint8_t colorToMove;
