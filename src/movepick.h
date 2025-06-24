@@ -4,8 +4,10 @@
 #include "globals.h"
 
 enum class MovegenStage : int {
-    GenOther = 0,
-    Other,
+    GenAll = 0,
+    All,
+    QSGenAll,
+    QSAll,
 };
 
 inline MovegenStage& operator++(MovegenStage& v) {
@@ -17,7 +19,7 @@ class MovePicker {
 public:
     inline Move next() {
         switch(stage) {
-            case MovegenStage::GenOther: {
+            case MovegenStage::GenAll: {
                 totalMoves = board.getMoves(moves);
                 idx = 0;
                 scoreMoves();
@@ -25,24 +27,35 @@ public:
                 ++stage;
                 [[fallthrough]];
             }
-            case MovegenStage::Other: {
-                // incremental sort
-                for(int j = idx + 1; j < totalMoves; j++) {
-                    if(moveScores[j] > moveScores[idx]) {
-                        std::swap(moveScores[j], moveScores[idx]);
-                        std::swap(moves[j], moves[idx]);
-                    }
-                }
+            case MovegenStage::All: {
+                incrementalSort();
+                return moves[idx++];
+            }
+            case MovegenStage::QSGenAll: {
+                totalMoves = board.getMovesQSearch(moves);
+                idx = 0;
+                scoreMoves();
 
+                ++stage;
+                [[fallthrough]];
+            }
+            case MovegenStage::QSAll: {
+                incrementalSort();
                 return moves[idx++];
             }
             default:
                 return Move();
         }
     }
-    explicit MovePicker(const Board &board) : stage(MovegenStage::GenOther),
-    board{board}, idx{0}, totalMoves{0}, moveScores{{}} {}
+    static inline MovePicker search(const Board &board) {
+        return MovePicker(board, MovegenStage::GenAll);
+    }
+    static inline MovePicker qsearch(const Board &board) {
+        return MovePicker(board, MovegenStage::QSGenAll);
+    }
 private:
+    explicit MovePicker(const Board &board, const MovegenStage stage) : stage(stage),
+    board{board}, idx{0}, totalMoves{0}, moveScores{{}} {}
     inline void scoreMoves() {
         for(int i = 0; i < totalMoves; ++i) {
             const auto move = moves[i];
@@ -51,6 +64,14 @@ private:
             if(victim != None) {
                 const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
                 moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
+            }
+        }
+    }
+    inline void incrementalSort() {
+        for(int j = idx + 1; j < totalMoves; j++) {
+            if(moveScores[j] > moveScores[idx]) {
+                std::swap(moveScores[j], moveScores[idx]);
+                std::swap(moves[j], moves[idx]);
             }
         }
     }

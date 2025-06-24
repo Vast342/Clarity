@@ -24,7 +24,7 @@ void Searcher::newGame() {
     // nothing really to reset here yet, so placeholder until I get a TT or histories
 }
 
-int16_t Searcher::ab(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
+int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
     // repetition check
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time manager
@@ -32,15 +32,13 @@ int16_t Searcher::ab(Board &board, const int depth, int16_t alpha, int16_t beta,
         endSearch = true;
         return 0;
     }
-    // ply limit & depth check, soon to be separated because of qsearch call
-    if(depth <= 0 || ply > 256) return board.getEvaluation();
+    if(depth <= 0) return qsearch(board, alpha, beta, ply, limiters);
+    if(ply > 256) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
 
-    // movepicker lets goooo
-    auto picker = MovePicker(board);
-
     // move loop
+    auto picker = MovePicker::search(board);
     int16_t bestScore = -mateScore;
     uint8_t legalMoves = 0;
     while(const auto move = picker.next()) {
@@ -53,7 +51,65 @@ int16_t Searcher::ab(Board &board, const int depth, int16_t alpha, int16_t beta,
 
         // Recursion:tm:
         const int newDepth = depth - 1;
-        const int16_t score = -ab(board, newDepth, -beta, -alpha, ply + 1, limiters);
+        const int16_t score = -search(board, newDepth, -beta, -alpha, ply + 1, limiters);
+        board.undoMove<true>();
+
+        // time check
+        if(endSearch) return 0;
+
+        if(score > bestScore) {
+            bestScore = score;
+            // alpha raise, new best move detected
+            if(score > alpha) {
+                alpha = score;
+                if(ply == 0) rootBestMove = move;
+            }
+            // beta cutoff
+            if(score >= beta) {
+                break;
+            }
+        }
+
+    }
+    // mate check
+    if(legalMoves == 0) {
+        if(board.isInCheck()) {
+            return -mateScore + ply;
+        }
+        return 0;
+    }
+
+    return bestScore;
+}
+
+int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
+    // time manager
+    if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
+        endSearch = true;
+        return 0;
+    }
+    // update seldepth
+    if(ply > seldepth) seldepth = ply + 1;
+
+    // stand-pat
+    const auto staticEval = board.getEvaluation();
+    int16_t bestScore = staticEval;
+    if(bestScore >= beta) return bestScore;
+    if(alpha < bestScore) alpha = bestScore;
+
+    // move loop
+    auto picker = MovePicker::qsearch(board);
+    uint8_t legalMoves = 0;
+    while(const auto move = picker.next()) {
+        // make the move
+        if(!board.makeMove<true>(move)) {
+            continue;
+        }
+        legalMoves++;
+        nodes++;
+
+        // Recursion:tm:
+        const int16_t score = -qsearch(board,  -beta, -alpha, ply + 1, limiters);
         board.undoMove<true>();
 
         // time check
@@ -63,7 +119,6 @@ int16_t Searcher::ab(Board &board, const int depth, int16_t alpha, int16_t beta,
             bestScore = score;
             if(score > alpha) {
                 alpha = score;
-                if(ply == 0) rootBestMove = move;
             }
             if(score >= beta) {
                 break;
@@ -110,7 +165,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     int depth = 1;
     while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
         const Move previousBest = rootBestMove;
-        const int16_t score = ab(board, depth, -mateScore, mateScore, 0, limiters);
+        const int16_t score = search(board, depth, -mateScore, mateScore, 0, limiters);
         if(endSearch) {
             rootBestMove = previousBest;
         }
