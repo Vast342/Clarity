@@ -47,23 +47,27 @@ public:
                 return Move();
         }
     }
-    static inline MovePicker search(const Board &board) {
-        return MovePicker(board, MovegenStage::GenAll);
+    static inline MovePicker search(const Board &board, const Move ttMove) {
+        return MovePicker(board, ttMove, MovegenStage::GenAll);
     }
-    static inline MovePicker qsearch(const Board &board) {
-        return MovePicker(board, MovegenStage::QSGenAll);
+    static inline MovePicker qsearch(const Board &board, const Move ttMove) {
+        return MovePicker(board, ttMove, MovegenStage::QSGenAll);
     }
 private:
-    explicit MovePicker(const Board &board, const MovegenStage stage) : stage(stage),
-    board{board}, idx{0}, totalMoves{0}, moveScores{{}} {}
+    explicit MovePicker(const Board &board, const Move ttMove, const MovegenStage stage) : stage(stage),
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, moveScores{{}} {}
     inline void scoreMoves() {
         for(int i = 0; i < totalMoves; ++i) {
             const auto move = moves[i];
-            const auto victim = getType(board.pieceAtIndex(move.getEndSquare()));
-            // captures, mvv-lva
-            if(victim != None) {
-                const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
-                moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
+            if(move == ttMove) {
+                moveScores[i] = 100000000;
+            } else {
+                const auto victim = getType(board.pieceAtIndex(move.getEndSquare()));
+                // captures, mvv-lva
+                if(victim != None) {
+                    const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
+                    moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
+                }
             }
         }
     }
@@ -77,6 +81,7 @@ private:
     }
     MovegenStage stage;
     const Board &board;
+    Move ttMove;
     int idx;
     int totalMoves;
     std::array<Move, 256> moves;

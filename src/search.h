@@ -19,6 +19,7 @@
 
 #include "globals.h"
 #include "limits.h"
+#include "tt.h"
 
 constexpr int16_t mateScore = 32000;
 
@@ -29,12 +30,15 @@ struct Searcher {
         uint64_t getNodes() const {
             return nodes;
         }
-        Searcher() : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false) {}
+        Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false), TT(TT) {}
     private:
         Move rootBestMove;
         uint64_t nodes;
         int seldepth;
         bool endSearch;
+
+        TranspositionTable* TT;
+
         std::chrono::steady_clock::time_point startTime;
         void outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const;
         int16_t search(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters);

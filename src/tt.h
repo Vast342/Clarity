@@ -34,27 +34,27 @@ constexpr uint64_t defaultSize = 64;
 
 #pragma pack(push, 1)
 struct Transposition {
-    int16_t score;
+    //int16_t score;
     Move bestMove;
-    uint16_t zobristKey;
-    int16_t staticEval;
-    uint8_t flag;
-    uint8_t depth;
+    //uint16_t zobristKey;
+    //int16_t staticEval;
+    //uint8_t flag;
+    //uint8_t depth;
     Transposition() {
-        zobristKey = 0;
+        //zobristKey = 0;
         bestMove = Move();
-        flag = 0;
-        score = 0;
-        depth = 0;
-        staticEval = 0;
+        //flag = 0;
+        //score = 0;
+        //depth = 0;
+        //staticEval = 0;
     }
-    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _staticEval, int _score, uint8_t _depth) {
-        zobristKey = shrink(_zobristKey);
+    Transposition(/*uint64_t _zobristKey,*/ Move _bestMove/*, uint8_t _flag, int _staticEval, int _score, uint8_t _depth*/) {
+        //zobristKey = shrink(_zobristKey);
         bestMove = _bestMove;
-        flag = _flag;
-        score = _score;
-        depth = _depth;
-        staticEval = _staticEval;
+        //flag = _flag;
+        //score = _score;
+        //depth = _depth;
+        //staticEval = _staticEval;
     }
 };
 #pragma pack(pop)
@@ -62,9 +62,10 @@ struct Transposition {
 struct TranspositionTable {
     public:
         Transposition* getEntry(uint64_t zkey);
-        void setEntry(uint64_t zkey, Transposition &entry);
+        void setEntry(uint64_t zkey, Transposition entry);
         void clearTable();
         void resize(size_t newSizeMB);
+
         TranspositionTable(uint64_t initSize = defaultSize) {
             resize(initSize);
         }
