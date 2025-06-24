@@ -107,7 +107,7 @@ Board::Board(std::string fen) {
     stateHistory.clear();
     stateHistory.reserve(256);
     stateHistory.push_back(BoardState());
-    //nnueState.reset();
+    nnueState.reset();
     stateHistory.back().zobristHash = 0;
 	stateHistory.back().pawnHash = 0;
     stateHistory.back().nonPawnHashes[0] = 0;
@@ -223,8 +223,8 @@ Board::Board(std::string fen) {
     stateHistory.back().hundredPlyCounter = 0;
     // ply count, segment 6
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
-    //nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
-    //.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
+    nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
+    nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
     stateHistory.back().threats = calculateThreats();
     updatePinsAndCheckers();
 }
@@ -330,7 +330,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = type;
     assert(pieceAtIndex(square) == type);
-    //if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -353,7 +353,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = None;
-    //if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -788,9 +788,9 @@ template <bool PushNNUE> void Board::makeMove(Move move) {
     }
     plyCount++;
     if constexpr(PushNNUE) {
-        //.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+        nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
     } else {
-        //nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+        nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
     }
     colorToMove = 1 - colorToMove;
     stateHistory.back().threats = calculateThreats();
@@ -800,7 +800,7 @@ template <bool PushNNUE> void Board::makeMove(Move move) {
 template <bool PushNNUE> void Board::undoMove() {
     //std::cout << "undomove\n";
     stateHistory.pop_back();
-    //if constexpr(PushNNUE) nnueState.pop();
+    if constexpr(PushNNUE) nnueState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
     //std::cout << "position fen " << getFenString() << std::endl;
@@ -814,7 +814,7 @@ uint64_t Board::getCurrentPlayerBitboard() const {
 
 void Board::changeColor() {
     stateHistory.push_back(stateHistory.back());
-    //nnueState.push();
+    nnueState.push();
     stateHistory.back().enPassantIndex = 64;
     stateHistory.back().hundredPlyCounter++;
     colorToMove = 1 - colorToMove;
@@ -824,7 +824,7 @@ void Board::changeColor() {
 
 void Board::undoChangeColor() {
     stateHistory.pop_back();
-    //nnueState.pop();
+    nnueState.pop();
     colorToMove = 1 - colorToMove;
 }
 
