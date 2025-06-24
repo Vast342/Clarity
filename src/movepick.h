@@ -65,7 +65,7 @@ public:
     }
 private:
     explicit MovePicker(const Board &board, const Move ttMove, const MovegenStage stage) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, moveScores{{}} {}
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0} {}
     inline void scoreMoves() {
         for(int i = 0; i < totalMoves; ++i) {
             const auto move = moves[i];
@@ -77,17 +77,25 @@ private:
                 if(victim != None) {
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
                     moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
+                } else {
+                    moveScores[i] = 0;
                 }
             }
         }
     }
     inline Move getNextInternal() {
+        int bestIdx = idx;
         for(int j = idx + 1; j < totalMoves; j++) {
-            if(moveScores[j] > moveScores[idx]) {
-                std::swap(moveScores[j], moveScores[idx]);
-                std::swap(moves[j], moves[idx]);
+            if(moveScores[j] > moveScores[bestIdx]) {
+                bestIdx = j;
             }
         }
+
+        if(bestIdx != idx) {
+            std::swap(moveScores[bestIdx], moveScores[idx]);
+            std::swap(moves[bestIdx], moves[idx]);
+        }
+
         return moves[idx++];
     }
     MovegenStage stage;
