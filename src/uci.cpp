@@ -23,6 +23,7 @@
 #include "uci.h"
 #include "tunables.h"
 #include "limits.h"
+#include "tt.h"
 
 bool useSyzygy = false;
 
@@ -34,14 +35,16 @@ bool useSyzygy = false;
 int defaultMovesToGo = 20;
 
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
-Searcher searcher;
 int64_t moveOverhead = 10;
 int benchDepth = 5;
+TranspositionTable TT;
+Searcher searcher = Searcher(&TT);
 
 // resets everything
 void newGame() {
     searcher.newGame();
     board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
+    TT.clearTable();
 }
 
 // runs a fixed depth search on a fixed set of positions, to see if a test changes how the engine behaves
@@ -64,7 +67,8 @@ void runBench(int depth = benchDepth) {
 void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
     if(name == "Hash") {
-        
+        const uint64_t newSizeMB = std::stoull(bits[4]);
+        TT.resize(newSizeMB);
     } else if(name == "Threads") {
         
     } else if(name == "MoveOverhead") {

@@ -29,12 +29,26 @@ Transposition* TranspositionTable::getEntry(uint64_t zkey) {
     return &table[index(zkey, size)];
 }
 
-void TranspositionTable::setEntry(uint64_t zkey, Transposition &entry) {
+void TranspositionTable::setEntry(uint64_t zkey, Transposition entry) {
     table[index(zkey, size)] = entry;
 }
 
 void TranspositionTable::clearTable() {
     std::fill(table.begin(), table.end(), Transposition());
+    /* multithreaded clear code for when I have SMP
+    const std::size_t chunks = (size + threadCount - 1) / threadCount;
+    std::vector<std::thread> threads;
+    for(int i = 0; i < threadCount; ++i) {
+        threads.emplace_back([i, chunks, this]() {
+            const std::size_t clearIndex = chunks * i;
+            const std::size_t clearSize = std::min(chunks, size - clearIndex) * sizeof(TTBucket);
+            std::memset(table.data() + clearIndex, 0, clearSize);
+        });
+    }
+    for(auto &thread : threads) {
+        thread.join();
+    }
+     */
 }
 
 void TranspositionTable::resize(size_t newSizeMB) {

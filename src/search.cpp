@@ -37,9 +37,13 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
 
+    auto zobristHash = board.getZobristHash();
+    auto entry = TT->getEntry(zobristHash);
+
     // move loop
-    auto picker = MovePicker::search(board);
+    auto picker = MovePicker::search(board, entry->bestMove);
     int16_t bestScore = -mateScore;
+    Move bestMove = Move();
     uint8_t legalMoves = 0;
     while(const auto move = picker.next()) {
         // make the move
@@ -62,6 +66,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
             // alpha raise, new best move detected
             if(score > alpha) {
                 alpha = score;
+                bestMove = move;
                 if(ply == 0) rootBestMove = move;
             }
             // beta cutoff
@@ -77,6 +82,9 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
         }
         return 0;
     }
+
+    // push to TT
+    TT->setEntry(zobristHash, Transposition(bestMove));
 
     return bestScore;
 }
@@ -96,8 +104,12 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
 
+    auto zobristHash = board.getZobristHash();
+    auto entry = TT->getEntry(zobristHash);
+
     // move loop
-    auto picker = MovePicker::qsearch(board);
+    auto picker = MovePicker::qsearch(board, entry->bestMove);
+    Move bestMove = Move();
     while(const auto move = picker.next()) {
         // make the move
         if(!board.makeMove<true>(move)) {
@@ -116,12 +128,16 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
             bestScore = score;
             if(score > alpha) {
                 alpha = score;
+                bestMove = move;
             }
             if(score >= beta) {
                 break;
             }
         }
     }
+
+    // push to TT
+    TT->setEntry(zobristHash, Transposition(bestMove));
 
     return bestScore;
 }
