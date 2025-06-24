@@ -4,7 +4,8 @@
 #include "globals.h"
 
 enum class MovegenStage : int {
-    GenAll = 0,
+    TTMove = 0,
+    GenAll,
     All,
     QSGenAll,
     QSAll,
@@ -19,6 +20,13 @@ class MovePicker {
 public:
     inline Move next() {
         switch(stage) {
+            case MovegenStage::TTMove: {
+                ++stage;
+                if(ttMove && board.isPseudolegal(ttMove)) {
+                    return ttMove;
+                }
+                [[fallthrough]];
+            }
             case MovegenStage::GenAll: {
                 totalMoves = board.getMoves(moves);
                 idx = 0;
@@ -28,8 +36,11 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::All: {
-                incrementalSort();
-                return moves[idx++];
+                auto move = getNextInternal();
+                // skips tt move because its staged
+                if(move == ttMove) move = getNextInternal();
+
+                return move;
             }
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
@@ -40,15 +51,14 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::QSAll: {
-                incrementalSort();
-                return moves[idx++];
+                return getNextInternal();
             }
             default:
                 return Move();
         }
     }
     static inline MovePicker search(const Board &board, const Move ttMove) {
-        return MovePicker(board, ttMove, MovegenStage::GenAll);
+        return MovePicker(board, ttMove, MovegenStage::TTMove);
     }
     static inline MovePicker qsearch(const Board &board, const Move ttMove) {
         return MovePicker(board, ttMove, MovegenStage::QSGenAll);
@@ -71,13 +81,14 @@ private:
             }
         }
     }
-    inline void incrementalSort() {
+    inline Move getNextInternal() {
         for(int j = idx + 1; j < totalMoves; j++) {
             if(moveScores[j] > moveScores[idx]) {
                 std::swap(moveScores[j], moveScores[idx]);
                 std::swap(moves[j], moves[idx]);
             }
         }
+        return moves[idx++];
     }
     MovegenStage stage;
     const Board &board;
