@@ -40,7 +40,9 @@ struct Tunable {
     int step;
 };
 
-// leaving only these tunables because funnies
+inline Tunable aspBaseDelta("ASP_BaseDelta", 13, 1);
+inline Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.22, 10);
+inline Tunable aspDepthCondition("ASP_DepthCondition", 5, 1);
 
 inline Tunable tmhDivisor("TMH_Divisor", 2, 1);
 inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
@@ -98,6 +100,9 @@ inline std::array<Tunable *, 7> SEE_values = {
 };
 
 inline std::vector<Tunable *> tunables = {
+    &aspDepthCondition,
+    &aspBaseDelta,
+    &aspDeltaMultiplier,
     &tmhDivisor,
     &tmsNumerator,
     &tmsDenominator,
