@@ -80,7 +80,7 @@ private:
                 // captures, mvv-lva
                 if(victim != None) {
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
-                    moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
+                    moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value + 16384;
                 } else {
                     const auto start = move.getStartSquare();
                     const auto end = move.getEndSquare();
