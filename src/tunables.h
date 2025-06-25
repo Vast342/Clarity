@@ -40,8 +40,8 @@ struct Tunable {
     int step;
 };
 
-inline Tunable aspBaseDelta("ASP_BaseDelta", 13, 1);
-inline Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.22, 10);
+inline Tunable aspBaseDelta("ASP_BaseDelta", 25, 1);
+inline Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.5, 10);
 inline Tunable aspDepthCondition("ASP_DepthCondition", 5, 1);
 
 inline Tunable tmhDivisor("TMH_Divisor", 2, 1);
