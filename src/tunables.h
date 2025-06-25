@@ -47,6 +47,10 @@ inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
 inline Tunable tmsDenominator("TMS_Denominator", 4, 1);
 inline Tunable tmsMultiplier("TMS_Multiplier", 0.6, 10);
 
+inline Tunable hstMaxBonus("HST_MaxBonus", 1632, 1);
+inline Tunable hstAdder("HST_Adder", 276, 1);
+inline Tunable hstSubtractor("HST_Subtractor", 119, 1);
+
 inline Tunable mvvPawn("MVV_Pawn", 95, 1);
 inline Tunable mvvKnight("MVV_Knight", 462, 1);
 inline Tunable mvvBishop("MVV_Bishop", 498, 1);
@@ -98,6 +102,9 @@ inline std::vector<Tunable *> tunables = {
     &tmsNumerator,
     &tmsDenominator,
     &tmsMultiplier,
+    &hstMaxBonus,
+    &hstAdder,
+    &hstSubtractor,
     &mvvPawn,
     &mvvKnight,
     &mvvBishop,
