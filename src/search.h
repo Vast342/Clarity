@@ -23,6 +23,12 @@
 #include "history.h"
 
 constexpr int16_t mateScore = 32000;
+constexpr int plyLimit = 256;
+
+struct StackEntry {
+    std::array<Move, plyLimit> pvTable;
+    int pvLength;
+};
 
 struct Searcher {
     public:
@@ -31,12 +37,13 @@ struct Searcher {
         uint64_t getNodes() const {
             return nodes;
         }
-        explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false), history({}), TT(TT) {}
+        explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false), stack({}), history({}), TT(TT) {}
     private:
         Move rootBestMove;
         uint64_t nodes;
         int seldepth;
         bool endSearch;
+        std::array<StackEntry, plyLimit> stack;
 
         HistoryTables history;
 
@@ -44,8 +51,9 @@ struct Searcher {
 
         std::chrono::steady_clock::time_point startTime;
         void outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const;
-        int16_t search(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters);
-        int16_t qsearch(Board &board, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters);
+        template <bool isPV = false> int16_t search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
+        int16_t qsearch(Board &board, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
+        std::string getPV() const;
         int getTimeElapsed() const {
             return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
         }

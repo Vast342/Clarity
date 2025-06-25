@@ -22,9 +22,12 @@
 
 void Searcher::newGame() {
     history.clear();
+    stack = {};
 }
 
-int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
+template <bool isPV>
+int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
+    stack[ply].pvLength = 0;
     // repetition check
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time manager
@@ -33,12 +36,12 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
         return 0;
     }
     if(depth <= 0) return qsearch(board, alpha, beta, ply, limiters);
-    if(ply > 256) return board.getEvaluation();
+    if(ply > plyLimit) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
 
-    auto zobristHash = board.getZobristHash();
-    auto entry = TT->getEntry(zobristHash);
+    const auto zobristHash = board.getZobristHash();
+    const auto entry = TT->getEntry(zobristHash);
 
     // tt cutoffs
     if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
@@ -67,7 +70,14 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
 
         // Recursion:tm:
         const int newDepth = depth - 1;
-        const int16_t score = -search(board, newDepth, -beta, -alpha, ply + 1, limiters);
+        int16_t score = 0;
+        // first move
+        if(!isPV || legalMoves > 1) {
+            score = -search(board, newDepth, -alpha-1, -alpha, ply + 1, limiters);
+        }
+        if(isPV && (legalMoves == 1 || score > alpha)) {
+            score = -search<true>(board, newDepth, -beta, -alpha, ply + 1, limiters);
+        }
         board.undoMove<true>();
 
         // time check
@@ -81,6 +91,12 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
                 bestMove = move;
                 if(ply == 0) rootBestMove = move;
                 flag = Exact;
+                if constexpr(isPV) {
+                    stack[ply].pvTable[0] = move;
+                    stack[ply].pvLength = stack[ply + 1].pvLength + 1;
+                    for (int i = 0; i < stack[ply + 1].pvLength; i++)
+                        stack[ply].pvTable[i + 1] = stack[ply + 1].pvTable[i];
+                }
             }
             // beta cutoff
             if(score >= beta) {
@@ -104,7 +120,8 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
     return bestScore;
 }
 
-int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
+int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
+    stack[ply].pvLength = 0;
     // time manager
     if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
         endSearch = true;
@@ -112,9 +129,10 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
     }
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
+    if(ply > plyLimit) return board.getEvaluation();
 
-    auto zobristHash = board.getZobristHash();
-    auto entry = TT->getEntry(zobristHash);
+    const auto zobristHash = board.getZobristHash();
+    const auto entry = TT->getEntry(zobristHash);
 
     // tt cutoffs
     if(ply > 0 && entry->zobristKey == shrink(zobristHash) && (
@@ -155,6 +173,10 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
             if(score > alpha) {
                 alpha = score;
                 bestMove = move;
+                stack[ply].pvTable[0] = move;
+                stack[ply].pvLength = stack[ply + 1].pvLength + 1;
+                for (int i = 0; i < stack[ply + 1].pvLength; i++)
+                    stack[ply].pvTable[i + 1] = stack[ply + 1].pvTable[i];
             }
             if(score >= beta) {
                 flag = BetaCutoff;
@@ -167,6 +189,14 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
     TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, bestScore, 0));
 
     return bestScore;
+}
+
+std::string Searcher::getPV() const {
+    std::string pv;
+    for(int i = 0; i < stack[0].pvLength; i++) {
+        pv += toLongAlgebraic(stack[0].pvTable[i]) + " ";
+    }
+    return pv;
 }
 
 void Searcher::outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const {
@@ -182,7 +212,7 @@ void Searcher::outputInfo(const Board& board, const int score, const int depth, 
         scoreString += "mate ";
         scoreString += std::to_string((abs(abs(score) - mateScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
-    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << std::endl;
+    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV() << std::endl;
 }
 
 void Searcher::think(Board board, const Limiters &limiters, const bool info) {
@@ -197,7 +227,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     int depth = 1;
     while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
         const Move previousBest = rootBestMove;
-        const int16_t score = search(board, depth, -mateScore, mateScore, 0, limiters);
+        const int16_t score = search<true>(board, depth, -mateScore, mateScore, 0, limiters);
         if(endSearch) {
             rootBestMove = previousBest;
         }
