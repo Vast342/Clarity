@@ -40,10 +40,20 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
     auto zobristHash = board.getZobristHash();
     auto entry = TT->getEntry(zobristHash);
 
+    // tt cutoffs
+    if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
+                entry->flag == Exact // exact score
+            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+    )) {
+        return entry->score;
+    }
+
     // move loop
     auto picker = MovePicker::search(board, entry->bestMove);
     int16_t bestScore = -mateScore;
-    Move bestMove = Move();
+    auto flag = FailLow;
+    auto bestMove = Move();
     uint8_t legalMoves = 0;
     while(const auto move = picker.next()) {
         // make the move
@@ -69,9 +79,11 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
                 alpha = score;
                 bestMove = move;
                 if(ply == 0) rootBestMove = move;
+                flag = Exact;
             }
             // beta cutoff
             if(score >= beta) {
+                flag = BetaCutoff;
                 break;
             }
         }
@@ -85,7 +97,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
     }
 
     // push to TT
-    TT->setEntry(zobristHash, Transposition(bestMove));
+    TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, bestScore, depth));
 
     return bestScore;
 }
@@ -108,8 +120,18 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
     auto zobristHash = board.getZobristHash();
     auto entry = TT->getEntry(zobristHash);
 
+    // tt cutoffs
+    if(ply > 0 && entry->zobristKey == shrink(zobristHash) && (
+                entry->flag == Exact // exact score
+            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+    )) {
+        return entry->score;
+    }
+
     // move loop
     auto picker = MovePicker::qsearch(board, entry->bestMove);
+    auto flag = FailLow;
     Move bestMove = Move();
     while(const auto move = picker.next()) {
         // make the move
@@ -133,13 +155,14 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
                 bestMove = move;
             }
             if(score >= beta) {
+                flag = BetaCutoff;
                 break;
             }
         }
     }
 
     // push to TT
-    TT->setEntry(zobristHash, Transposition(bestMove));
+    TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, bestScore, 0));
 
     return bestScore;
 }
