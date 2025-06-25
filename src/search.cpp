@@ -47,9 +47,10 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
     uint8_t legalMoves = 0;
     while(const auto move = picker.next()) {
         // make the move
-        if(!board.makeMove<true>(move)) {
+        if(!board.isLegal(move)) {
             continue;
         }
+        board.makeMove<true>(move);
         legalMoves++;
         nodes++;
 
@@ -112,9 +113,10 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
     Move bestMove = Move();
     while(const auto move = picker.next()) {
         // make the move
-        if(!board.makeMove<true>(move)) {
+        if(!board.isLegal(move)) {
             continue;
         }
+        board.makeMove<true>(move);
         nodes++;
 
         // Recursion:tm:
@@ -186,11 +188,9 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
             const Move move = moves[moveIndex];
 
             // make the move
-            if(!board.makeMove<true>(move)) {
+            if(!board.isLegal(move)) {
                 continue;
             }
-
-            board.undoMove<false>();
 
             rootBestMove = move;
             break;

@@ -81,6 +81,9 @@ struct BoardState {
     uint64_t majorHash;
     uint64_t minorHash;
     uint64_t threats;
+    uint64_t checkers;
+    uint64_t diagonal_pins;
+    uint64_t orthogonal_pins;
 };
 
 // a single move, stored in 16 bits
@@ -108,7 +111,7 @@ struct Board {
     public:
         Board(std::string fen);
         Board(BoardState s, int ctm);
-        template <bool PushNNUE> bool makeMove(Move move);
+        template <bool PushNNUE> void makeMove(Move move);
         template <bool PushNNUE> void undoMove();
         int getMoves(std::array<Move, 256> &moves) const;
         int getMovesQSearch(std::array<Move, 256> &moves) const;
@@ -144,6 +147,11 @@ struct Board {
         int getPawnHashIndex() const;
         uint64_t getThreats() const;
         uint64_t calculateThreats();
+        bool isLegal(Move move) const;
+        bool isPseudolegal(Move move) const;
+        void updatePinsAndCheckers();
+        void printPins() const;
+        uint64_t getOppAttacks(int square) const;
     private:
         int plyCount;
         uint8_t colorToMove;
@@ -161,8 +169,6 @@ struct Board {
 [[nodiscard]]std::string toLongAlgebraic(Move move);
 [[nodiscard]]uint64_t getRankMask(int rank);
 [[nodiscard]]uint64_t getFileMask(int file);
-[[nodiscard]]uint64_t getRookAttacksOld(int square, uint64_t occupiedBitboard);
-[[nodiscard]]uint64_t getBishopAttacksOld(int square, uint64_t occupiedBitboard);
 [[nodiscard]]uint64_t getRookAttacks(int square, uint64_t occupiedBitboard);
 [[nodiscard]]uint64_t getBishopAttacks(int square, uint64_t occupiedBitboard);
 [[nodiscard]]uint64_t getPawnPushes(uint64_t pawnBitboard, uint64_t emptyBitboard, int colorToMove);
