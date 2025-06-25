@@ -21,7 +21,7 @@
 #include "normalize.h"
 
 void Searcher::newGame() {
-    // nothing really to reset here yet, so placeholder until I get a TT or histories
+    history.clear();
 }
 
 int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t beta, const int ply, const Limiters &limiters) {
@@ -50,18 +50,19 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
     }
 
     // move loop
-    auto picker = MovePicker::search(board, entry->bestMove);
+    auto picker = MovePicker::search(board, entry->bestMove, history);
     int16_t bestScore = -mateScore;
     auto flag = FailLow;
     auto bestMove = Move();
     uint8_t legalMoves = 0;
+    std::array<Move, 256> testedMoves;
     while(const auto move = picker.next()) {
         // make the move
         if(!board.isLegal(move)) {
             continue;
         }
         board.makeMove<true>(move);
-        legalMoves++;
+        testedMoves[legalMoves++] = move;
         nodes++;
 
         // Recursion:tm:
@@ -83,6 +84,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, int16_t b
             }
             // beta cutoff
             if(score >= beta) {
+                history.betaCutoff(board, board.getColorToMove(), move, testedMoves, legalMoves, depth);
                 flag = BetaCutoff;
                 break;
             }
@@ -111,12 +113,6 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
 
-    // stand-pat
-    const auto staticEval = board.getEvaluation();
-    int16_t bestScore = staticEval;
-    if(bestScore >= beta) return bestScore;
-    if(alpha < bestScore) alpha = bestScore;
-
     auto zobristHash = board.getZobristHash();
     auto entry = TT->getEntry(zobristHash);
 
@@ -129,8 +125,14 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, int16_t beta, const int p
         return entry->score;
     }
 
+    // stand-pat
+    const auto staticEval = board.getEvaluation();
+    int16_t bestScore = staticEval;
+    if(bestScore >= beta) return bestScore;
+    if(alpha < bestScore) alpha = bestScore;
+
     // move loop
-    auto picker = MovePicker::qsearch(board, entry->bestMove);
+    auto picker = MovePicker::qsearch(board, entry->bestMove, history);
     auto flag = FailLow;
     Move bestMove = Move();
     while(const auto move = picker.next()) {

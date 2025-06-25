@@ -2,6 +2,7 @@
 #pragma once
 
 #include "globals.h"
+#include "history.h"
 
 enum class MovegenStage : int {
     TTMove = 0,
@@ -57,15 +58,18 @@ public:
                 return Move();
         }
     }
-    static inline MovePicker search(const Board &board, const Move ttMove) {
-        return MovePicker(board, ttMove, MovegenStage::TTMove);
+    static inline MovePicker search(const Board &board, const Move ttMove, HistoryTables &tables) {
+        return MovePicker(board, ttMove, tables, MovegenStage::TTMove);
     }
-    static inline MovePicker qsearch(const Board &board, const Move ttMove) {
-        return MovePicker(board, ttMove, MovegenStage::QSGenAll);
+    static inline MovePicker qsearch(const Board &board, const Move ttMove, HistoryTables &tables) {
+        return MovePicker(board, ttMove, tables, MovegenStage::QSGenAll);
+    }
+    inline int getTotalMoves() const {
+        return totalMoves;
     }
 private:
-    explicit MovePicker(const Board &board, const Move ttMove, const MovegenStage stage) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0} {}
+    explicit MovePicker(const Board &board, const Move ttMove, HistoryTables &tables, const MovegenStage stage) : stage(stage),
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, tables{tables} {}
     inline void scoreMoves() {
         for(int i = 0; i < totalMoves; ++i) {
             const auto move = moves[i];
@@ -78,7 +82,11 @@ private:
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
                     moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
                 } else {
-                    moveScores[i] = 0;
+                    const auto start = move.getStartSquare();
+                    const auto end = move.getEndSquare();
+                    const auto startAttack = board.squareIsUnderAttack(start);
+                    const auto endAttack = board.squareIsUnderAttack(end);
+                    moveScores[i] = tables.historyTable[board.getColorToMove()][start][startAttack][end][endAttack];
                 }
             }
         }
@@ -103,6 +111,7 @@ private:
     Move ttMove;
     int idx;
     int totalMoves;
+    HistoryTables &tables;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
 };

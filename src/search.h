@@ -20,6 +20,7 @@
 #include "globals.h"
 #include "limits.h"
 #include "tt.h"
+#include "history.h"
 
 constexpr int16_t mateScore = 32000;
 
@@ -30,12 +31,14 @@ struct Searcher {
         uint64_t getNodes() const {
             return nodes;
         }
-        Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false), TT(TT) {}
+        explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false), history({}), TT(TT) {}
     private:
         Move rootBestMove;
         uint64_t nodes;
         int seldepth;
         bool endSearch;
+
+        HistoryTables history;
 
         TranspositionTable* TT;
 
