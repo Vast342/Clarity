@@ -238,18 +238,15 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
             int delta = aspBaseDelta.value;
             int alpha = std::max(int(-mateScore), score - delta);
             int beta = std::min(int(mateScore), score + delta);
-            int usedDepth = depth;
             while(true) {
-                score = search<true>(board, usedDepth, alpha, beta, 0, limiters);
+                score = search<true>(board, depth, alpha, beta, 0, limiters);
                 if(endSearch) break;
 
                 if(score >= beta) {
                     beta = std::min(beta + delta, int(mateScore));
-                    usedDepth = std::max(usedDepth - 1, depth - 5);
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, int(-mateScore));
-                    usedDepth = depth;
                 } else break;
 
                 delta *= aspDeltaMultiplier.value;
