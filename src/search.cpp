@@ -36,7 +36,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         return 0;
     }
     if(depth <= 0) return qsearch(board, alpha, beta, ply, limiters);
-    if(ply > plyLimit) return board.getEvaluation();
+    if(ply >= plyLimit) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
 
@@ -61,10 +61,11 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
 
         // Null Move Pruning (NMP)
         // "I could probably detect zugzwang here but ehhhhh" -Me, 2 years ago
-        if(ply > 0 && !stack[ply - 1].isNull && !board.isPKEndgame() && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta && staticEval >= beta + 175 - 25 * depth) {
+        if(ply > 0 && !stack[ply - 1].isNull && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
             board.changeColor();
             stack[ply].isNull = true;
-            const int score = -search(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, limiters);
+            constexpr auto r = 3;
+            const int score = -search(board, depth - r, 0-beta, 1-beta, ply + 1, limiters);
             board.undoChangeColor();
             stack[ply].isNull = false;
             if(score >= beta) {
@@ -150,7 +151,7 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
     }
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
-    if(ply > plyLimit) return board.getEvaluation();
+    if(ply >= plyLimit) return board.getEvaluation();
 
     const auto zobristHash = board.getZobristHash();
     const auto entry = TT->getEntry(zobristHash);
