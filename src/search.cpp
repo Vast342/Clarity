@@ -212,7 +212,13 @@ void Searcher::outputInfo(const Board& board, const int score, const int depth, 
         scoreString += "mate ";
         scoreString += std::to_string((abs(abs(score) - mateScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
-    std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodes) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV() << std::endl;
+    std::cout << "info depth " << std::to_string(depth)
+              << " seldepth " << std::to_string(seldepth)
+              << " nodes " << std::to_string(nodes)
+              << " time " << std::to_string(elapsedTime)
+              << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000))
+              << scoreString
+              << " pv " << getPV() << std::endl;
 }
 
 void Searcher::think(Board board, const Limiters &limiters, const bool info) {
@@ -225,9 +231,29 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
 
     // Iterative Deepening
     int depth = 1;
+    int16_t score = 0;
     while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
         const Move previousBest = rootBestMove;
-        const int16_t score = search<true>(board, depth, -mateScore, mateScore, 0, limiters);
+        if(depth > aspDepthCondition.value) {
+            int delta = aspBaseDelta.value;
+            int alpha = std::max(int(-mateScore), score - delta);
+            int beta = std::min(int(mateScore), score + delta);
+            while(true) {
+                score = search<true>(board, depth, alpha, beta, 0, limiters);
+                if(endSearch) break;
+
+                if(score >= beta) {
+                    beta = std::min(beta + delta, int(mateScore));
+                } else if(score <= alpha) {
+                    beta = (alpha + beta) / 2;
+                    alpha = std::max(alpha - delta, int(-mateScore));
+                } else break;
+
+                delta *= aspDeltaMultiplier.value;
+            }
+        } else {
+            score = search<true>(board, depth, -mateScore, mateScore, 0, limiters);
+        }
         if(endSearch) {
             rootBestMove = previousBest;
         }
