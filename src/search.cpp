@@ -52,6 +52,14 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         return entry->score;
     }
 
+    // Prunings!
+    if constexpr(!isPV) {
+        const auto staticEval = board.getEvaluation();
+        const auto inCheck = board.isInCheck();
+        // Reverse Futility Pruning (RFP)
+        if(!inCheck && staticEval - rfpMultiplier.value * depth >= beta && depth < rfpDepthCondition.value) return staticEval;
+    }
+
     // move loop
     auto picker = MovePicker::search(board, entry->bestMove, history);
     int16_t bestScore = -mateScore;
