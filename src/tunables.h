@@ -20,6 +20,7 @@
 
 #include "globals.h"
 
+// I wanna redo this to have the Funny Macro type of tunables (which are more importantly known at compile time)
 
 struct Tunable {
     explicit Tunable(std::string _name, double _value, int _divisor)
@@ -43,6 +44,9 @@ struct Tunable {
 inline Tunable aspBaseDelta("ASP_BaseDelta", 25, 1);
 inline Tunable aspDeltaMultiplier("ASP_DeltaMultiplier", 1.5, 10);
 inline Tunable aspDepthCondition("ASP_DepthCondition", 5, 1);
+
+inline Tunable rfpDepthCondition("RFP_DepthCondition", 9, 1);
+inline Tunable rfpMultiplier("RFP_Multiplier", 85, 1);
 
 inline Tunable tmhDivisor("TMH_Divisor", 2, 1);
 inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
