@@ -28,6 +28,7 @@ constexpr int plyLimit = 256;
 struct StackEntry {
     std::array<Move, plyLimit> pvTable;
     int pvLength;
+    bool isNull;
 };
 
 struct Searcher {

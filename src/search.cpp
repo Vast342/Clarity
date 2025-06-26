@@ -58,6 +58,19 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         const auto inCheck = board.isInCheck();
         // Reverse Futility Pruning (RFP)
         if(!inCheck && staticEval - rfpMultiplier.value * depth >= beta && depth < rfpDepthCondition.value) return staticEval;
+
+        // Null Move Pruning (NMP)
+        // "I could probably detect zugzwang here but ehhhhh" -Me, 2 years ago
+        if(ply > 0 && !stack[ply - 1].isNull && !board.isPKEndgame() && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta && staticEval >= beta + 175 - 25 * depth) {
+            board.changeColor();
+            stack[ply].isNull = true;
+            const int score = -search(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, limiters);
+            board.undoChangeColor();
+            stack[ply].isNull = false;
+            if(score >= beta) {
+                return score;
+            }
+        }
     }
 
     // move loop
