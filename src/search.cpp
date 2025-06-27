@@ -43,19 +43,20 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     const auto zobristHash = board.getZobristHash();
     const auto entry = TT->getEntry(zobristHash);
 
-    // tt cutoffs
-    if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
-                entry->flag == Exact // exact score
-            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
-            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
-    )) {
-        return entry->score;
-    }
-
     // Prunings!
     if constexpr(!isPV) {
+        // tt cutoffs
+        if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
+                    entry->flag == Exact // exact score
+                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+        )) {
+            return entry->score;
+        }
+
         auto staticEval = board.getEvaluation();
         const auto inCheck = board.isInCheck();
+
         if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
             entry->flag == Exact ||
             (entry->flag == BetaCutoff && entry->score >= staticEval) ||
