@@ -48,6 +48,8 @@ inline Tunable aspDepthCondition("ASP_DepthCondition", 5, 1);
 inline Tunable rfpDepthCondition("RFP_DepthCondition", 9, 1);
 inline Tunable rfpMultiplier("RFP_Multiplier", 85, 1);
 
+inline Tunable nmpDepthCondition("NMP_DepthCondition", 2, 1);
+
 inline Tunable tmhDivisor("TMH_Divisor", 2, 1);
 inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
 inline Tunable tmsDenominator("TMS_Denominator", 4, 1);
