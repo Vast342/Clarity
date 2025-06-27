@@ -45,6 +45,15 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
 
     // Prunings!
     if constexpr(!isPV) {
+        // tt cutoffs
+        if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
+                    entry->flag == Exact // exact score
+                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+        )) {
+            return entry->score;
+        }
+
         const auto staticEval = board.getEvaluation();
         const auto inCheck = board.isInCheck();
         // Reverse Futility Pruning (RFP)
@@ -62,15 +71,6 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             if(score >= beta) {
                 return score;
             }
-        }
-
-        // tt cutoffs
-        if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
-                    entry->flag == Exact // exact score
-                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
-                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
-        )) {
-            return entry->score;
         }
     }
 
