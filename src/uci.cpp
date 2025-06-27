@@ -36,7 +36,7 @@ int defaultMovesToGo = 20;
 
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 int64_t moveOverhead = 10;
-int benchDepth = 6;
+int benchDepth = 7;
 TranspositionTable TT;
 Searcher searcher = Searcher(&TT);
 

@@ -54,8 +54,18 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             return entry->score;
         }
 
-        const auto staticEval = board.getEvaluation();
+        auto staticEval = board.getEvaluation();
         const auto inCheck = board.isInCheck();
+
+        // Adjust staticEval to TT Score if it's good enough
+        if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
+                    entry->flag == Exact ||
+                    (entry->flag == BetaCutoff && entry->score >= staticEval) ||
+                    (entry->flag == FailLow && entry->score <= staticEval)
+                )) {
+            staticEval = entry->score;
+                }
+
         // Reverse Futility Pruning (RFP)
         if(!inCheck && staticEval - rfpMultiplier.value * depth >= beta && depth < rfpDepthCondition.value) return staticEval;
 
