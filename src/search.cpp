@@ -54,7 +54,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             return entry->score;
         }
 
-        auto staticEval = board.getEvaluation();
+        int16_t staticEval = board.getEvaluation();
         const auto inCheck = board.isInCheck();
 
         if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
