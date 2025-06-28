@@ -52,7 +52,7 @@ struct Searcher {
 
         std::chrono::steady_clock::time_point startTime;
         void outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const;
-        template <bool isPV = false> int16_t search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
+        template <bool isPV = false> int16_t search(Board &board, int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
         int16_t qsearch(Board &board, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
         std::string getPV() const;
         int getTimeElapsed() const {
