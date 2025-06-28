@@ -28,13 +28,14 @@ void Searcher::newGame() {
 template <bool isPV>
 int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
     stack[ply].pvLength = 0;
-    // repetition check
-    if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time manager
     if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
         endSearch = true;
         return 0;
     }
+    // repetition check
+    if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
+
     if(depth <= 0) return qsearch(board, alpha, beta, ply, limiters);
     if(ply >= plyLimit) return board.getEvaluation();
     // update seldepth

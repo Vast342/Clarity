@@ -889,7 +889,7 @@ uint64_t Board::fullZobristRegen() {
 
 bool Board::isRepeatedPosition() {
     int size = std::ssize(stateHistory);
-    for(int i = size - 5; i >= size - stateHistory.back().hundredPlyCounter - 1; i -= 2) {
+    for(int i = size - 5; i >= size - stateHistory.back().hundredPlyCounter - 1 && i >= 0; i -= 2) {
         if(stateHistory[i].zobristHash == stateHistory.back().zobristHash) {
             return true;
         }
