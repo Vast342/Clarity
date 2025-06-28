@@ -121,46 +121,44 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
 
             uint64_t added = curr & ~prev;
             uint64_t removed = prev & ~curr;
-            //std::cout << "added:  " << added << std::endl;
-            //std::cout << "removed: " << removed << std::endl;
 
-            while(added) {
+            while (added) {
                 const int sq = popLSB(added);
                 const int index = getFeatureIndex(sq, c * 8 + piece, color, king);
-                //std::cout << "sq " << sq << " p " << p << std::endl;
-                // change values for all of them
-                if(color == 0) {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.black[i] += network->featureWeights[index * layer1Size + i];
-                    }
-                } else {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.white[i] += network->featureWeights[index * layer1Size + i];
-                    }
+
+                const int16_t *__restrict__ weights = network->featureWeights.data();
+                int16_t *__restrict__ acc =
+                    (color == 0 ? entry.accumulator.black.data()
+                                : entry.accumulator.white.data());
+
+                const int16_t *__restrict__ w = weights + index * layer1Size;
+
+                for (int i = 0; i < layer1Size; ++i) {
+                    acc[i] += w[i];
                 }
             }
 
-            while(removed) {
+            while (removed) {
                 const int sq = popLSB(removed);
                 const int index = getFeatureIndex(sq, c * 8 + piece, color, king);
-                //std::cout << "sq " << sq << " p " << p << std::endl;
-                // change values for all of them
-                if(color == 0) {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.black[i] -= network->featureWeights[index * layer1Size + i];
-                    }
-                } else {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.white[i] -= network->featureWeights[index * layer1Size + i];
-                    }
+
+                const int16_t *__restrict__ weights = network->featureWeights.data();
+                int16_t *__restrict__ acc =
+                    (color == 0 ? entry.accumulator.black.data()
+                                : entry.accumulator.white.data());
+
+                const int16_t *__restrict__ w = weights + index * layer1Size;
+
+                for (int i = 0; i < layer1Size; ++i) {
+                    acc[i] -= w[i];
                 }
             }
         }
     }
     if(color == 0) {
-        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<std::int16_t, layer1Size>));
+        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<int16_t, layer1Size>));
     } else {
-        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<std::int16_t, layer1Size>));
+        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<int16_t, layer1Size>));
     }
     std::memcpy(&prevBoards, &state, sizeof(BoardState));
 }
@@ -249,7 +247,7 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
         vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
         vector1 = _mm512_madd_epi16(vector0, vector1);
         sum = _mm512_add_epi32(sum, vector1);
-        
+
         // them
         vector0 = _mm512_max_epi16(_mm512_min_epi16(_mm512_load_si512(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm512_set1_epi16(Qa)), _mm512_setzero_si512());
         vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
@@ -276,7 +274,7 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
         vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
         vector1 = _mm256_madd_epi16(vector0, vector1);
         sum = _mm256_add_epi32(sum, vector1);
-        
+
         // them
         vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
         vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
@@ -318,7 +316,7 @@ int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size>
         vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
         vector1 = _mm_madd_epi16(vector0, vector1);
         sum = _mm_add_epi32(sum, vector1);
-        
+
         // them
         vector0 = _mm_max_epi16(_mm_min_epi16(_mm_load_si128(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm_set1_epi16(Qa)), _mm_setzero_si128());
         vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
@@ -344,28 +342,35 @@ void NetworkState::activateFeature(int square, int piece, int blackKing, int whi
 void NetworkState::activateFeatureSingle(int square, int piece, int color, int king){ 
     const int index = getFeatureIndex(square, piece, color, king);
 
-    // change values for all of them
-    if(color == 0) {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].black[i] += network->featureWeights[index * layer1Size + i];
-        }
-    } else {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].white[i] += network->featureWeights[index * layer1Size + i];
-        }
+    const int16_t *__restrict__ weights = network->featureWeights.data();
+    int16_t *__restrict__ acc =
+        (color == 0 ? stack[current].black.data()
+                    : stack[current].white.data());
+
+    for (int i = 0; i < layer1Size; ++i) {
+        acc[i] += weights[index * layer1Size + i];
     }
 }
 
-void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing){ 
+void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing) {
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece, blackKing, whiteKing);
 
-    // change values for all of them
-    for(int i = 0; i < layer1Size; ++i) {
-        stack[current + 1].black[i] = stack[current].black[i] + network->featureWeights[blackIdx * layer1Size + i];
-        stack[current + 1].white[i] = stack[current].white[i] + network->featureWeights[whiteIdx * layer1Size + i];
+    const int16_t *__restrict__ weights = network->featureWeights.data();
+
+    const int16_t *__restrict__ blackPrev = stack[current].black.data();
+    const int16_t *__restrict__ whitePrev = stack[current].white.data();
+
+    int16_t *__restrict__ blackNext = stack[current + 1].black.data();
+    int16_t *__restrict__ whiteNext = stack[current + 1].white.data();
+
+    for (int i = 0; i < layer1Size; ++i) {
+        blackNext[i] = blackPrev[i] + weights[blackIdx * layer1Size + i];
+        whiteNext[i] = whitePrev[i] + weights[whiteIdx * layer1Size + i];
     }
+
     current++;
 }
+
 
 void NetworkState::disableFeature(int square, int piece, int blackKing, int whiteKing) {
     disableFeatureSingle(square, piece, 0, blackKing);
@@ -374,15 +379,13 @@ void NetworkState::disableFeature(int square, int piece, int blackKing, int whit
 void NetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
     const int index = getFeatureIndex(square, piece, color, king);
 
-    // change values for all of them
-    if(color == 0) {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].black[i] -= network->featureWeights[index * layer1Size + i];
-        }
-    } else {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].white[i] -= network->featureWeights[index * layer1Size + i];
-        }
+    const int16_t *__restrict__ weights = network->featureWeights.data();
+    int16_t *__restrict__ acc =
+        (color == 0 ? stack[current].black.data()
+                    : stack[current].white.data());
+
+    for (int i = 0; i < layer1Size; ++i) {
+        acc[i] -= weights[index * layer1Size + i];
     }
 }
 
