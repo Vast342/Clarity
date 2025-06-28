@@ -17,6 +17,8 @@
 */
 #include "search.h"
 
+#include <sys/stat.h>
+
 #include "movepick.h"
 #include "normalize.h"
 
@@ -44,7 +46,6 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     const auto zobristHash = board.getZobristHash();
     const auto entry = TT->getEntry(zobristHash);
 
-    // Prunings!
     if constexpr(!isPV) {
         // tt cutoffs
         if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
@@ -54,18 +55,30 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         )) {
             return entry->score;
         }
+    }
 
-        int16_t staticEval = board.getEvaluation();
-        const auto inCheck = board.isInCheck();
-
-        if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
-            entry->flag == Exact ||
-            (entry->flag == BetaCutoff && entry->score >= staticEval) ||
-            (entry->flag == FailLow && entry->score <= staticEval)
-        )) {
-                staticEval = entry->score;
+    int16_t staticEval = 0;
+    if(entry->zobristKey == shrink(zobristHash)) {
+        staticEval = entry->staticEval;
+    } else {
+        staticEval = board.getEvaluation();
+        if(entry->zobristKey == 0) {
+            TT->setEntry(zobristHash, Transposition(zobristHash, Move(), 0, staticEval, 0, 0));
         }
+    }
+    const auto inCheck = board.isInCheck();
 
+    // Correct staticEval to TT score if its useful
+    if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
+        entry->flag == Exact ||
+        (entry->flag == BetaCutoff && entry->score >= staticEval) ||
+        (entry->flag == FailLow && entry->score <= staticEval)
+    )) {
+        staticEval = entry->score;
+    }
+
+    // Prunings!
+    if constexpr(!isPV) {
         // Reverse Futility Pruning (RFP)
         if(!inCheck && staticEval - rfpMultiplier.value * depth >= beta && depth < rfpDepthCondition.value) return staticEval;
 
@@ -147,7 +160,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     }
 
     // push to TT
-    TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, bestScore, depth));
+    TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, staticEval, bestScore, depth));
 
     return bestScore;
 }
@@ -176,7 +189,15 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
     }
 
     // stand-pat
-    const auto staticEval = board.getEvaluation();
+    int16_t staticEval;
+    if(entry->zobristKey == shrink(zobristHash)) {
+        staticEval = entry->staticEval;
+    } else {
+        staticEval = board.getEvaluation();
+        if(entry->zobristKey == 0) {
+            TT->setEntry(zobristHash, Transposition(zobristHash, Move(), 0, staticEval, 0, 0));
+        }
+    }
     int16_t bestScore = staticEval;
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
@@ -218,7 +239,7 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
     }
 
     // push to TT
-    TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, bestScore, 0));
+    TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, staticEval, bestScore, 0));
 
     return bestScore;
 }
