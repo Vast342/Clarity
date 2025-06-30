@@ -28,6 +28,7 @@ void Searcher::newGame() {
 
 template <bool isPV>
 int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
+    if(endSearch.load(std::memory_order_relaxed)) return 0;
     stack[ply].pvLength = 0;
     // time manager
     if((nodes.load(std::memory_order_relaxed) % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes.load(std::memory_order_relaxed))) {
@@ -163,6 +164,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
 }
 
 int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
+    if(endSearch.load(std::memory_order_relaxed)) return 0;
     stack[ply].pvLength = 0;
     // time manager
     if((nodes.load(std::memory_order_relaxed) % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes.load(std::memory_order_relaxed))) {
@@ -299,10 +301,12 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
         }
         if(endSearch.load(std::memory_order_relaxed)) {
             rootBestMove = previousBest;
+            break;
         }
         if(info) outputInfo(board, score, depth, getTimeElapsed());
         depth++;
     }
+    if(isMain) endSearch.store(true, std::memory_order_relaxed);
 
     if(rootBestMove == Move()) {
         std::array<Move, 256> moves;

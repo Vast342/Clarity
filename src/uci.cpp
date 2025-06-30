@@ -38,7 +38,7 @@ int64_t moveOverhead = 10;
 int benchDepth = 7;
 TranspositionTable TT;
 std::vector<Searcher> searchers;
-std::vector<std::thread> threads;
+std::vector<std::jthread> threads;
 int threadCount = 1;
 
 // resets everything
