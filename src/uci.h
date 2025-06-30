@@ -1,6 +1,6 @@
 /*
-    Clarity
-    Copyright (C) 2025 Joseph Pasfield
+Clarity
+    Copyright (C) 2024 Joseph Pasfield
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,6 +19,4 @@
 
 #include "globals.h"
 
-extern bool mainThreadDone;
-void stopOtherThreads();
 uint64_t getTotalNodes();

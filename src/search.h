@@ -31,31 +31,32 @@ struct StackEntry {
     bool isNull;
 };
 
+inline std::atomic<bool> endSearch(false);
+
 struct Searcher {
-    public:
-        void think(Board board, const Limiters &limiters, const bool info);
-        void newGame();
-        uint64_t getNodes() const {
-            return nodes;
-        }
-        explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false), stack({}), history({}), TT(TT) {}
-    private:
-        Move rootBestMove;
-        uint64_t nodes;
-        int seldepth;
-        bool endSearch;
-        std::array<StackEntry, plyLimit> stack;
+public:
+    void think(Board board, const Limiters &limiters, const bool info);
+    void newGame();
+    uint64_t getNodes() const {
+        return nodes;
+    }
+    explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), stack({}), history({}), TT(TT) {}
+private:
+    Move rootBestMove;
+    uint64_t nodes;
+    int seldepth;
+    std::array<StackEntry, plyLimit> stack;
 
-        HistoryTables history;
+    HistoryTables history;
 
-        TranspositionTable* TT;
+    TranspositionTable* TT;
 
-        std::chrono::steady_clock::time_point startTime;
-        void outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const;
-        template <bool isPV = false> int16_t search(Board &board, int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
-        int16_t qsearch(Board &board, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
-        std::string getPV() const;
-        int getTimeElapsed() const {
-            return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
-        }
+    std::chrono::steady_clock::time_point startTime;
+    void outputInfo(const Board& board, int score, int depth, int elapsedTime) const;
+    template <bool isPV = false> int16_t search(Board &board, int depth, int16_t alpha, int16_t beta, int16_t ply, const Limiters &limiters);
+    int16_t qsearch(Board &board, int16_t alpha, int16_t beta, int16_t ply, const Limiters &limiters);
+    [[nodiscard]] std::string getPV() const;
+    [[nodiscard]] int getTimeElapsed() const {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
+    }
 };
