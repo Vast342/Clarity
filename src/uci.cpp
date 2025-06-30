@@ -69,7 +69,7 @@ void runBench(int depth = benchDepth) {
     limiters.load_values(0, 0, 0, depth, 0, 0);
     for(std::string fen : benchFens) {
         Board benchBoard(fen);
-        searchers[0].think(benchBoard, limiters, false);
+        searchers[0].think(benchBoard, limiters, true, false);
         total += searchers[0].getNodes();
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
@@ -199,7 +199,7 @@ void go(std::vector<std::string> bits) {
     limiters.load_values(time, inc, nodes, depth, movetime, movestogo);
     for(int i = 0; i < threadCount; i++) {
         threads.emplace_back([i, limiters]() {
-            searchers[i].think(board, limiters, i == 0);
+            searchers[i].think(board, limiters, i == 0, i == 0);
         });
     }
     //bestMove = engine.think(board, softBound, hardBound, true);

@@ -30,7 +30,7 @@ template <bool isPV>
 int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
     stack[ply].pvLength = 0;
     // time manager
-    if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
+    if((nodes.load(std::memory_order_relaxed) % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes.load(std::memory_order_relaxed))) {
         endSearch.store(true, std::memory_order_relaxed);
         return 0;
     }
@@ -108,7 +108,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         }
         board.makeMove<true>(move);
         testedMoves[legalMoves++] = move;
-        nodes++;
+        nodes.fetch_add(1, std::memory_order_relaxed);
 
         // Recursion:tm:
         const int newDepth = depth - 1;
@@ -123,7 +123,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         board.undoMove<true>();
 
         // time check
-        if(endSearch) return 0;
+        if(endSearch.load(std::memory_order_relaxed)) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -165,8 +165,8 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
 int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
     stack[ply].pvLength = 0;
     // time manager
-    if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
-        endSearch = true;
+    if((nodes.load(std::memory_order_relaxed) % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes.load(std::memory_order_relaxed))) {
+        endSearch.store(true, std::memory_order_relaxed);
         return 0;
     }
     // update seldepth
@@ -201,14 +201,14 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
             continue;
         }
         board.makeMove<true>(move);
-        nodes++;
+        nodes.fetch_add(1, std::memory_order_relaxed);
 
         // Recursion:tm:
         const int16_t score = -qsearch(board,  -beta, -alpha, ply + 1, limiters);
         board.undoMove<true>();
 
         // time check
-        if(endSearch) return 0;
+        if(endSearch.load(std::memory_order_relaxed)) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -267,15 +267,15 @@ void Searcher::outputInfo(const Board& board, const int score, const int depth, 
 void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     // reset things
     rootBestMove = Move();
-    if(info) endSearch.store(false);
-    nodes = 0;
+    if(info) endSearch.store(false, std::memory_order_relaxed);
+    nodes.store(0, std::memory_order_relaxed);
     seldepth = 0;
     startTime = std::chrono::steady_clock::now();
 
     // Iterative Deepening
     int depth = 1;
     int16_t score = 0;
-    while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
+    while((!info && !limiters.useDepth) || limiters.keep_searching_soft(getTimeElapsed(), nodes.load(std::memory_order_relaxed), depth)) {
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
             int delta = aspBaseDelta.value;
@@ -283,7 +283,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
             int beta = std::min(int(mateScore), score + delta);
             while(true) {
                 score = search<true>(board, depth, alpha, beta, 0, limiters);
-                if(endSearch) break;
+                if(endSearch.load(std::memory_order_relaxed)) break;
 
                 if(score >= beta) {
                     beta = std::min(beta + delta, int(mateScore));
@@ -297,7 +297,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
         } else {
             score = search<true>(board, depth, -mateScore, mateScore, 0, limiters);
         }
-        if(endSearch) {
+        if(endSearch.load(std::memory_order_relaxed)) {
             rootBestMove = previousBest;
         }
         if(info) outputInfo(board, score, depth, getTimeElapsed());

@@ -35,7 +35,7 @@ inline std::atomic endSearch(false);
 
 struct Searcher {
 public:
-    void think(Board board, const Limiters &limiters, bool info);
+    void think(Board board, const Limiters &limiters, bool isMain, bool info);
     void newGame();
     uint64_t getNodes() const {
         return nodes.load(std::memory_order_relaxed);
