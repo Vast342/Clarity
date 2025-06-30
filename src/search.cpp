@@ -19,6 +19,7 @@
 
 #include "movepick.h"
 #include "normalize.h"
+#include "uci.h"
 
 void Searcher::newGame() {
     history.clear();
@@ -26,11 +27,11 @@ void Searcher::newGame() {
 }
 
 template <bool isPV>
-int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
+int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
     stack[ply].pvLength = 0;
     // time manager
     if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
-        endSearch = true;
+        endSearch.store(true, std::memory_order_relaxed);
         return 0;
     }
     // repetition check
@@ -81,6 +82,15 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             if(score >= beta) {
                 return score;
             }
+        }
+    }
+
+    // Mate Distance Pruning (I will test it at some point I swear)
+    if(!isPV) {
+        const auto mdAlpha = std::max(alpha, int16_t(-mateScore + ply));
+        const auto mdBeta = std::min(beta, int16_t(mateScore - ply - 1));
+        if(mdAlpha >= mdBeta) {
+            return mdAlpha;
         }
     }
 
@@ -152,7 +162,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     return bestScore;
 }
 
-int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
+int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
     stack[ply].pvLength = 0;
     // time manager
     if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
@@ -244,11 +254,12 @@ void Searcher::outputInfo(const Board& board, const int score, const int depth, 
         scoreString += "mate ";
         scoreString += std::to_string((abs(abs(score) - mateScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
+    const auto nodeCount = getTotalNodes();
     std::cout << "info depth " << std::to_string(depth)
               << " seldepth " << std::to_string(seldepth)
-              << " nodes " << std::to_string(nodes)
+              << " nodes " << std::to_string(nodeCount)
               << " time " << std::to_string(elapsedTime)
-              << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000))
+              << " nps " << std::to_string(int(double(nodeCount) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000))
               << scoreString
               << " pv " << getPV() << std::endl;
 }
@@ -256,7 +267,7 @@ void Searcher::outputInfo(const Board& board, const int score, const int depth, 
 void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     // reset things
     rootBestMove = Move();
-    endSearch = false;
+    if(info) endSearch.store(false);
     nodes = 0;
     seldepth = 0;
     startTime = std::chrono::steady_clock::now();
@@ -297,14 +308,10 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
         std::array<Move, 256> moves;
         const int totalMoves = board.getMoves(moves);
         for(uint8_t moveIndex = 0; moveIndex < totalMoves; moveIndex++) {
-            // information gathering
             const Move move = moves[moveIndex];
-
-            // make the move
             if(!board.isLegal(move)) {
                 continue;
             }
-
             rootBestMove = move;
             break;
         }
