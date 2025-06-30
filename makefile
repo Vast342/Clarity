@@ -71,9 +71,9 @@ ifeq ($(OS),Windows_NT)
     override EXE := $(EXE).exe
 endif
 
-ifneq (,$(findstring clang,$(CXX)))
-  LDFLAGS := -fuse-ld=lld
-endif
+#ifneq (,$(findstring clang,$(CXX)))
+#  LDFLAGS := -fuse-ld=lld
+#endif
 
 # Default target
 all: CXXFLAGS += $(BUILD_CXXFLAGS)

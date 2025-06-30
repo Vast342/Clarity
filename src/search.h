@@ -31,19 +31,35 @@ struct StackEntry {
     bool isNull;
 };
 
-inline std::atomic<bool> endSearch(false);
+inline std::atomic endSearch(false);
 
 struct Searcher {
 public:
-    void think(Board board, const Limiters &limiters, const bool info);
+    void think(Board board, const Limiters &limiters, bool info);
     void newGame();
     uint64_t getNodes() const {
-        return nodes;
+        return nodes.load(std::memory_order_relaxed);
     }
     explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), stack({}), history({}), TT(TT) {}
+    Searcher(const Searcher&) = delete;
+    Searcher& operator=(const Searcher&) = delete;
+
+    Searcher(Searcher&& other) noexcept
+        : rootBestMove(std::move(other.rootBestMove)),
+          nodes(other.nodes.load()),
+          seldepth(other.seldepth),
+          stack(std::move(other.stack)),
+          history(std::move(other.history)),
+          TT(other.TT),
+          startTime(std::move(other.startTime)) {
+        // Reset the moved-from object
+        other.nodes.store(0);
+        other.seldepth = 0;
+        other.TT = nullptr;
+    }
 private:
     Move rootBestMove;
-    uint64_t nodes;
+    std::atomic<uint64_t> nodes;
     int seldepth;
     std::array<StackEntry, plyLimit> stack;
 
