@@ -307,6 +307,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool isMain, c
         depth++;
     }
     if(isMain) endSearch.store(true, std::memory_order_relaxed);
+    if(!isMain) nodes.store(0, std::memory_order_relaxed);
 
     if(rootBestMove == Move()) {
         std::array<Move, 256> moves;
