@@ -26,7 +26,7 @@ void Searcher::newGame() {
 }
 
 template <bool isPV>
-int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
+int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
     stack[ply].pvLength = 0;
     // time manager
     if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
@@ -35,8 +35,8 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     }
     // repetition check
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
-
-    if(depth <= 0) return qsearch(board, alpha, beta, ply, limiters);
+    const auto inCheck = board.isInCheck();
+    if(depth <= 0 && !inCheck) return qsearch(board, alpha, beta, ply, limiters);
     if(ply >= plyLimit) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
@@ -56,14 +56,13 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         }
 
         int16_t staticEval = board.getEvaluation();
-        const auto inCheck = board.isInCheck();
 
         if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
             entry->flag == Exact ||
             (entry->flag == BetaCutoff && entry->score >= staticEval) ||
             (entry->flag == FailLow && entry->score <= staticEval)
         )) {
-                staticEval = entry->score;
+            staticEval = entry->score;
         }
 
         // Reverse Futility Pruning (RFP)
@@ -83,6 +82,9 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             }
         }
     }
+
+    // Check extensions teehee
+    if(inCheck) depth++;
 
     // move loop
     auto picker = MovePicker::search(board, entry->bestMove, history);
