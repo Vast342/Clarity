@@ -19,6 +19,7 @@
 
 #include "movepick.h"
 #include "normalize.h"
+#include "uci.h"
 
 void Searcher::newGame() {
     history.clear();
@@ -26,17 +27,18 @@ void Searcher::newGame() {
 }
 
 template <bool isPV>
-int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
+int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
+    if(endSearch.load(std::memory_order_relaxed)) return 0;
     stack[ply].pvLength = 0;
     // time manager
-    if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
-        endSearch = true;
+    if((nodes.load(std::memory_order_relaxed) % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes.load(std::memory_order_relaxed))) {
+        endSearch.store(true, std::memory_order_relaxed);
         return 0;
     }
     // repetition check
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
-    const auto inCheck = board.isInCheck();
-    if(depth <= 0 && !inCheck) return qsearch(board, alpha, beta, ply, limiters);
+
+    if(depth <= 0) return qsearch(board, alpha, beta, ply, limiters);
     if(ply >= plyLimit) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
@@ -56,13 +58,14 @@ int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t b
         }
 
         int16_t staticEval = board.getEvaluation();
+        const auto inCheck = board.isInCheck();
 
         if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
             entry->flag == Exact ||
             (entry->flag == BetaCutoff && entry->score >= staticEval) ||
             (entry->flag == FailLow && entry->score <= staticEval)
         )) {
-            staticEval = entry->score;
+                staticEval = entry->score;
         }
 
         // Reverse Futility Pruning (RFP)
@@ -83,8 +86,14 @@ int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t b
         }
     }
 
-    // Check extensions teehee
-    if(inCheck) depth++;
+    // Mate Distance Pruning (I will test it at some point I swear)
+    if(!isPV) {
+        const auto mdAlpha = std::max(alpha, int16_t(-mateScore + ply));
+        const auto mdBeta = std::min(beta, int16_t(mateScore - ply - 1));
+        if(mdAlpha >= mdBeta) {
+            return mdAlpha;
+        }
+    }
 
     // move loop
     auto picker = MovePicker::search(board, entry->bestMove, history);
@@ -100,7 +109,7 @@ int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t b
         }
         board.makeMove<true>(move);
         testedMoves[legalMoves++] = move;
-        nodes++;
+        nodes.fetch_add(1, std::memory_order_relaxed);
 
         // Recursion:tm:
         const int newDepth = depth - 1;
@@ -115,7 +124,7 @@ int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t b
         board.undoMove<true>();
 
         // time check
-        if(endSearch) return 0;
+        if(endSearch.load(std::memory_order_relaxed)) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -154,11 +163,12 @@ int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t b
     return bestScore;
 }
 
-int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters) {
+int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
+    if(endSearch.load(std::memory_order_relaxed)) return 0;
     stack[ply].pvLength = 0;
     // time manager
-    if((nodes % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes)) {
-        endSearch = true;
+    if((nodes.load(std::memory_order_relaxed) % 4096 == 0 || limiters.useNodes) && !limiters.keep_searching_hard(getTimeElapsed(), nodes.load(std::memory_order_relaxed))) {
+        endSearch.store(true, std::memory_order_relaxed);
         return 0;
     }
     // update seldepth
@@ -193,14 +203,14 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
             continue;
         }
         board.makeMove<true>(move);
-        nodes++;
+        nodes.fetch_add(1, std::memory_order_relaxed);
 
         // Recursion:tm:
         const int16_t score = -qsearch(board,  -beta, -alpha, ply + 1, limiters);
         board.undoMove<true>();
 
         // time check
-        if(endSearch) return 0;
+        if(endSearch.load(std::memory_order_relaxed)) return 0;
 
         if(score > bestScore) {
             bestScore = score;
@@ -246,27 +256,28 @@ void Searcher::outputInfo(const Board& board, const int score, const int depth, 
         scoreString += "mate ";
         scoreString += std::to_string((abs(abs(score) - mateScore) / 2 + board.getColorToMove()) * colorMultiplier);
     }
+    const auto nodeCount = getTotalNodes();
     std::cout << "info depth " << std::to_string(depth)
               << " seldepth " << std::to_string(seldepth)
-              << " nodes " << std::to_string(nodes)
+              << " nodes " << std::to_string(nodeCount)
               << " time " << std::to_string(elapsedTime)
-              << " nps " << std::to_string(int(double(nodes) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000))
+              << " nps " << std::to_string(int(double(nodeCount) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000))
               << scoreString
               << " pv " << getPV() << std::endl;
 }
 
-void Searcher::think(Board board, const Limiters &limiters, const bool info) {
+void Searcher::think(Board board, const Limiters &limiters, const bool isMain, const bool info) {
     // reset things
     rootBestMove = Move();
-    endSearch = false;
-    nodes = 0;
+    if(isMain) endSearch.store(false, std::memory_order_relaxed);
+    nodes.store(0, std::memory_order_relaxed);
     seldepth = 0;
     startTime = std::chrono::steady_clock::now();
 
     // Iterative Deepening
     int depth = 1;
     int16_t score = 0;
-    while(limiters.keep_searching_soft(getTimeElapsed(), nodes, depth)) {
+    while(!isMain || limiters.keep_searching_soft(getTimeElapsed(), nodes.load(std::memory_order_relaxed), depth)) {
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
             int delta = aspBaseDelta.value;
@@ -274,7 +285,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
             int beta = std::min(int(mateScore), score + delta);
             while(true) {
                 score = search<true>(board, depth, alpha, beta, 0, limiters);
-                if(endSearch) break;
+                if(endSearch.load(std::memory_order_relaxed)) break;
 
                 if(score >= beta) {
                     beta = std::min(beta + delta, int(mateScore));
@@ -288,25 +299,24 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
         } else {
             score = search<true>(board, depth, -mateScore, mateScore, 0, limiters);
         }
-        if(endSearch) {
+        if(endSearch.load(std::memory_order_relaxed)) {
             rootBestMove = previousBest;
+            break;
         }
         if(info) outputInfo(board, score, depth, getTimeElapsed());
         depth++;
     }
+    if(isMain) endSearch.store(true, std::memory_order_relaxed);
+    if(!isMain) nodes.store(0, std::memory_order_relaxed);
 
     if(rootBestMove == Move()) {
         std::array<Move, 256> moves;
         const int totalMoves = board.getMoves(moves);
         for(uint8_t moveIndex = 0; moveIndex < totalMoves; moveIndex++) {
-            // information gathering
             const Move move = moves[moveIndex];
-
-            // make the move
             if(!board.isLegal(move)) {
                 continue;
             }
-
             rootBestMove = move;
             break;
         }

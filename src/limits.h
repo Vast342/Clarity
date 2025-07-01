@@ -22,75 +22,75 @@
 #include <cstdint>
 
 class Limiters {
-    private:
-        bool useTime;
-        uint64_t time;
-        uint64_t increment;
-        uint64_t nodeLimit;
-        bool useDepth;
-        uint32_t depthLimit;
-        bool useMoveTime;
-        uint64_t moveTime;
-        uint64_t movesToGo;
-        uint64_t softCap;
-        uint64_t hardCap;
+private:
+    bool useTime;
+    uint64_t time;
+    uint64_t increment;
+    uint64_t nodeLimit;
+    uint32_t depthLimit;
+    bool useMoveTime;
+    uint64_t moveTime;
+    uint64_t movesToGo;
+    uint64_t softCap;
+    uint64_t hardCap;
 
-        uint64_t time_allocated_soft() const {
-            return tmsMultiplier.value * (time / movesToGo + increment * tmsNumerator.value / tmsDenominator.value);
-        }
+    uint64_t time_allocated_soft() const {
+        return tmsMultiplier.value * (time / movesToGo + increment * tmsNumerator.value / tmsDenominator.value);
+    }
 
-        uint64_t time_allocated_hard() const {
-            return time / tmhDivisor.value;
-        }
+    uint64_t time_allocated_hard() const {
+        return time / tmhDivisor.value;
+    }
 
-    public:
-        bool useNodes;
-        Limiters() : useTime(false), time(0), increment(0), 
-                    nodeLimit(0), useDepth(false), depthLimit(0), 
-                    useMoveTime(false), moveTime(0), movesToGo(20), softCap(0), hardCap(0), useNodes(false) {}
+public:
+    bool useNodes;
+    bool useDepth;
+    Limiters() : useTime(false), time(0), increment(0),
+                nodeLimit(0), depthLimit(0),
+                useMoveTime(false), moveTime(0), movesToGo(20), softCap(0), hardCap(0), useNodes(false), useDepth(false) {}
 
-        void load_values(uint64_t tim, uint64_t inc, uint64_t nodes, uint32_t depth, uint64_t movetime, uint64_t mtg) {
-            useTime = (tim != 0);
-            useNodes = (nodes != 0);
-            useDepth = (depth != 0);
-            useMoveTime = (movetime != 0);
-            
-            time = tim;
-            increment = inc;
-            nodeLimit = nodes;
-            depthLimit = depth;
-            moveTime = movetime;
-            movesToGo = mtg;
-            
-            softCap = time_allocated_soft();
-            hardCap = time_allocated_hard();
-        }
+    void load_values(uint64_t tim, uint64_t inc, uint64_t nodes, uint32_t depth, uint64_t movetime, uint64_t mtg) {
+        useTime = (tim != 0);
+        useNodes = (nodes != 0);
+        useDepth = (depth != 0);
+        useMoveTime = (movetime != 0);
 
-        bool keep_searching_soft(uint64_t tim, uint64_t nodes, uint32_t depth) const {
-            if (useTime && tim >= softCap) {
-                return false;
-            }
-            if (useNodes && nodes >= nodeLimit) {
-                return false;
-            }
-            if (useDepth && depth > depthLimit) {
-                return false;
-            }
-            if (useMoveTime && tim >= moveTime) {
-                return false;
-            }
-            return true;
+        time = tim;
+        increment = inc;
+        nodeLimit = nodes;
+        depthLimit = depth;
+        moveTime = movetime;
+        movesToGo = mtg;
+
+        softCap = time_allocated_soft();
+        hardCap = time_allocated_hard();
+    }
+
+    bool keep_searching_soft(uint64_t tim, uint64_t nodes, uint32_t depth) const {
+        if (useTime && tim >= softCap) {
+            return false;
         }
-        bool keep_searching_hard(uint64_t tim, uint64_t nodes) const {
-            if (useTime && tim >= hardCap) {
-                return false;
-            }
-            if (useNodes && nodes >= nodeLimit) {
-                return false;
-            }
-            if (useMoveTime && tim >= moveTime) {
-                return false;
-            }
-            return true;
+        if (useNodes && nodes >= nodeLimit) {
+            return false;
         }
+        if (useDepth && depth > depthLimit) {
+            return false;
+        }
+        if (useMoveTime && tim >= moveTime) {
+            return false;
+        }
+        return true;
+    }
+    bool keep_searching_hard(uint64_t tim, uint64_t nodes) const {
+        if (useTime && tim >= hardCap) {
+            return false;
+        }
+        if (useNodes && nodes >= nodeLimit) {
+            return false;
+        }
+        if (useMoveTime && tim >= moveTime) {
+            return false;
+        }
+        return true;
+    }
 };

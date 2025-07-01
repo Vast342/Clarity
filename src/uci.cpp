@@ -20,7 +20,6 @@
 #include "search.h"
 #include "bench.h"
 #include "external/fathom/tbprobe.h"
-#include "uci.h"
 #include "tunables.h"
 #include "limits.h"
 #include "tt.h"
@@ -38,26 +37,40 @@ Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 int64_t moveOverhead = 10;
 int benchDepth = 7;
 TranspositionTable TT;
-Searcher searcher = Searcher(&TT);
+std::vector<Searcher> searchers;
+std::vector<std::jthread> threads;
+int threadCount = 1;
 
 // resets everything
 void newGame() {
-    searcher.newGame();
+    searchers.clear();
+    for(int i = 0; i < threadCount; i++) {
+        searchers.emplace_back(&TT);
+        searchers[i].newGame();
+    }
     board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
-    TT.clearTable();
+    TT.clearTable(threadCount);
+}
+
+uint64_t getTotalNodes() {
+    uint64_t sum = 0;
+    for(int i = 0; i < threadCount; i++) {
+        sum += searchers[i].getNodes();
+    }
+    return sum;
 }
 
 // runs a fixed depth search on a fixed set of positions, to see if a test changes how the engine behaves
 void runBench(int depth = benchDepth) {
-    searcher.newGame();
+    searchers[0].newGame();
     uint64_t total = 0;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     auto limiters = Limiters();
     limiters.load_values(0, 0, 0, depth, 0, 0);
     for(std::string fen : benchFens) {
         Board benchBoard(fen);
-        searcher.think(benchBoard, limiters, false);
-        total += searcher.getNodes();
+        searchers[0].think(benchBoard, limiters, true, false);
+        total += searchers[0].getNodes();
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
     std::cout << total << " nodes " << std::to_string(int(total / (double(elapsedTime) / 1000))) << " nps" << '\n';
@@ -65,12 +78,17 @@ void runBench(int depth = benchDepth) {
 
 // sets options, need to add `Hash` and `Threads` back when i do those things
 void setOption(const std::vector<std::string>& bits) {
-    std::string name = bits[2];
+    const std::string name = bits[2];
     if(name == "Hash") {
         const uint64_t newSizeMB = std::stoull(bits[4]);
-        TT.resize(newSizeMB);
+        TT.resize(newSizeMB, threadCount);
     } else if(name == "Threads") {
-        
+        threadCount = std::stoi(bits[4]);
+        searchers.clear();
+        for(int i = 0; i < threadCount; i++) {
+            searchers.emplace_back(&TT);
+        }
+        newGame();
     } else if(name == "MoveOverhead") {
         moveOverhead = std::stoull(bits[4]);
     } else if(name == "SyzygyPath") {
@@ -179,12 +197,23 @@ void go(std::vector<std::string> bits) {
     time -= moveOverhead;
     auto limiters = Limiters();
     limiters.load_values(time, inc, nodes, depth, movetime, movestogo);
-    searcher.think(board, limiters, true);
+    for(int i = 0; i < threadCount; i++) {
+        threads.emplace_back([i, limiters]() {
+            searchers[i].think(board, limiters, i == 0, i == 0);
+        });
+    }
     //bestMove = engine.think(board, softBound, hardBound, true);
 }
 
+void stopThePresses() {
+    endSearch.store(true);
+    for (auto& t : threads) {
+        if (t.joinable()) t.join();
+    }
+    threads.clear();
+}
+
 // interprets the command
-// todo: add stop back in
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
 
@@ -242,8 +271,10 @@ void interpretCommand(std::string command) {
         outputTunableOB(); 
     } else if(bits[0] == "showthreats") {
         std::cout << board.getThreats() << std::endl; 
+    } else if (bits[0] == "stop") {
+        stopThePresses();
     } else if(bits[0] == "calcthreats") {
-        std::cout << board.calculateThreats() << std::endl;   
+        std::cout << board.calculateThreats() << std::endl;
     } else {
         std::cout << "invalid or unsupported command\n";
     }
@@ -261,6 +292,7 @@ int main(int argc, char* argv[]) {
     while(true) {
         std::getline(std::cin, command, '\n');
         if(command == "quit") {
+            stopThePresses();
             return 0;
         }
         interpretCommand(command);

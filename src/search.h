@@ -31,31 +31,48 @@ struct StackEntry {
     bool isNull;
 };
 
+inline std::atomic endSearch(false);
+
 struct Searcher {
-    public:
-        void think(Board board, const Limiters &limiters, const bool info);
-        void newGame();
-        uint64_t getNodes() const {
-            return nodes;
-        }
-        explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), endSearch(false), stack({}), history({}), TT(TT) {}
-    private:
-        Move rootBestMove;
-        uint64_t nodes;
-        int seldepth;
-        bool endSearch;
-        std::array<StackEntry, plyLimit> stack;
+public:
+    void think(Board board, const Limiters &limiters, bool isMain, bool info);
+    void newGame();
+    uint64_t getNodes() const {
+        return nodes.load(std::memory_order_relaxed);
+    }
+    explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), stack({}), history({}), TT(TT) {}
+    Searcher(const Searcher&) = delete;
+    Searcher& operator=(const Searcher&) = delete;
 
-        HistoryTables history;
+    Searcher(Searcher&& other) noexcept
+        : rootBestMove(std::move(other.rootBestMove)),
+          nodes(other.nodes.load()),
+          seldepth(other.seldepth),
+          stack(std::move(other.stack)),
+          history(std::move(other.history)),
+          TT(other.TT),
+          startTime(std::move(other.startTime)) {
+        // Reset the moved-from object
+        other.nodes.store(0);
+        other.seldepth = 0;
+        other.TT = nullptr;
+    }
+private:
+    Move rootBestMove;
+    std::atomic<uint64_t> nodes;
+    int seldepth;
+    std::array<StackEntry, plyLimit> stack;
 
-        TranspositionTable* TT;
+    HistoryTables history;
 
-        std::chrono::steady_clock::time_point startTime;
-        void outputInfo(const Board& board, const int score, const int depth, const int elapsedTime) const;
-        template <bool isPV = false> int16_t search(Board &board, int depth, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
-        int16_t qsearch(Board &board, int16_t alpha, const int16_t beta, const int ply, const Limiters &limiters);
-        std::string getPV() const;
-        int getTimeElapsed() const {
-            return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
-        }
+    TranspositionTable* TT;
+
+    std::chrono::steady_clock::time_point startTime;
+    void outputInfo(const Board& board, int score, int depth, int elapsedTime) const;
+    template <bool isPV = false> int16_t search(Board &board, int depth, int16_t alpha, int16_t beta, int16_t ply, const Limiters &limiters);
+    int16_t qsearch(Board &board, int16_t alpha, int16_t beta, int16_t ply, const Limiters &limiters);
+    [[nodiscard]] std::string getPV() const;
+    [[nodiscard]] int getTimeElapsed() const {
+        return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - startTime).count();
+    }
 };
