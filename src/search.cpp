@@ -111,12 +111,17 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         testedMoves[legalMoves++] = move;
         nodes.fetch_add(1, std::memory_order_relaxed);
 
+        // LMR
+        int lmr = 0;
+        if(depth > lmrDepth.value) {
+            lmr = reductions[depth][legalMoves];
+        }
         // Recursion:tm:
         const int newDepth = depth - 1;
         int16_t score = 0;
         // first move
         if(!isPV || legalMoves > 1) {
-            score = -search(board, newDepth, -alpha-1, -alpha, ply + 1, limiters);
+            score = -search(board, newDepth - lmr, -alpha-1, -alpha, ply + 1, limiters);
         }
         if(isPV && (legalMoves == 1 || score > alpha)) {
             score = -search<true>(board, newDepth, -beta, -alpha, ply + 1, limiters);

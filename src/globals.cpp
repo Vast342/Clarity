@@ -78,6 +78,16 @@ void generateSquareToBitboard() {
     }
 }
 
+std::array<std::array<uint8_t, 218>, 256> reductions;
+
+void calculateReductions() {
+    for(int i = 0; i < 256; i++) {
+        for(int j = 0; j < 218; j++) {
+            reductions[i][j] = uint8_t((0.77 + log(i) * log(j)) / 2.36);
+        }
+    }
+}
+
 /*ran on startup, does 4 things:
 1: generates the lookups for sliding pieces
 2: generates the numbers used for zobrist hashing
@@ -88,6 +98,7 @@ void initialize() {
     generateSquareToBitboard();
     generateLookups();
     initializeZobrist();
+    calculateReductions();
 }
 
 // splits a string into segments based on the seperator
