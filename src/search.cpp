@@ -23,6 +23,7 @@
 
 void Searcher::newGame() {
     history.clear();
+    corrhist.clear();
     stack = {};
 }
 
@@ -46,20 +47,23 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     const auto zobristHash = board.getZobristHash();
     const auto entry = TT->getEntry(zobristHash);
 
+    // tt cutoffs
+    if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
+                entry->flag == Exact // exact score
+            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+    )) {
+        return entry->score;
+    }
+
+    int16_t staticEval = board.getEvaluation();
+    const auto ctm = board.getColorToMove();
+    const auto pawnHash = board.getPawnHashIndex();
+    staticEval = corrhist.correct(ctm, pawnHash, staticEval);
+    const auto inCheck = board.isInCheck();
+
     // Prunings!
     if constexpr(!isPV) {
-        // tt cutoffs
-        if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
-                    entry->flag == Exact // exact score
-                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
-                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
-        )) {
-            return entry->score;
-        }
-
-        int16_t staticEval = board.getEvaluation();
-        const auto inCheck = board.isInCheck();
-
         if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
             entry->flag == Exact ||
             (entry->flag == BetaCutoff && entry->score >= staticEval) ||
@@ -100,6 +104,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     int16_t bestScore = -mateScore;
     auto flag = FailLow;
     auto bestMove = Move();
+    auto bestIsCapture = false;
     uint8_t legalMoves = 0;
     std::array<Move, 256> testedMoves;
     while(const auto move = picker.next()) {
@@ -132,6 +137,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             if(score > alpha) {
                 alpha = score;
                 bestMove = move;
+                bestIsCapture = board.pieceAtIndex(move.getEndSquare()) != None;
                 if(ply == 0) rootBestMove = move;
                 flag = Exact;
                 if constexpr(isPV) {
@@ -159,6 +165,12 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
 
     // push to TT
     TT->setEntry(zobristHash, Transposition(zobristHash, bestMove, flag, bestScore, depth));
+
+    // push to corrhist
+    if(!board.isInCheck() && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval)
+       && !(bestMove == Move() && bestScore >= staticEval)) {
+        corrhist.push(pawnHash, ctm, bestScore, staticEval, depth);
+    }
 
     return bestScore;
 }
@@ -188,7 +200,8 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
     }
 
     // stand-pat
-    const auto staticEval = board.getEvaluation();
+    auto staticEval = board.getEvaluation();
+    staticEval = corrhist.correct(board.getColorToMove(), board.getPawnHashIndex(), staticEval);
     int16_t bestScore = staticEval;
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;

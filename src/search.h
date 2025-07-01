@@ -17,6 +17,7 @@
 */
 #pragma once
 
+#include "corrhist.h"
 #include "globals.h"
 #include "limits.h"
 #include "tt.h"
@@ -40,7 +41,7 @@ public:
     uint64_t getNodes() const {
         return nodes.load(std::memory_order_relaxed);
     }
-    explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), stack({}), history({}), TT(TT) {}
+    explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), stack({}), history({}), corrhist({}), TT(TT) {}
     Searcher(const Searcher&) = delete;
     Searcher& operator=(const Searcher&) = delete;
 
@@ -64,7 +65,7 @@ private:
     std::array<StackEntry, plyLimit> stack;
 
     HistoryTables history;
-
+    Corrhist corrhist;
     TranspositionTable* TT;
 
     std::chrono::steady_clock::time_point startTime;
