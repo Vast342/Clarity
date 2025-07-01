@@ -266,10 +266,10 @@ void Searcher::outputInfo(const Board& board, const int score, const int depth, 
               << " pv " << getPV() << std::endl;
 }
 
-void Searcher::think(Board board, const Limiters &limiters, const bool info) {
+void Searcher::think(Board board, const Limiters &limiters, const bool isMain, const bool info) {
     // reset things
     rootBestMove = Move();
-    if(info) endSearch.store(false, std::memory_order_relaxed);
+    if(isMain) endSearch.store(false, std::memory_order_relaxed);
     nodes.store(0, std::memory_order_relaxed);
     seldepth = 0;
     startTime = std::chrono::steady_clock::now();
@@ -277,7 +277,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool info) {
     // Iterative Deepening
     int depth = 1;
     int16_t score = 0;
-    while((!info && !limiters.useDepth) || limiters.keep_searching_soft(getTimeElapsed(), nodes.load(std::memory_order_relaxed), depth)) {
+    while(!isMain || limiters.keep_searching_soft(getTimeElapsed(), nodes.load(std::memory_order_relaxed), depth)) {
         const Move previousBest = rootBestMove;
         if(depth > aspDepthCondition.value) {
             int delta = aspBaseDelta.value;
