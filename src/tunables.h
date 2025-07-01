@@ -50,7 +50,7 @@ inline Tunable rfpMultiplier("RFP_Multiplier", 85, 1);
 
 inline Tunable lmrDepth("LMR_Depth", 2, 1);
 inline Tunable lmrBase("LMR_Base", 0.77, 100);
-inline Tunable lmrMultiplier("LMR_Divisor", 2.36, 100);
+inline Tunable lmrDivisor("LMR_Divisor", 2.36, 100);
 
 inline Tunable nmpDepthCondition("NMP_DepthCondition", 2, 1);
 

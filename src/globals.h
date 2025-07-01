@@ -179,7 +179,7 @@ std::vector<std::string> split(const std::string &string, const char seperator);
 int flipIndex(int index);
 uint64_t getPassedPawnMask(int square, int colorToMove);
 extern std::array<uint64_t, 64> squareToBitboard;
-extern std::array<std::array<uint8_t, 218>, 256> reductions;
+extern std::array<std::array<uint8_t, 219>, 257> reductions;
 
 // conthist hehe
 using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
