@@ -16,6 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "globals.h"
+
+#include "search.h"
 #include "slidey.h"
 #include "tunables.h"
 
@@ -79,10 +81,10 @@ void generateSquareToBitboard() {
     }
 }
 
-std::array<std::array<uint8_t, 219>, 257> reductions;
+std::array<std::array<uint8_t, 219>, plyLimit> reductions;
 
 void calculateReductions() {
-    for(int i = 0; i < 257; i++) {
+    for(int i = 0; i < plyLimit; i++) {
         for(int j = 0; j < 219; j++) {
             reductions[i][j] = uint8_t((lmrBase.value + log(i) * log(j)) / lmrDivisor.value);
         }

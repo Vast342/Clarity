@@ -114,7 +114,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         // LMR
         int lmr = 0;
         if(depth > lmrDepth.value) {
-            lmr = reductions[depth][legalMoves];
+            lmr = reductions[std::clamp(depth, 0, plyLimit - 1)][legalMoves];
         }
         // Recursion:tm:
         const int newDepth = depth - 1;

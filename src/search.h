@@ -23,7 +23,6 @@
 #include "history.h"
 
 constexpr int16_t mateScore = 32000;
-constexpr int plyLimit = 256;
 
 struct StackEntry {
     std::array<Move, plyLimit> pvTable;
