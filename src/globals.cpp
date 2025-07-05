@@ -16,7 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "globals.h"
+
+#include "search.h"
 #include "slidey.h"
+#include "tunables.h"
 
 // takes a piece number and gets the type of it
 int getType(int value) {
@@ -78,6 +81,16 @@ void generateSquareToBitboard() {
     }
 }
 
+std::array<std::array<uint8_t, 219>, plyLimit> reductions;
+
+void calculateReductions() {
+    for(int i = 0; i < plyLimit; i++) {
+        for(int j = 0; j < 219; j++) {
+            reductions[i][j] = uint8_t((lmrBase.value + log(i) * log(j)) / lmrDivisor.value);
+        }
+    }
+}
+
 /*ran on startup, does 4 things:
 1: generates the lookups for sliding pieces
 2: generates the numbers used for zobrist hashing
@@ -88,6 +101,7 @@ void initialize() {
     generateSquareToBitboard();
     generateLookups();
     initializeZobrist();
+    calculateReductions();
 }
 
 // splits a string into segments based on the seperator
