@@ -134,11 +134,12 @@ void identify() {
 }
 
 // tells the engine to search, with support for a few different types
-void go(std::vector<std::string> bits) {
+void go(const std::vector<std::string> &bits) {
+    threads.clear();
     if(useSyzygy) {
         if(__builtin_popcountll(board.getOccupiedBitboard()) <= 7) {
             // probe endgame tt at root
-            unsigned probeResult = tb_probe_root(board.getColoredBitboard(1), 
+            unsigned probeResult = tb_probe_root(board.getColoredBitboard(1),
                                                 board.getColoredBitboard(0),
                                                 board.getPieceBitboard(King),
                                                 board.getPieceBitboard(Queen),
@@ -214,7 +215,7 @@ void stopThePresses() {
 }
 
 // interprets the command
-void interpretCommand(std::string command) {
+void interpretCommand(const std::string &command) {
     std::vector<std::string> bits = split(command, ' ');
 
     if(bits.empty()) {
@@ -268,9 +269,9 @@ void interpretCommand(std::string command) {
     } else if(bits[0] == "tunablejson") {
         outputTunableJSON();
     } else if(bits[0] == "tunableob") {
-        outputTunableOB(); 
+        outputTunableOB();
     } else if(bits[0] == "showthreats") {
-        std::cout << board.getThreats() << std::endl; 
+        std::cout << board.getThreats() << std::endl;
     } else if (bits[0] == "stop") {
         stopThePresses();
     } else if(bits[0] == "calcthreats") {
