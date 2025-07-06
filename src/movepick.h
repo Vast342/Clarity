@@ -19,7 +19,7 @@ inline MovegenStage& operator++(MovegenStage& v) {
 
 class MovePicker {
 public:
-    inline Move next() {
+     Move next() {
         switch(stage) {
             case MovegenStage::TTMove: {
                 ++stage;
@@ -58,19 +58,20 @@ public:
                 return Move();
         }
     }
-    static inline MovePicker search(const Board &board, const Move ttMove, HistoryTables &tables) {
-        return MovePicker(board, ttMove, tables, MovegenStage::TTMove);
+    static MovePicker search(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer) {
+        return MovePicker(board, ttMove, tables, killer, MovegenStage::TTMove);
     }
-    static inline MovePicker qsearch(const Board &board, const Move ttMove, HistoryTables &tables) {
-        return MovePicker(board, ttMove, tables, MovegenStage::QSGenAll);
+    static MovePicker qsearch(const Board &board, const Move ttMove, HistoryTables &tables) {
+        return MovePicker(board, ttMove, tables, Move(), MovegenStage::QSGenAll);
     }
-    inline int getTotalMoves() const {
+    int getTotalMoves() const {
         return totalMoves;
     }
 private:
-    explicit MovePicker(const Board &board, const Move ttMove, HistoryTables &tables, const MovegenStage stage) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, tables{tables} {}
-    inline void scoreMoves() {
+    static constexpr int killerScore = HistoryTables::historyCap * HistoryTables::quietHistCount + 1;
+    explicit MovePicker(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer, const MovegenStage stage) : stage(stage),
+    board{board}, ttMove(ttMove), killer(killer), idx{0}, totalMoves{0}, tables{tables} {}
+    void scoreMoves() {
         for(int i = 0; i < totalMoves; ++i) {
             const auto move = moves[i];
             if(move == ttMove) {
@@ -82,16 +83,20 @@ private:
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
                     moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value + 16384;
                 } else {
-                    const auto start = move.getStartSquare();
-                    const auto end = move.getEndSquare();
-                    const auto startAttack = board.squareIsUnderAttack(start);
-                    const auto endAttack = board.squareIsUnderAttack(end);
-                    moveScores[i] = tables.historyTable[board.getColorToMove()][start][startAttack][end][endAttack];
+                    if(move == killer) {
+                        moveScores[i] = killerScore;
+                    } else {
+                        const auto start = move.getStartSquare();
+                        const auto end = move.getEndSquare();
+                        const auto startAttack = board.squareIsUnderAttack(start);
+                        const auto endAttack = board.squareIsUnderAttack(end);
+                        moveScores[i] = tables.historyTable[board.getColorToMove()][start][startAttack][end][endAttack];
+                    }
                 }
             }
         }
     }
-    inline Move getNextInternal() {
+    Move getNextInternal() {
         int bestIdx = idx;
         for(int j = idx + 1; j < totalMoves; j++) {
             if(moveScores[j] > moveScores[bestIdx]) {
@@ -109,6 +114,7 @@ private:
     MovegenStage stage;
     const Board &board;
     Move ttMove;
+    Move killer;
     int idx;
     int totalMoves;
     HistoryTables &tables;

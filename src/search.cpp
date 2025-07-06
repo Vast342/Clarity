@@ -96,7 +96,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     }
 
     // move loop
-    auto picker = MovePicker::search(board, entry->bestMove, history);
+    auto picker = MovePicker::search(board, entry->bestMove, history, stack[ply].killer);
     int16_t bestScore = -mateScore;
     auto flag = FailLow;
     auto bestMove = Move();
@@ -149,6 +149,9 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             // beta cutoff
             if(score >= beta) {
                 history.betaCutoff(board, board.getColorToMove(), move, testedMoves, legalMoves, depth);
+                if(board.pieceAtIndex(move.getEndSquare()) == None) {
+                    stack[ply].killer = move;
+                }
                 flag = BetaCutoff;
                 break;
             }

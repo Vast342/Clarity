@@ -27,7 +27,12 @@ constexpr int16_t mateScore = 32000;
 struct StackEntry {
     std::array<Move, plyLimit> pvTable;
     int pvLength;
+
+    // Was a null move executed at this ply
     bool isNull;
+
+    // Move that previously caused a beta cutoff at this ply, meaning yeah its pretty good
+    Move killer;
 };
 
 inline std::atomic endSearch(false);
