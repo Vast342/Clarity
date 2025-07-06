@@ -107,6 +107,12 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         if(!board.isLegal(move)) {
             continue;
         }
+        const bool isQuiet = board.pieceAtIndex(move.getEndSquare()) != None;
+
+        // Move Loop Prunings:
+        // Late Move Pruning (LMP)
+        if(!isPV && isQuiet && bestScore > -mateScore + 256 && legalMoves > lmpBase.value + depth * depth) break;
+
         board.makeMove<true>(move);
         testedMoves[legalMoves++] = move;
         nodes.fetch_add(1, std::memory_order_relaxed);
@@ -149,7 +155,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             // beta cutoff
             if(score >= beta) {
                 history.betaCutoff(board, board.getColorToMove(), move, testedMoves, legalMoves, depth);
-                if(board.pieceAtIndex(move.getEndSquare()) == None) {
+                if(!isQuiet) {
                     stack[ply].killer = move;
                 }
                 flag = BetaCutoff;
