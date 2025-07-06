@@ -54,6 +54,10 @@ inline Tunable lmrDivisor("LMR_Divisor", 2.36, 100);
 
 inline Tunable nmpDepthCondition("NMP_DepthCondition", 2, 1);
 
+inline Tunable fpDepthCondition("FP_DepthCondition", 3, 1);
+inline Tunable fpBase("FP_Base", 500, 1);
+inline Tunable fpMultiplier("FP_Multiplier", 50, 1);
+
 inline Tunable tmhDivisor("TMH_Divisor", 2, 1);
 inline Tunable tmsNumerator("TMS_Numerator", 3, 1);
 inline Tunable tmsDenominator("TMS_Denominator", 4, 1);
