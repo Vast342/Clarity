@@ -27,7 +27,7 @@ void Searcher::newGame() {
 }
 
 template <bool isPV>
-int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
+int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t beta, const int16_t ply, const Limiters &limiters) {
     if(endSearch.load(std::memory_order_relaxed)) return 0;
     stack[ply].pvLength = 0;
     // time manager
@@ -94,6 +94,9 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             return mdAlpha;
         }
     }
+
+    // Internal Iterative Reduction (IIR)
+    if((entry->zobristKey != shrink(zobristHash) || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
 
     // move loop
     auto picker = MovePicker::search(board, entry->bestMove, history, stack[ply].killer);
