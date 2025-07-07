@@ -96,7 +96,7 @@ int16_t Searcher::search(Board &board, int depth, int16_t alpha, const int16_t b
     }
 
     // Internal Iterative Reduction (IIR)
-    if((entry->zobristKey != shrink(zobristHash) || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
+    if(isPV && (entry->zobristKey != shrink(zobristHash) || entry->bestMove == Move()) && depth > iirDepthCondition.value) depth--;
 
     // move loop
     auto picker = MovePicker::search(board, entry->bestMove, history, stack[ply].killer);
