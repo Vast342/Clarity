@@ -50,7 +50,7 @@ struct HistoryTables {
             }
         }
     }
-    void updateHistory(const int colorToMove, const int start, const int end, const bool startAttack, const bool endAttack, const bool bonus) {
+    void updateHistory(const int colorToMove, const int start, const int end, const bool startAttack, const bool endAttack, const int bonus) {
         update(&historyTable[colorToMove][start][startAttack][end][endAttack], bonus);
     }
     std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 64>, 2>, 64>, 2> historyTable;
