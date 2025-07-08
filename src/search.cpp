@@ -86,7 +86,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         }
     }
 
-    // Mate Distance Pruning (I will test it at some point I swear)
+    // Mate Distance Pruning
     if(!isPV) {
         const auto mdAlpha = std::max(alpha, int16_t(-mateScore + ply));
         const auto mdBeta = std::min(beta, int16_t(mateScore - ply - 1));
@@ -119,7 +119,6 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         // Recursion:tm:
         const int newDepth = depth - 1;
         int16_t score = 0;
-        // first move
         if(!isPV || legalMoves > 1) {
             score = -search(board, newDepth - lmr, -alpha-1, -alpha, ply + 1, limiters);
         }

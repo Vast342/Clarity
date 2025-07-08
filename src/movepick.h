@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "history.h"
+#include "see.h"
 
 enum class MovegenStage : int {
     TTMove = 0,
@@ -78,10 +79,13 @@ private:
                 moveScores[i] = 100000000;
             } else {
                 const auto victim = getType(board.pieceAtIndex(move.getEndSquare()));
-                // captures, mvv-lva
+                // captures, mvv-lva + bonus for see
                 if(victim != None) {
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
-                    moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value + 16384;
+                    moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
+                    if(see(board, move, 0)) {
+                        moveScores[i] += HistoryTables::historyCap * HistoryTables::quietHistCount + 2;
+                    }
                 } else {
                     if(move == killer) {
                         moveScores[i] = killerScore;
