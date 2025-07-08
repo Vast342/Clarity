@@ -42,8 +42,8 @@ struct HistoryTables {
         for(int idx = 0; idx < legalMoves - 1; idx += 1) {
             const auto move = testedMoves[idx];
             if(board.pieceAtIndex(move.getEndSquare()) == None) {
-                const auto start = cutoffMove.getStartSquare();
-                const auto end = cutoffMove.getEndSquare();
+                const auto start = move.getStartSquare();
+                const auto end = move.getEndSquare();
                 const auto startAttack = board.squareIsUnderAttack(start);
                 const auto endAttack = board.squareIsUnderAttack(end);
                 updateHistory(colorToMove, start, end, startAttack, endAttack, bonus);
