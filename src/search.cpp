@@ -20,6 +20,7 @@
 #include "movepick.h"
 #include "normalize.h"
 #include "uci.h"
+#include "see.h"
 
 void Searcher::newGame() {
     history.clear();
@@ -103,7 +104,6 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     uint8_t legalMoves = 0;
     std::array<Move, 256> testedMoves;
     while(const auto move = picker.next()) {
-        // make the move
         if(!board.isLegal(move)) {
             continue;
         }
@@ -206,10 +206,14 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
     auto flag = FailLow;
     Move bestMove = Move();
     while(const auto move = picker.next()) {
-        // make the move
         if(!board.isLegal(move)) {
             continue;
         }
+
+        if(!see(board, move, 0)) {
+            continue;
+        }
+
         board.makeMove<true>(move);
         nodes.fetch_add(1, std::memory_order_relaxed);
 
