@@ -82,10 +82,8 @@ private:
                 // captures, mvv-lva + bonus for see
                 if(victim != None) {
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
-                    moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value;
-                    if(see(board, move, 0)) {
-                        moveScores[i] += HistoryTables::historyCap * HistoryTables::quietHistCount + 2;
-                    }
+                    // this will be done implicitly when i stage good v bad captures
+                    moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value + 200000 - 800000 * !see(board, move, 0);
                 } else {
                     if(move == killer) {
                         moveScores[i] = killerScore;
