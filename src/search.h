@@ -20,9 +20,12 @@
 #include "globals.h"
 #include "limits.h"
 #include "tt.h"
-#include "history.h"
 
 constexpr int16_t mateScore = 32000;
+
+// conthist hehe
+using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
+using CHTable = std::array<std::array<std::array<std::array<CHEntry, 7>, 64>, 7>, 2>;
 
 struct StackEntry {
     std::array<Move, plyLimit> pvTable;
@@ -33,7 +36,12 @@ struct StackEntry {
 
     // Move that previously caused a beta cutoff at this ply, meaning yeah its pretty good
     Move killer;
+
+    // Entry for Conthist
+    CHEntry* chEntry;
 };
+
+#include "history.h"
 
 inline std::atomic endSearch(false);
 

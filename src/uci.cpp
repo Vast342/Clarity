@@ -66,7 +66,7 @@ void runBench(int depth = benchDepth) {
     uint64_t total = 0;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     auto limiters = Limiters();
-    limiters.load_values(0, 0, 0, depth, 0, 0);
+    limiters.load_values(0, 0, 0, depth, 0, defaultMovesToGo);
     for(std::string fen : benchFens) {
         Board benchBoard(fen);
         searchers[0].think(benchBoard, limiters, true, false);

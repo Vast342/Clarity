@@ -58,19 +58,19 @@ public:
                 return Move();
         }
     }
-    static MovePicker search(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer) {
-        return MovePicker(board, ttMove, tables, killer, MovegenStage::TTMove);
+    static MovePicker search(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer, std::array<StackEntry, plyLimit> &stack, const int ply) {
+        return MovePicker(board, ttMove, tables, killer, stack, ply, MovegenStage::TTMove);
     }
-    static MovePicker qsearch(const Board &board, const Move ttMove, HistoryTables &tables) {
-        return MovePicker(board, ttMove, tables, Move(), MovegenStage::QSGenAll);
+    static MovePicker qsearch(const Board &board, const Move ttMove, HistoryTables &tables, std::array<StackEntry, plyLimit> &stack, const int ply) {
+        return MovePicker(board, ttMove, tables, Move(), stack, ply, MovegenStage::QSGenAll);
     }
     int getTotalMoves() const {
         return totalMoves;
     }
 private:
     static constexpr int killerScore = HistoryTables::historyCap * HistoryTables::quietHistCount + 1;
-    explicit MovePicker(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer, const MovegenStage stage) : stage(stage),
-    board{board}, ttMove(ttMove), killer(killer), idx{0}, totalMoves{0}, tables{tables} {}
+    explicit MovePicker(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer, std::array<StackEntry, plyLimit> &stack, const int ply, const MovegenStage stage) : stage(stage),
+    board{board}, stack{&stack}, ply{ply}, ttMove(ttMove), killer(killer), idx{0}, totalMoves{0}, tables{tables} {}
     void scoreMoves() {
         for(int i = 0; i < totalMoves; ++i) {
             const auto move = moves[i];
@@ -90,7 +90,9 @@ private:
                         const auto end = move.getEndSquare();
                         const auto startAttack = board.squareIsUnderAttack(start);
                         const auto endAttack = board.squareIsUnderAttack(end);
-                        moveScores[i] = tables.historyTable[board.getColorToMove()][start][startAttack][end][endAttack];
+                        const auto piece = getType(board.pieceAtIndex(start));
+                        const auto ctm = board.getColorToMove();
+                        moveScores[i] = tables.getQuietHistory(ctm, start, end, startAttack, endAttack, piece, *stack, ply);
                     }
                 }
             }
@@ -113,6 +115,8 @@ private:
     }
     MovegenStage stage;
     const Board &board;
+    std::array<StackEntry, plyLimit>* stack;
+    int ply;
     Move ttMove;
     Move killer;
     int idx;

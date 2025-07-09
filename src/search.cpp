@@ -76,6 +76,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         // "I could probably detect zugzwang here but ehhhhh" -Me, 2 years ago
         if(ply > 0 && !stack[ply - 1].isNull && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
             board.changeColor();
+            stack[ply].chEntry = &history.contHist[0][0][0][0];
             stack[ply].isNull = true;
             constexpr auto r = 3;
             const int score = -search(board, depth - r, 0-beta, 1-beta, ply + 1, limiters);
@@ -97,19 +98,32 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     }
 
     // move loop
-    auto picker = MovePicker::search(board, entry->bestMove, history, stack[ply].killer);
+    auto picker = MovePicker::search(board, entry->bestMove, history, stack[ply].killer, stack, ply);
     int16_t bestScore = -mateScore;
     auto flag = FailLow;
     auto bestMove = Move();
     uint8_t legalMoves = 0;
     std::array<Move, 256> testedMoves;
     while(const auto move = picker.next()) {
+        // info
+        const auto end = move.getEndSquare();
+        const auto start = move.getStartSquare();
+        const auto piece = getType(board.pieceAtIndex(start));
+        const auto victim = getType(board.pieceAtIndex(end));
+        const auto colorToMove = board.getColorToMove();
+
+        // legality
         if(!board.isLegal(move)) {
             continue;
         }
+
+        // prunings go here
+
+        // make & updates
         board.makeMove<true>(move);
         testedMoves[legalMoves++] = move;
         nodes.fetch_add(1, std::memory_order_relaxed);
+        stack[ply].chEntry = &history.contHist[colorToMove][piece][end][victim];
 
         // LMR
         int lmr = 0;
@@ -148,8 +162,8 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             }
             // beta cutoff
             if(score >= beta) {
-                history.betaCutoff(board, board.getColorToMove(), move, testedMoves, legalMoves, depth);
-                if(board.pieceAtIndex(move.getEndSquare()) == None) {
+                history.betaCutoff(board, board.getColorToMove(), move, testedMoves, legalMoves, depth, stack, ply);
+                if(victim == None) {
                     stack[ply].killer = move;
                 }
                 flag = BetaCutoff;
@@ -202,10 +216,16 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
     if(alpha < bestScore) alpha = bestScore;
 
     // move loop
-    auto picker = MovePicker::qsearch(board, entry->bestMove, history);
+    auto picker = MovePicker::qsearch(board, entry->bestMove, history, stack, ply);
     auto flag = FailLow;
     Move bestMove = Move();
     while(const auto move = picker.next()) {
+        const auto end = move.getEndSquare();
+        const auto start = move.getStartSquare();
+        const auto piece = getType(board.pieceAtIndex(start));
+        const auto victim = getType(board.pieceAtIndex(end));
+        const auto colorToMove = board.getColorToMove();
+
         if(!board.isLegal(move)) {
             continue;
         }
@@ -216,6 +236,7 @@ int16_t Searcher::qsearch(Board &board, int16_t alpha, const int16_t beta, const
 
         board.makeMove<true>(move);
         nodes.fetch_add(1, std::memory_order_relaxed);
+        stack[ply].chEntry = &history.contHist[colorToMove][piece][end][victim];
 
         // Recursion:tm:
         const int16_t score = -qsearch(board,  -beta, -alpha, ply + 1, limiters);

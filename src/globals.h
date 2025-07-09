@@ -182,10 +182,6 @@ extern std::array<uint64_t, 64> squareToBitboard;
 constexpr int plyLimit = 256;
 extern std::array<std::array<uint8_t, 219>, plyLimit> reductions;
 
-// conthist hehe
-using CHEntry = std::array<std::array<std::array<int16_t, 64>, 7>, 2>;
-using CHTable = std::array<std::array<std::array<std::array<CHEntry, 7>, 64>, 7>, 2>;
-
 // flags for moves
 constexpr uint8_t Normal = 0b0000;
 constexpr std::array<uint8_t, 4> castling = {0b0001, 0b0010, 0b0011, 0b0100};
