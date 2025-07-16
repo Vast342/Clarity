@@ -76,7 +76,7 @@ inline Tunable seeBishop("SEE_Bishop", 422, 1);
 inline Tunable seeRook("SEE_Rook", 606, 1);
 inline Tunable seeQueen("SEE_Queen", 1127, 1);
 
-inline Tunable lmpBase("LMP_Base", 2, 1);
+inline Tunable lmpBase("LMP_Base", 4, 1);
 
 // corrhist tunables
 inline Tunable chUncertaintyMargin("CH_Uncertainty_Margin", 128, 1);
