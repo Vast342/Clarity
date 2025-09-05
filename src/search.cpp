@@ -73,7 +73,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         if(!inCheck && staticEval - rfpMultiplier.value * depth >= beta && depth < rfpDepthCondition.value) return staticEval;
 
         // Null Move Pruning (NMP)
-        // "I could probably detect zugzwang here but ehhhhh" -Me, 2 years ago
+        // "I could probably detect zugzwang here but ehhhhh" -Me, 2 years ago, completely ignorant of the concept of NMP verification search
         if(ply > 0 && !stack[ply - 1].isNull && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta) {
             board.changeColor();
             stack[ply].isNull = true;
