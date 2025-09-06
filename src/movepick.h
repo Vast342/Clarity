@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "history.h"
+#include "see.h"
 
 enum class MovegenStage : int {
     TTMove = 0,
@@ -59,18 +60,18 @@ public:
         }
     }
     static MovePicker search(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer) {
-        return MovePicker(board, ttMove, tables, killer, MovegenStage::TTMove);
+        return MovePicker(board, ttMove, tables, killer, MovegenStage::TTMove, false);
     }
     static MovePicker qsearch(const Board &board, const Move ttMove, HistoryTables &tables) {
-        return MovePicker(board, ttMove, tables, Move(), MovegenStage::QSGenAll);
+        return MovePicker(board, ttMove, tables, Move(), MovegenStage::QSGenAll, true);
     }
     int getTotalMoves() const {
         return totalMoves;
     }
 private:
     static constexpr int killerScore = HistoryTables::historyCap * HistoryTables::quietHistCount + 1;
-    explicit MovePicker(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer, const MovegenStage stage) : stage(stage),
-    board{board}, ttMove(ttMove), killer(killer), idx{0}, totalMoves{0}, tables{tables} {}
+    explicit MovePicker(const Board &board, const Move ttMove, HistoryTables &tables, const Move killer, const MovegenStage stage, const bool isQs) : stage(stage),
+    board{board}, ttMove(ttMove), killer(killer), idx{0}, totalMoves{0}, tables{tables}, isQs(isQs) {}
     void scoreMoves() {
         for(int i = 0; i < totalMoves; ++i) {
             const auto move = moves[i];
@@ -82,6 +83,9 @@ private:
                 if(victim != None) {
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
                     moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value + 16384;
+					if(!isQs) {
+						moveScores[i] += 500000 * see(board, move, -100);
+					}
                 } else {
                     if(move == killer) {
                         moveScores[i] = killerScore;
@@ -120,4 +124,5 @@ private:
     HistoryTables &tables;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
+    bool isQs;
 };
