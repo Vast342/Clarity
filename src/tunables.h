@@ -88,7 +88,11 @@ inline Tunable nonpawnChWeight("NonPawn_CH_Weight", 512, 1);
 inline Tunable majorChWeight("Major_CH_Weight", 512, 1);
 inline Tunable minorChWeight("Minor_CH_Weight", 512, 1);
 
-inline Tunable seeMoWeight("SEE_Mo_Weight", -107, -1);
+inline Tunable seeMoThreshold("SEE_Mo_Threshold", -107, -1);
+
+inline Tunable fpDepthCondition("FP_DepthCondition", 3, 1);
+inline Tunable fpBase("FP_Base", 500, 1);
+inline Tunable fpMultiplier("FP_Multiplier", 50, 1);
 
 // Declaration of pointers to tunables
 inline std::array<Tunable *, 7> MVV_values = {

@@ -84,7 +84,7 @@ private:
                     const auto piece = getType(board.pieceAtIndex(move.getStartSquare()));
                     moveScores[i] = MVV_values[victim]->value * 10 - MVV_values[piece]->value + 16384;
 					if(!isQs) {
-						moveScores[i] += 500000 * see(board, move, -100);
+						moveScores[i] += 500000 * see(board, move, seeMoThreshold.value);
 					}
                 } else {
                     if(move == killer) {

@@ -47,28 +47,28 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     const auto zobristHash = board.getZobristHash();
     const auto entry = TT->getEntry(zobristHash);
 
+    // tt cutoffs
+    if(!isPV && ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
+                entry->flag == Exact // exact score
+            || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
+            || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
+    )) {
+        return entry->score;
+    }
+
+    int16_t staticEval = board.getEvaluation();
+    const auto inCheck = board.isInCheck();
+
+    if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
+        entry->flag == Exact ||
+        (entry->flag == BetaCutoff && entry->score >= staticEval) ||
+        (entry->flag == FailLow && entry->score <= staticEval)
+    )) {
+        staticEval = entry->score;
+    }
+
     // Prunings!
     if constexpr(!isPV) {
-        // tt cutoffs
-        if(ply > 0 && entry->zobristKey == shrink(zobristHash) && entry->depth >= depth && (
-                    entry->flag == Exact // exact score
-                || (entry->flag == BetaCutoff && entry->score >= beta) // lower bound, fail high
-                || (entry->flag == FailLow && entry->score <= alpha) // upper bound, fail low
-        )) {
-            return entry->score;
-        }
-
-        int16_t staticEval = board.getEvaluation();
-        const auto inCheck = board.isInCheck();
-
-        if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
-            entry->flag == Exact ||
-            (entry->flag == BetaCutoff && entry->score >= staticEval) ||
-            (entry->flag == FailLow && entry->score <= staticEval)
-        )) {
-                staticEval = entry->score;
-        }
-
         // Reverse Futility Pruning (RFP)
         if(!inCheck && staticEval - rfpMultiplier.value * depth >= beta && depth < rfpDepthCondition.value) return staticEval;
 
@@ -107,6 +107,11 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
         if(!board.isLegal(move)) {
             continue;
         }
+
+        // Move Loop Prunings:
+        // futility pruning
+        if(bestScore > -mateScore + 256 && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) break;
+
         board.makeMove<true>(move);
         testedMoves[legalMoves++] = move;
         nodes.fetch_add(1, std::memory_order_relaxed);
