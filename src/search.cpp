@@ -39,7 +39,26 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     // repetition check
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
 
-    if(depth <= 0) return qsearch(board, alpha, beta, ply, limiters);
+    if(depth <= 0) {
+		// adjust this for SE when i add it
+		// probe tt
+        const auto zobristHash = board.getZobristHash();
+        const auto entry = TT->getEntry(zobristHash);
+
+        const auto inCheck = board.isInCheck();
+
+        // if score is usable (same conditions as corrections later), use it instead
+        if(!inCheck && shrink(zobristHash) == entry->zobristKey) {
+            int16_t staticEval = board.getEvaluation();
+            if (entry->flag == Exact ||
+                (entry->flag == BetaCutoff && entry->score >= staticEval) ||
+                (entry->flag == FailLow && entry->score <= staticEval)
+            ) {
+                return entry->score;
+            }
+        }
+        return qsearch(board, alpha, beta, ply, limiters);
+    }
     if(ply >= plyLimit) return board.getEvaluation();
     // update seldepth
     if(ply > seldepth) seldepth = ply + 1;
