@@ -664,6 +664,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 lmr -= improving;
                 lmr -= !isQuietOrBadCapture;
                 lmr -= corrhistUncertain;
+                lmr -= move == stack[ply].killer;
 
                 lmr = std::clamp(lmr, 0, depth - 1);
             }
