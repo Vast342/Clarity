@@ -674,7 +674,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             stack[ply].reduction = 0;
             // and then if it fails high or low we search again with the original bounds
             if(score > alpha && (score < beta || lmr > 0)) {
-                score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, false);
+                const bool doShallower = score < bestScore + depth - 1;
+
+                score = -negamax(board, depth - 1 - doShallower, -beta, -alpha, ply + 1, true, false);
             }
         }
         board.undoMove<true>();
