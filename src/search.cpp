@@ -611,7 +611,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             auto score = 0;
             // maybe will need more conditions and stuff here, sprt it and see
             if(entry->seScore != 0 && entry->seScore != matedScore
-            && entry->depth >= sDepth) {
+            && (entry->depth - 1) / 2 >= sDepth) {
                 score = entry->seScore;
             } else {
                 stack[ply].excluded = entry->bestMove;
