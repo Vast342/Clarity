@@ -1,0 +1,1005 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="BackendCodeEditorMiscSettings">
+    <option name="/Default/Housekeeping/FeatureSuggestion/FeatureSuggestionManager/DisabledSuggesters/=SwitchToGoToActionSuggester/@EntryIndexedValue" value="true" type="bool" />
+    <option name="/Default/Housekeeping/OptionsDialog/SelectedPageId/@EntryValue" value="CppFormatterOtherPage" type="string" />
+  </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeRunConfigurationManager">
+    <generated>
+      <config projectName="Clarity" targetName="datagen" />
+      <config projectName="Clarity" targetName="debug" />
+      <config projectName="Clarity" targetName="all" />
+      <config projectName="Clarity" targetName="uci-v4" />
+      <config projectName="Clarity" targetName="v3" />
+      <config projectName="Clarity" targetName="datagen-v3" />
+      <config projectName="Clarity" targetName="info" />
+      <config projectName="Clarity" targetName="v2" />
+      <config projectName="Clarity" targetName="Clarity" />
+      <config projectName="Clarity" targetName="v4" />
+      <config projectName="Clarity" targetName="uci" />
+      <config projectName="Clarity" targetName="v1" />
+      <config projectName="Clarity" targetName="build" />
+      <config projectName="Clarity" targetName="download-net" />
+      <config projectName="Clarity" targetName="run" />
+      <config projectName="Clarity" targetName="bench" />
+    </generated>
+  </component>
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="735af775-9cf0-47a7-8b47-6dd2c9a4e8d2" name="Changes" comment="SEE move ordering, bench: 5341801" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="Git.Settings">
+    <favorite-branches>
+      <branch-storage>
+        <map>
+          <entry type="LOCAL">
+            <value>
+              <list>
+                <branch-info repo="$PROJECT_DIR$" source="search-rw" />
+              </list>
+            </value>
+          </entry>
+        </map>
+      </branch-storage>
+    </favorite-branches>
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="search-rw" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {}
+}</component>
+  <component name="GitHubPullRequestState">{
+  &quot;prStates&quot;: [
+    {
+      &quot;id&quot;: {
+        &quot;id&quot;: &quot;PR_kwDOKDMnCs6b5-bH&quot;,
+        &quot;number&quot;: 162
+      },
+      &quot;lastSeen&quot;: 1750810219590
+    }
+  ]
+}</component>
+  <component name="GithubProjectSettings">
+    <option name="branchProtectionPatterns">
+      <list>
+        <option value="main" />
+      </list>
+    </option>
+  </component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Vast342/Clarity.git&quot;,
+    &quot;accountId&quot;: &quot;08a23983-2f60-416f-999c-2ef186d40944&quot;
+  }
+}</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="mock://D:/Clarity/src/eval.cpp" root0="SKIP_HIGHLIGHTING" />
+  </component>
+  <component name="MacroExpansionManager">
+    <option name="directoryName" value="n2ekPQfj" />
+  </component>
+  <component name="ProblemsViewState">
+    <hideBySeverity>
+      <option value="11" />
+      <option value="12" />
+      <option value="13" />
+      <option value="14" />
+      <option value="15" />
+      <option value="16" />
+    </hideBySeverity>
+    <option name="selectedTabId" value="ProjectErrors" />
+    <option name="showPreview" value="true" />
+  </component>
+  <component name="ProjectApplicationVersion">
+    <option name="ide" value="CLion" />
+    <option name="majorVersion" value="2025" />
+    <option name="minorVersion" value="1.2" />
+    <option name="productBranch" value="Classic" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2ykHrZKQDSdq16ejTlIE1rIOIkZ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.RadMigrateCodeStyle&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;rw-fp&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Clarity&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;org.rust.cargo.project.model.impl.CargoExternalSystemProjectAware.subscribe.first.balloon&quot;: &quot;&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;Errors&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\Clarity" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Native Application.bench">
+    <configuration name="Clarity" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="Clarity" CONFIG_NAME="Clarity" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Clarity" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="Clarity" CONFIG_NAME="Clarity" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Clarity" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="Clarity" CONFIG_NAME="Clarity" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="all" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="all" CONFIG_NAME="all" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="all" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="all" CONFIG_NAME="all" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="all" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="all" CONFIG_NAME="all" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="bench" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="true" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="bench" CONFIG_NAME="bench" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="bench" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="true" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="bench" CONFIG_NAME="bench" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="bench" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="true" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="bench" CONFIG_NAME="bench" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="build" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="build" CONFIG_NAME="build" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="build" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="build" CONFIG_NAME="build" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="build" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="build" CONFIG_NAME="build" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="datagen-v3" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="datagen-v3" CONFIG_NAME="datagen-v3" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="datagen-v3" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="datagen-v3" CONFIG_NAME="datagen-v3" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="datagen-v3" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="datagen-v3" CONFIG_NAME="datagen-v3" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="datagen" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="datagen" CONFIG_NAME="datagen" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="datagen" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="datagen" CONFIG_NAME="datagen" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="datagen" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="datagen" CONFIG_NAME="datagen" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="debug" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="debug" CONFIG_NAME="debug" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="debug" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="debug" CONFIG_NAME="debug" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="debug" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="debug" CONFIG_NAME="debug" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="download-net" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="download-net" CONFIG_NAME="download-net" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="download-net" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="download-net" CONFIG_NAME="download-net" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="download-net" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="download-net" CONFIG_NAME="download-net" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="info" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="info" CONFIG_NAME="info" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="info" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="info" CONFIG_NAME="info" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="info" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="info" CONFIG_NAME="info" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="run" CONFIG_NAME="run" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="run" CONFIG_NAME="run" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="run" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="run" CONFIG_NAME="run" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="uci-v4" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="uci-v4" CONFIG_NAME="uci-v4" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="uci-v4" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="uci-v4" CONFIG_NAME="uci-v4" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="uci-v4" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="uci-v4" CONFIG_NAME="uci-v4" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="uci" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="uci" CONFIG_NAME="uci" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="uci" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="uci" CONFIG_NAME="uci" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="uci" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="uci" CONFIG_NAME="uci" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v1" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v1" CONFIG_NAME="v1" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v1" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v1" CONFIG_NAME="v1" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v1" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v1" CONFIG_NAME="v1" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v2" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v2" CONFIG_NAME="v2" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v2" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v2" CONFIG_NAME="v2" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v2" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v2" CONFIG_NAME="v2" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v3" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v3" CONFIG_NAME="v3" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v3" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v3" CONFIG_NAME="v3" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v3" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v3" CONFIG_NAME="v3" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v4" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v4" CONFIG_NAME="v4" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v4" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v4" CONFIG_NAME="v4" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="v4" type="CLionNativeAppRunConfigurationType" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" EMULATE_TERMINAL="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Clarity" TARGET_NAME="v4" CONFIG_NAME="v4" version="1">
+      <method v="2">
+        <option name="CLION.COMPOUND.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Native Application.Clarity" />
+      <item itemvalue="Native Application.all" />
+      <item itemvalue="Native Application.bench" />
+      <item itemvalue="Native Application.build" />
+      <item itemvalue="Native Application.datagen-v3" />
+      <item itemvalue="Native Application.datagen" />
+      <item itemvalue="Native Application.debug" />
+      <item itemvalue="Native Application.download-net" />
+      <item itemvalue="Native Application.info" />
+      <item itemvalue="Native Application.run" />
+      <item itemvalue="Native Application.uci-v4" />
+      <item itemvalue="Native Application.uci" />
+      <item itemvalue="Native Application.v1" />
+      <item itemvalue="Native Application.v2" />
+      <item itemvalue="Native Application.v3" />
+      <item itemvalue="Native Application.v4" />
+    </list>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="735af775-9cf0-47a7-8b47-6dd2c9a4e8d2" name="Changes" comment="" />
+      <created>1750371851007</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1750371851007</updated>
+      <workItem from="1750371852545" duration="292000" />
+      <workItem from="1750373305831" duration="28000" />
+      <workItem from="1750373351275" duration="4530000" />
+      <workItem from="1750378135597" duration="586000" />
+      <workItem from="1750379165935" duration="595000" />
+      <workItem from="1750383833898" duration="588000" />
+      <workItem from="1750384464867" duration="107000" />
+      <workItem from="1750384623093" duration="1291000" />
+      <workItem from="1750386928523" duration="842000" />
+      <workItem from="1750641043287" duration="9937000" />
+      <workItem from="1750681776337" duration="5406000" />
+      <workItem from="1750693040272" duration="6729000" />
+      <workItem from="1750703703998" duration="3292000" />
+      <workItem from="1750721772016" duration="319000" />
+      <workItem from="1750722515495" duration="906000" />
+      <workItem from="1750727337778" duration="758000" />
+      <workItem from="1750728807277" duration="2098000" />
+      <workItem from="1750735334258" duration="2682000" />
+      <workItem from="1750738600482" duration="1750000" />
+      <workItem from="1750764280756" duration="2054000" />
+      <workItem from="1750771337255" duration="12063000" />
+      <workItem from="1750794933053" duration="1929000" />
+      <workItem from="1750803981751" duration="1558000" />
+      <workItem from="1750806927271" duration="33000" />
+      <workItem from="1750810151502" duration="3481000" />
+      <workItem from="1750813951460" duration="115000" />
+      <workItem from="1750814793777" duration="1210000" />
+      <workItem from="1750818703847" duration="3919000" />
+      <workItem from="1750857454352" duration="4680000" />
+      <workItem from="1750877546457" duration="1350000" />
+      <workItem from="1750883629669" duration="4167000" />
+      <workItem from="1750892457850" duration="605000" />
+      <workItem from="1750899368289" duration="1454000" />
+      <workItem from="1750946756742" duration="5886000" />
+      <workItem from="1750955247690" duration="2998000" />
+      <workItem from="1750970631379" duration="743000" />
+      <workItem from="1750971568163" duration="736000" />
+      <workItem from="1750972344173" duration="635000" />
+      <workItem from="1750973252400" duration="262000" />
+      <workItem from="1750974898186" duration="645000" />
+      <workItem from="1750980053206" duration="2630000" />
+      <workItem from="1750982990798" duration="4409000" />
+      <workItem from="1750995454928" duration="2877000" />
+      <workItem from="1751036087122" duration="27000" />
+      <workItem from="1751042245325" duration="588000" />
+      <workItem from="1751055198542" duration="67000" />
+      <workItem from="1751058238924" duration="7730000" />
+      <workItem from="1751072131451" duration="2781000" />
+      <workItem from="1751082665048" duration="211000" />
+      <workItem from="1751118674641" duration="4475000" />
+      <workItem from="1751124826163" duration="2012000" />
+      <workItem from="1751130809085" duration="2691000" />
+      <workItem from="1751145539631" duration="222000" />
+      <workItem from="1751161669976" duration="336000" />
+      <workItem from="1751201452910" duration="1647000" />
+      <workItem from="1751210841000" duration="1200000" />
+      <workItem from="1751229560119" duration="78000" />
+      <workItem from="1751229647125" duration="631000" />
+      <workItem from="1751236734318" duration="2254000" />
+      <workItem from="1751288902254" duration="3277000" />
+      <workItem from="1751300225845" duration="2720000" />
+      <workItem from="1751305230439" duration="1788000" />
+      <workItem from="1751308694264" duration="872000" />
+      <workItem from="1751319360818" duration="1873000" />
+      <workItem from="1751327859364" duration="3294000" />
+      <workItem from="1751333315052" duration="1824000" />
+      <workItem from="1751339342454" duration="258000" />
+      <workItem from="1751339772155" duration="1460000" />
+      <workItem from="1751375941783" duration="2013000" />
+      <workItem from="1751378498459" duration="614000" />
+      <workItem from="1751382921176" duration="2238000" />
+      <workItem from="1751386410037" duration="659000" />
+      <workItem from="1751388778488" duration="287000" />
+      <workItem from="1751408143465" duration="2183000" />
+      <workItem from="1751469443570" duration="415000" />
+      <workItem from="1751502154010" duration="124000" />
+      <workItem from="1751509364278" duration="1475000" />
+      <workItem from="1751558904636" duration="362000" />
+      <workItem from="1751559583977" duration="274000" />
+      <workItem from="1751592823676" duration="1634000" />
+      <workItem from="1751657817364" duration="363000" />
+      <workItem from="1751674229999" duration="616000" />
+      <workItem from="1751742331525" duration="3054000" />
+      <workItem from="1751753694577" duration="1804000" />
+      <workItem from="1751756649782" duration="3064000" />
+      <workItem from="1751763630013" duration="1662000" />
+      <workItem from="1751770052962" duration="269000" />
+      <workItem from="1751819164725" duration="1377000" />
+      <workItem from="1751830144728" duration="632000" />
+      <workItem from="1751844808123" duration="2021000" />
+      <workItem from="1751909830317" duration="531000" />
+      <workItem from="1751910792993" duration="287000" />
+      <workItem from="1751980735554" duration="694000" />
+      <workItem from="1751981681156" duration="2355000" />
+      <workItem from="1751984840584" duration="273000" />
+      <workItem from="1751989867074" duration="399000" />
+      <workItem from="1751991920810" duration="860000" />
+      <workItem from="1751997187347" duration="6000" />
+      <workItem from="1752004649436" duration="142000" />
+      <workItem from="1752010008790" duration="90000" />
+      <workItem from="1752011848037" duration="2165000" />
+      <workItem from="1752017117034" duration="168000" />
+      <workItem from="1752018134123" duration="4517000" />
+      <workItem from="1752026130913" duration="51000" />
+      <workItem from="1752103658652" duration="336000" />
+      <workItem from="1752104453868" duration="907000" />
+      <workItem from="1752160914683" duration="1049000" />
+      <workItem from="1752624287926" duration="338000" />
+      <workItem from="1752626327401" duration="184000" />
+      <workItem from="1752629410078" duration="124000" />
+      <workItem from="1752967795371" duration="713000" />
+      <workItem from="1752969410697" duration="21000" />
+      <workItem from="1752978579252" duration="26000" />
+      <workItem from="1753036216256" duration="1223000" />
+      <workItem from="1753054603654" duration="925000" />
+      <workItem from="1753056633025" duration="968000" />
+      <workItem from="1753065290412" duration="19000" />
+      <workItem from="1753103047098" duration="265000" />
+      <workItem from="1753191024588" duration="450000" />
+      <workItem from="1753238549370" duration="869000" />
+      <workItem from="1753283041849" duration="306000" />
+      <workItem from="1753469492482" duration="756000" />
+      <workItem from="1753472600812" duration="596000" />
+      <workItem from="1753477374473" duration="28000" />
+      <workItem from="1754338184426" duration="106000" />
+      <workItem from="1754350266311" duration="25000" />
+      <workItem from="1756687961546" duration="29000" />
+      <workItem from="1756750996413" duration="101000" />
+      <workItem from="1757114368040" duration="624000" />
+      <workItem from="1757115019755" duration="329000" />
+      <workItem from="1757118640682" duration="373000" />
+      <workItem from="1757179844041" duration="206000" />
+      <workItem from="1757260390081" duration="52000" />
+    </task>
+    <task id="LOCAL-00014" summary="actually have an eval, bench: 4863373">
+      <option name="closed" value="true" />
+      <created>1750785660307</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1750785660307</updated>
+    </task>
+    <task id="LOCAL-00015" summary="maybe an improvement, bench: 4922286">
+      <option name="closed" value="true" />
+      <created>1750805373871</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1750805373871</updated>
+    </task>
+    <task id="LOCAL-00016" summary="TT cutoffs, bench: 4106393">
+      <option name="closed" value="true" />
+      <created>1750813049489</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1750813049489</updated>
+    </task>
+    <task id="LOCAL-00017" summary="History Heuristic, bench: 2923960">
+      <option name="closed" value="true" />
+      <created>1750822704872</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1750822704872</updated>
+    </task>
+    <task id="LOCAL-00018" summary="captures first, bench: 2862166">
+      <option name="closed" value="true" />
+      <created>1750861374967</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1750861374967</updated>
+    </task>
+    <task id="LOCAL-00019" summary="PVS &amp; PV Table, bench: 2561919">
+      <option name="closed" value="true" />
+      <created>1750878597006</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1750878597006</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Aspiration Windows, bench: 2561919">
+      <option name="closed" value="true" />
+      <created>1750886351749</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1750886351749</updated>
+    </task>
+    <task id="LOCAL-00021" summary="bench: 2561919">
+      <option name="closed" value="true" />
+      <created>1750887252630</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1750887252630</updated>
+    </task>
+    <task id="LOCAL-00022" summary="bench: 2561919">
+      <option name="closed" value="true" />
+      <created>1750899475864</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1750899475864</updated>
+    </task>
+    <task id="LOCAL-00023" summary="Reverse Futility Pruning, bench: 3013351">
+      <option name="closed" value="true" />
+      <created>1750947701491</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1750947701491</updated>
+    </task>
+    <task id="LOCAL-00024" summary="Null Move Pruning, bench: 1826775">
+      <option name="closed" value="true" />
+      <created>1750949207417</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1750949207417</updated>
+    </task>
+    <task id="LOCAL-00025" summary="bruh, bench: 1712692">
+      <option name="closed" value="true" />
+      <created>1750952098907</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1750952098907</updated>
+    </task>
+    <task id="LOCAL-00026" summary="no tt cutoffs in pv nodes, bench: 3013351">
+      <option name="closed" value="true" />
+      <created>1750984683049</created>
+      <option name="number" value="00026" />
+      <option name="presentableId" value="LOCAL-00026" />
+      <option name="project" value="LOCAL" />
+      <updated>1750984683050</updated>
+    </task>
+    <task id="LOCAL-00027" summary="bruh, bench: 1711726">
+      <option name="closed" value="true" />
+      <created>1750990188412</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1750990188412</updated>
+    </task>
+    <task id="LOCAL-00028" summary="TT StaticEval Adjustment, bench: 3818111">
+      <option name="closed" value="true" />
+      <created>1750998087146</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1750998087146</updated>
+    </task>
+    <task id="LOCAL-00029" summary="fix it because rebase menus make no sense, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1750998810720</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1750998810720</updated>
+    </task>
+    <task id="LOCAL-00030" summary="Fix Windows Speed, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751074580436</created>
+      <option name="number" value="00030" />
+      <option name="presentableId" value="LOCAL-00030" />
+      <option name="project" value="LOCAL" />
+      <updated>1751074580436</updated>
+    </task>
+    <task id="LOCAL-00031" summary="Fix TM in repeated positions, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751132826162</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1751132826162</updated>
+    </task>
+    <task id="LOCAL-00032" summary="Store StaticEval in TT, bench: 3790003">
+      <option name="closed" value="true" />
+      <created>1751133479177</created>
+      <option name="number" value="00032" />
+      <option name="presentableId" value="LOCAL-00032" />
+      <option name="project" value="LOCAL" />
+      <updated>1751133479177</updated>
+    </task>
+    <task id="LOCAL-00033" summary="Check Extensions: bench: 5097899">
+      <option name="closed" value="true" />
+      <created>1751145743152</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1751145743152</updated>
+    </task>
+    <task id="LOCAL-00034" summary="LazySMP, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751302290592</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1751302290592</updated>
+    </task>
+    <task id="LOCAL-00035" summary="Fixes, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751306905716</created>
+      <option name="number" value="00035" />
+      <option name="presentableId" value="LOCAL-00035" />
+      <option name="project" value="LOCAL" />
+      <updated>1751306905716</updated>
+    </task>
+    <task id="LOCAL-00036" summary="Fixes, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751306964548</created>
+      <option name="number" value="00036" />
+      <option name="presentableId" value="LOCAL-00036" />
+      <option name="project" value="LOCAL" />
+      <updated>1751306964548</updated>
+    </task>
+    <task id="LOCAL-00037" summary="Fixes, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751308927518</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1751308927518</updated>
+    </task>
+    <task id="LOCAL-00038" summary="lessgo, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751321229740</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1751321229740</updated>
+    </task>
+    <task id="LOCAL-00039" summary="fix it because rebase menus make no sense: bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751331452724</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1751331452724</updated>
+    </task>
+    <task id="LOCAL-00040" summary="fix, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751332076814</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1751332076814</updated>
+    </task>
+    <task id="LOCAL-00041" summary="LMR, bench: 5614454">
+      <option name="closed" value="true" />
+      <created>1751332977510</created>
+      <option name="number" value="00041" />
+      <option name="presentableId" value="LOCAL-00041" />
+      <option name="project" value="LOCAL" />
+      <updated>1751332977510</updated>
+    </task>
+    <task id="LOCAL-00042" summary="bruh, bench: 5614454">
+      <option name="closed" value="true" />
+      <created>1751339437686</created>
+      <option name="number" value="00042" />
+      <option name="presentableId" value="LOCAL-00042" />
+      <option name="project" value="LOCAL" />
+      <updated>1751339437686</updated>
+    </task>
+    <task id="LOCAL-00043" summary="Pawn Corrhist, bench: 3910513">
+      <option name="closed" value="true" />
+      <created>1751340634536</created>
+      <option name="number" value="00043" />
+      <option name="presentableId" value="LOCAL-00043" />
+      <option name="project" value="LOCAL" />
+      <updated>1751340634536</updated>
+    </task>
+    <task id="LOCAL-00044" summary="bench: 8678703">
+      <option name="closed" value="true" />
+      <created>1751658113451</created>
+      <option name="number" value="00044" />
+      <option name="presentableId" value="LOCAL-00044" />
+      <option name="project" value="LOCAL" />
+      <updated>1751658113451</updated>
+    </task>
+    <task id="LOCAL-00045" summary="Fix SMP memory leak, bench: 3831493">
+      <option name="closed" value="true" />
+      <created>1751755833130</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1751755833130</updated>
+    </task>
+    <task id="LOCAL-00046" summary="no crashes plz and ty, bench: 5614454">
+      <option name="closed" value="true" />
+      <created>1751756975998</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1751756975998</updated>
+    </task>
+    <task id="LOCAL-00047" summary="bench: 4478119">
+      <option name="closed" value="true" />
+      <created>1751760379831</created>
+      <option name="number" value="00047" />
+      <option name="presentableId" value="LOCAL-00047" />
+      <option name="project" value="LOCAL" />
+      <updated>1751760379831</updated>
+    </task>
+    <task id="LOCAL-00048" summary="LMP, bench: 4687736">
+      <option name="closed" value="true" />
+      <created>1751766124363</created>
+      <option name="number" value="00048" />
+      <option name="presentableId" value="LOCAL-00048" />
+      <option name="project" value="LOCAL" />
+      <updated>1751766124363</updated>
+    </task>
+    <task id="LOCAL-00049" summary="Futility Pruning, bench: 4687736">
+      <option name="closed" value="true" />
+      <created>1751770318671</created>
+      <option name="number" value="00049" />
+      <option name="presentableId" value="LOCAL-00049" />
+      <option name="project" value="LOCAL" />
+      <updated>1751770318671</updated>
+    </task>
+    <task id="LOCAL-00050" summary="IIR, bench: 5794122">
+      <option name="closed" value="true" />
+      <created>1751910283610</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1751910283610</updated>
+    </task>
+    <task id="LOCAL-00051" summary="fudge, bench: 8635865">
+      <option name="closed" value="true" />
+      <created>1751911063194</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1751911063194</updated>
+    </task>
+    <task id="LOCAL-00052" summary="idk, bench: 4261386">
+      <option name="closed" value="true" />
+      <created>1751981038195</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1751981038196</updated>
+    </task>
+    <task id="LOCAL-00053" summary="SEE Move Ordering, bench: 4820364">
+      <option name="closed" value="true" />
+      <created>1751984024814</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1751984024815</updated>
+    </task>
+    <task id="LOCAL-00054" summary="e, bench: 4583810">
+      <option name="closed" value="true" />
+      <created>1751985082843</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1751985082844</updated>
+    </task>
+    <task id="LOCAL-00055" summary="QS SEE Pruning, bench: 6142989">
+      <option name="closed" value="true" />
+      <created>1751990185777</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1751990185777</updated>
+    </task>
+    <task id="LOCAL-00056" summary="bruh what, bench: 6133155">
+      <option name="closed" value="true" />
+      <created>1752014197108</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1752014197108</updated>
+    </task>
+    <task id="LOCAL-00057" summary="bruh what, bench: 4870981">
+      <option name="closed" value="true" />
+      <created>1752017197587</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1752017197587</updated>
+    </task>
+    <task id="LOCAL-00058" summary="uhhh i think this is it bench: 7493916">
+      <option name="closed" value="true" />
+      <created>1752022632147</created>
+      <option name="number" value="00058" />
+      <option name="presentableId" value="LOCAL-00058" />
+      <option name="project" value="LOCAL" />
+      <updated>1752022632147</updated>
+    </task>
+    <task id="LOCAL-00059" summary="LMP attempt 2: bench: 5184103">
+      <option name="closed" value="true" />
+      <created>1752624572632</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1752624572633</updated>
+    </task>
+    <task id="LOCAL-00060" summary="3, bench: 5406970">
+      <option name="closed" value="true" />
+      <created>1752626472443</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1752626472443</updated>
+    </task>
+    <task id="LOCAL-00061" summary="2 step trained net rounded, bench: 7968773">
+      <option name="closed" value="true" />
+      <created>1754338284044</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1754338284045</updated>
+    </task>
+    <task id="LOCAL-00062" summary="SEE move ordering, bench: 5341801">
+      <option name="closed" value="true" />
+      <created>1757115326869</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1757115326869</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="lessgo, bench: 3831493" />
+    <MESSAGE value="fix it because rebase menus make no sense: bench: 3831493" />
+    <MESSAGE value="fix, bench: 3831493" />
+    <MESSAGE value="LMR, bench: 5614454" />
+    <MESSAGE value="bruh, bench: 5614454" />
+    <MESSAGE value="Pawn Corrhist, bench: 3910513" />
+    <MESSAGE value="bench: 8678703" />
+    <MESSAGE value="Fix SMP memory leak, bench: 3831493" />
+    <MESSAGE value="no crashes plz and ty, bench: 5614454" />
+    <MESSAGE value="bench: 4478119" />
+    <MESSAGE value="LMP, bench: 4687736" />
+    <MESSAGE value="Futility Pruning, bench: 4687736" />
+    <MESSAGE value="IIR, bench: 5794122" />
+    <MESSAGE value="fudge, bench: 8635865" />
+    <MESSAGE value="idk, bench: 4261386" />
+    <MESSAGE value="SEE Move Ordering, bench: 4820364" />
+    <MESSAGE value="e, bench: 4583810" />
+    <MESSAGE value="QS SEE Pruning, bench: 6142989" />
+    <MESSAGE value="bruh what, bench: 6133155" />
+    <MESSAGE value="bruh what, bench: 4870981" />
+    <MESSAGE value="uhhh i think this is it bench: 7493916" />
+    <MESSAGE value="LMP attempt 2: bench: 5184103" />
+    <MESSAGE value="3, bench: 5406970" />
+    <MESSAGE value="2 step trained net rounded, bench: 7968773" />
+    <MESSAGE value="SEE move ordering, bench: 5341801" />
+    <option name="LAST_COMMIT_MESSAGE" value="SEE move ordering, bench: 5341801" />
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

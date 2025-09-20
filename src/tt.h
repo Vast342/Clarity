@@ -38,6 +38,7 @@ struct Transposition {
     Move bestMove;
     uint16_t zobristKey;
     int16_t staticEval;
+    int16_t seScore;
     uint8_t flag;
     uint8_t depth;
     Transposition() {
@@ -47,14 +48,16 @@ struct Transposition {
         score = 0;
         depth = 0;
         staticEval = 0;
+        seScore = 0;
     }
-    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _staticEval, int _score, uint8_t _depth) {
+    Transposition(uint64_t _zobristKey, Move _bestMove, uint8_t _flag, int _staticEval, int _score, uint8_t _depth, int16_t _seScore) {
         zobristKey = shrink(_zobristKey);
         bestMove = _bestMove;
         flag = _flag;
         score = _score;
         depth = _depth;
         staticEval = _staticEval;
+        seScore = _seScore;
     }
 };
 #pragma pack(pop)

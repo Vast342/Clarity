@@ -371,7 +371,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     }
 
     // push to TT
-    Transposition entryToWrite = Transposition(hash, bestMove, flag, staticEval, bestScore, 0);
+    Transposition entryToWrite = Transposition(hash, bestMove, flag, staticEval, bestScore, 0, 0);
     TT->setEntry(hash, entryToWrite);
 
     return bestScore;
@@ -465,7 +465,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     } else {
         staticEval = board.getEvaluation();
         if(!inSingularSearch && entry->zobristKey == 0) {
-            Transposition entryToWrite = Transposition(hash, Move(), 0, staticEval, 0, 0);
+            Transposition entryToWrite = Transposition(hash, Move(), 0, staticEval, 0, 0, 0);
             TT->setEntry(hash, entryToWrite);
         }
     }
@@ -550,6 +550,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     Move bestMove;
     bool bestIsCapture = false;
     int flag = FailLow;
+    int16_t seScore = matedScore;
 
     // extensions, currently only extending if you are in check
     depth += inCheck;
@@ -606,10 +607,18 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         if(!inSingularSearch && entry->bestMove == move && depth >= sinDepthCondition.value && entry->depth >= depth - sinDepthMargin.value && entry->flag != FailLow) {
             const auto sBeta = std::max(matedScore, int16_t(entry->score - depth * int(sinDepthScale.value) / 16));
             const auto sDepth = (depth - 1) / 2;
-
-            stack[ply].excluded = entry->bestMove;
-            const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true, isCutNode);
-            stack[ply].excluded = Move();
+            
+            auto score = 0;
+            // maybe will need more conditions and stuff here, sprt it and see
+            if(entry->seScore != 0 && entry->seScore != matedScore
+            && entry->depth >= sDepth) {
+                score = entry->seScore;
+            } else {
+                stack[ply].excluded = entry->bestMove;
+                score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true, isCutNode);
+                seScore = score;
+                stack[ply].excluded = Move();
+            }
             if(score < sBeta) {
                 if (!isPV && score < sBeta - dexMargin.value && stack[ply].doubleExtensions <= dexLimit.value) {
                     TTExtensions = 2 + (score < sBeta - texMargin.value);
@@ -764,7 +773,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // push to TT
     if(!inSingularSearch) {
         if(entry->zobristKey == shrink(hash) && entry->bestMove != Move() && bestMove == Move()) bestMove = entry->bestMove;
-        Transposition entryToWrite = Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth);
+        Transposition entryToWrite = Transposition(hash, bestMove, flag, originalStaticEval, bestScore, depth, seScore);
         TT->setEntry(hash, entryToWrite);
     }
 
