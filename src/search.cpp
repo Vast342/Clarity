@@ -551,6 +551,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     bool bestIsCapture = false;
     int flag = FailLow;
     int16_t seScore = matedScore;
+    bool seScoreSet = false;
 
     // extensions, currently only extending if you are in check
     depth += inCheck;
@@ -617,6 +618,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 stack[ply].excluded = entry->bestMove;
                 score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true, isCutNode);
                 seScore = score;
+                seScoreSet = true;
                 stack[ply].excluded = Move();
             }
             if(score < sBeta) {
@@ -684,6 +686,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             // and then if it fails high or low we search again with the original bounds
             if(score > alpha && (score < beta || lmr > 0)) {
                 score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, false);
+            }
+            // pseudo-se score for this search from the non-first move
+            if (!seScoreSet && !inSingularSearch && score > seScore) {
+                seScore = score;
             }
         }
         board.undoMove<true>();
