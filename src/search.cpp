@@ -799,8 +799,6 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
     std::cout << "info depth " << std::to_string(depth) << " seldepth " << std::to_string(seldepth) << " nodes " << std::to_string(nodeSum) << " time " << std::to_string(elapsedTime) << " nps " << std::to_string(int(double(nodeSum) / (elapsedTime == 0 ? 1 : elapsedTime) * 1000)) << scoreString << " pv " << getPV() << std::endl;
 }
 
-constexpr std::array<double, 7> stabilityNumbers = {2.2, 1.6, 1.4, 1.1, 1, 0.95, 0.9};
-
 // the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
 Move Engine::think(Board board, int softBound, int hardBound, bool info) {
     stack[0].doubleExtensions = 0;
@@ -856,7 +854,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
             const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
             // soft time bounds check
             double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
-            if(timesUp.load(std::memory_order_relaxed) || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * stabilityNumbers[std::min(stability, 6)]) break;
+            if(timesUp.load(std::memory_order_relaxed) || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * bmStabilityNumbers[std::min(stability, 6)]->value) break;
             // outputs info which is picked up by the user
             if(info) outputInfo(board, score, depth, elapsedTime);
             //if(elapsedTime > softBound) break;

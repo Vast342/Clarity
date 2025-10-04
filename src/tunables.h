@@ -131,6 +131,24 @@ inline Tunable nonpawnChWeight("NonPawn_CH_Weight", 512, 1);
 inline Tunable majorChWeight("Major_CH_Weight", 512, 1);
 inline Tunable minorChWeight("Minor_CH_Weight", 512, 1);
 
+inline Tunable bmStabilityZero("BM_Stability_Zero", 2.2, 100);
+inline Tunable bmStabilityOne("BM_Stability_One", 1.6, 100);
+inline Tunable bmStabilityTwo("BM_Stability_Two", 1.4, 100);
+inline Tunable bmStabilityThree("BM_Stability_Three", 1.1, 100);
+inline Tunable bmStabilityFour("BM_Stability_Four", 1.0, 100);
+inline Tunable bmStabilityFive("BM_Stability_Five", 0.95, 100);
+inline Tunable bmStabilitySix("BM_Stability_Six", 0.9, 100);
+
+inline std::array<Tunable *, 7> bmStabilityNumbers = {
+    &bmStabilityZero,
+    &bmStabilityOne,
+    &bmStabilityTwo,
+    &bmStabilityThree,
+    &bmStabilityFour,
+    &bmStabilityFive,
+    &bmStabilitySix
+};
+
 // Declaration of pointers to tunables
 inline std::array<Tunable *, 7> MVV_values = {
     &mvvPawn,
