@@ -381,18 +381,23 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
 void Engine::updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int16_t ply, const int hash, const bool startAttack, const bool endAttack) {
     int thingToAdd = bonus - historyTable[colorToMove][start][startAttack][end][endAttack] * std::abs(bonus) / historyCap;
     historyTable[colorToMove][start][startAttack][end][endAttack] += thingToAdd;
+
+    const auto baseConthistScore = (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0);
+
     if(ply > 0) {
-        thingToAdd = bonus - (*stack[ply - 1].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        thingToAdd = bonus - baseConthistScore * std::abs(bonus) / historyCap;
         (*stack[ply - 1].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
     if(ply > 1) {
-        thingToAdd = bonus - (*stack[ply - 2].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        thingToAdd = bonus - baseConthistScore * std::abs(bonus) / historyCap;
         (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
     if(ply > 3) {
-        thingToAdd = bonus - (*stack[ply - 4].ch_entry)[colorToMove][piece][end] * std::abs(bonus) / historyCap;
+        thingToAdd = bonus - baseConthistScore * std::abs(bonus) / historyCap;
         (*stack[ply - 4].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
