@@ -670,7 +670,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 lmr -= !isQuietOrBadCapture;
                 lmr -= corrhistUncertain;
 
-                lmr = std::clamp(lmr, -1, depth - 1);
+                lmr = std::clamp(lmr, -1 * isPV, depth - 1);
             }
 
             stack[ply].reduction = lmr;
