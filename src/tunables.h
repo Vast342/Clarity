@@ -130,6 +130,7 @@ inline Tunable pawnChWeight("Pawn_CH_Weight", 512, 1);
 inline Tunable nonpawnChWeight("NonPawn_CH_Weight", 512, 1);
 inline Tunable majorChWeight("Major_CH_Weight", 512, 1);
 inline Tunable minorChWeight("Minor_CH_Weight", 512, 1);
+inline Tunable zobristChWeight("Zobrist_CH_Weight", 512, 1);
 
 inline Tunable bmStabilityZero("BM_Stability_Zero", 2.2, 100);
 inline Tunable bmStabilityOne("BM_Stability_One", 1.6, 100);
