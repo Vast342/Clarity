@@ -1040,6 +1040,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     rootBestMove = Move();
     Move previousBest = Move();
     int16_t previousScore = 0;
+    int16_t previousExactScore = 0;
     int16_t score = 0;
     // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
     for(int depth = 1; depth <= 100; depth++) {
@@ -1062,13 +1063,17 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
-                } else break;
+                } else {
+                    previousExactScore = score;
+                    break;
+                };
                 if(nodes > nodeCap) break;
                 if(timesUp) break;
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
+            previousExactScore = score;
         }
         if(timesUp) {
             rootBestMove = previousBest;
@@ -1103,7 +1108,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         }
     }
 
-    return std::pair<Move, int>(rootBestMove, score);
+    return std::pair<Move, int>(rootBestMove, previousExactScore);
 }
 
 Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
