@@ -21,6 +21,7 @@
 #include "limits.h"
 #include "tt.h"
 #include "history.h"
+#include "corrhist.h"
 
 constexpr int16_t mateScore = 32000;
 
@@ -44,7 +45,7 @@ public:
     uint64_t getNodes() const {
         return nodes.load(std::memory_order_relaxed);
     }
-    explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), stack({}), history({}), TT(TT) {}
+    explicit Searcher(TranspositionTable* TT) : rootBestMove(Move()), nodes(0), seldepth(0), stack({}), history({}), corrhist({}), TT(TT) {}
     Searcher(const Searcher&) = delete;
     Searcher& operator=(const Searcher&) = delete;
 
@@ -54,6 +55,7 @@ public:
           seldepth(other.seldepth),
           stack(std::move(other.stack)),
           history(std::move(other.history)),
+          corrhist(std::move(other.corrhist)),
           TT(other.TT),
           startTime(std::move(other.startTime)) {
         // Reset the moved-from object
@@ -68,6 +70,7 @@ private:
     std::array<StackEntry, plyLimit> stack;
 
     HistoryTables history;
+    Corrhist corrhist;
 
     TranspositionTable* TT;
 
