@@ -24,6 +24,7 @@
 
 void Searcher::newGame() {
     history.clear();
+    corrhist.clear();
     stack = {};
 }
 
@@ -47,6 +48,13 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     const auto zobristHash = board.getZobristHash();
     const auto entry = TT->getEntry(zobristHash);
 
+    int16_t staticEval = board.getEvaluation();
+    // corrhist!
+    const auto ctm = board.getColorToMove();
+    const auto chPawnHash = board.getPawnHashIndex() & Corrhist::mask;
+    staticEval = corrhist.correct(ctm, chPawnHash, staticEval);
+    const auto inCheck = board.isInCheck();
+
     // Prunings!
     if constexpr(!isPV) {
         // tt cutoffs
@@ -58,9 +66,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             return entry->score;
         }
 
-        int16_t staticEval = board.getEvaluation();
-        const auto inCheck = board.isInCheck();
-
+        // correct staticEval to TT score if it's good enough
         if(!inCheck && shrink(zobristHash) == entry->zobristKey && (
             entry->flag == Exact ||
             (entry->flag == BetaCutoff && entry->score >= staticEval) ||
@@ -103,6 +109,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
     auto bestMove = Move();
     uint8_t legalMoves = 0;
     std::array<Move, 256> testedMoves;
+    bool bestIsCapture = false;
     while(const auto move = picker.next()) {
         if(!board.isLegal(move)) {
             continue;
@@ -137,6 +144,7 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             if(score > alpha) {
                 alpha = score;
                 bestMove = move;
+                bestIsCapture = board.pieceAtIndex(move.getEndSquare()) != None;
                 if(ply == 0) rootBestMove = move;
                 flag = Exact;
                 if constexpr(isPV) {
@@ -163,6 +171,11 @@ int16_t Searcher::search(Board &board, const int depth, int16_t alpha, const int
             return -mateScore + ply;
         }
         return 0;
+    }
+
+    // push to corrhist
+    if(!board.isInCheck() && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
+        corrhist.push(chPawnHash, ctm, bestScore, staticEval, depth);
     }
 
     // push to TT
