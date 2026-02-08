@@ -330,6 +330,7 @@ void Searcher::think(Board board, const Limiters &limiters, const bool isMain, c
         }
         if(info) outputInfo(board, score, depth, getTimeElapsed());
         depth++;
+        if(depth >= plyLimit) break;
     }
     if(isMain) endSearch.store(true, std::memory_order_relaxed);
     if(!isMain) nodes.store(0, std::memory_order_relaxed);
