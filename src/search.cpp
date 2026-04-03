@@ -42,12 +42,12 @@ constexpr int goodCaptureBonus= 500000;
 // resets the history, done when ucinewgame is sent, and at the start of each turn
 // thanks zzzzz
 void Engine::clearHistory() {
-    std::memset(historyTable.data(), 0, sizeof(historyTable));
-    std::memset(noisyHistoryTable.data(), 0, sizeof(noisyHistoryTable));
-    std::memset(conthistTable.get(), 0, sizeof(conthistTable));
-    std::memset(qsHistoryTable.data(), 0, sizeof(qsHistoryTable));
-    std::memset(pawnHistoryTable.data(), 0, sizeof(pawnHistoryTable));
-    corrhist.clear();
+    std::memset(info.historyTable.data(), 0, sizeof(info.historyTable));
+    std::memset(info.noisyHistoryTable.data(), 0, sizeof(info.noisyHistoryTable));
+    std::memset(info.conthistTable.get(), 0, sizeof(info.conthistTable));
+    std::memset(info.qsHistoryTable.data(), 0, sizeof(info.qsHistoryTable));
+    std::memset(info.pawnHistoryTable.data(), 0, sizeof(info.pawnHistoryTable));
+    info.corrhist.clear();
 }
 
 Move Engine::getBestMove() {
@@ -56,9 +56,9 @@ Move Engine::getBestMove() {
 
 // resets the engine, done when ucinewgame is sent
 void Engine::resetEngine() {
-    stack = {};
+    info.stack = {};
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
-    std::memset(counterMoves.data(), 0, sizeof(counterMoves));
+    std::memset(info.counterMoves.data(), 0, sizeof(info.counterMoves));
     clearHistory(); 
 }
 
@@ -83,7 +83,7 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             // Captures!
             const int victim = getType(board.pieceAtIndex(end));
             // Capthist!
-            values[i] = MVV_values[victim]->value + noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
+            values[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
             // see!
             // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
             if(see(board, move, 0)) {
@@ -92,18 +92,18 @@ void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::a
             }
         } else {
             // if not in qsearch, killers
-            if(move == stack[ply].killer) {
+            if(move == info.stack[ply].killer) {
                 values[i] = killerScore;
-            } else if(ply > 0 && move == counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()]) {
+            } else if(ply > 0 && move == info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()]) {
                 values[i] = counterScore;   
             } else {
                 int hash = board.getPawnHashIndex();
                 // read from history
-                values[i] = historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
-                    + (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
-                    + pawnHistoryTable[hash][colorToMove][piece][end];
+                values[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
+                    + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
+                    + info.pawnHistoryTable[hash][colorToMove][piece][end];
             }
         }
     }
@@ -122,7 +122,7 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
             // Captures!
             const int victim = getType(board.pieceAtIndex(end));
             // Capthist!
-            values[i] = MVV_values[victim]->value + qsHistoryTable[colorToMove][piece][end][victim];
+            values[i] = MVV_values[victim]->value + info.qsHistoryTable[colorToMove][piece][end][victim];
         }
     }
 }
@@ -132,7 +132,7 @@ void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std:
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
-    stack[ply].pvLength = 0;
+    info.stack[ply].pvLength = 0;
     //if(board.isRepeatedPosition()) return 0;
     // time check every 4096 nodes
     if(useNodeCap) {
@@ -176,7 +176,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     auto nonPawnHash = board.getNonPawnHash();
     auto majorHash = board.getMajorHash();
     auto minorHash = board.getMinorHash();
-    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash);
+    staticEval = info.corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash);
 
     // adjust staticEval to TT score if it's good enough
     if(shrink(hash) == entry->zobristKey && (
@@ -244,10 +244,10 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
             if(score > alpha) {
                 alpha = score;
                 bestMove = move;
-                stack[ply].pvTable[0] = move;
-                stack[ply].pvLength = stack[ply + 1].pvLength + 1;
-                for (int i = 0; i < stack[ply + 1].pvLength; i++)
-                    stack[ply].pvTable[i + 1] = stack[ply + 1].pvTable[i];
+                info.stack[ply].pvTable[0] = move;
+                info.stack[ply].pvLength = info.stack[ply + 1].pvLength + 1;
+                for (int i = 0; i < info.stack[ply + 1].pvLength; i++)
+                    info.stack[ply].pvTable[i + 1] = info.stack[ply + 1].pvTable[i];
             }
 
             // Fail-high
@@ -289,45 +289,45 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
 
 // adds to the history of a particular move
 void Engine::updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int16_t ply, const int hash, const bool startAttack, const bool endAttack) {
-    int thingToAdd = bonus - historyTable[colorToMove][start][startAttack][end][endAttack] * std::abs(bonus) / historyCap;
-    historyTable[colorToMove][start][startAttack][end][endAttack] += thingToAdd;
+    int thingToAdd = bonus - info.historyTable[colorToMove][start][startAttack][end][endAttack] * std::abs(bonus) / historyCap;
+    info.historyTable[colorToMove][start][startAttack][end][endAttack] += thingToAdd;
 
-    const auto baseConthistScore = (ply > 0 ? (*stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 1 ? (*stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 3 ? (*stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0);
+    const auto baseConthistScore = (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0);
 
     if(ply > 0) {
         thingToAdd = bonus - baseConthistScore * std::abs(bonus) / historyCap;
-        (*stack[ply - 1].ch_entry)[colorToMove][piece][end] += thingToAdd;
+        (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
     if(ply > 1) {
         thingToAdd = bonus - baseConthistScore * std::abs(bonus) / historyCap;
-        (*stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
+        (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
     if(ply > 3) {
         thingToAdd = bonus - baseConthistScore * std::abs(bonus) / historyCap;
-        (*stack[ply - 4].ch_entry)[colorToMove][piece][end] += thingToAdd;
+        (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] += thingToAdd;
     }
 
-    thingToAdd = bonus - pawnHistoryTable[hash][colorToMove][piece][end] * std::abs(bonus) / historyCap;
-    pawnHistoryTable[hash][colorToMove][piece][end] += thingToAdd;
+    thingToAdd = bonus - info.pawnHistoryTable[hash][colorToMove][piece][end] * std::abs(bonus) / historyCap;
+    info.pawnHistoryTable[hash][colorToMove][piece][end] += thingToAdd;
 }
 
 void Engine::updateNoisyHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus, const bool endAttack) {
-    const int thingToAdd = bonus - noisyHistoryTable[colorToMove][piece][end][victim][endAttack] * std::abs(bonus) / historyCap;
-    noisyHistoryTable[colorToMove][piece][end][victim][endAttack] += thingToAdd;
+    const int thingToAdd = bonus - info.noisyHistoryTable[colorToMove][piece][end][victim][endAttack] * std::abs(bonus) / historyCap;
+    info.noisyHistoryTable[colorToMove][piece][end][victim][endAttack] += thingToAdd;
 }
 
 void Engine::updateQSHistory(const int colorToMove, const int piece, const int end, const int victim, const int bonus) {
-    const int thingToAdd = bonus - qsHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
-    qsHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
+    const int thingToAdd = bonus - info.qsHistoryTable[colorToMove][piece][end][victim] * std::abs(bonus) / historyCap;
+    info.qsHistoryTable[colorToMove][piece][end][victim] += thingToAdd;
 }
 
 // The main search function
 int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t ply, bool nmpAllowed, bool isCutNode) {
-    stack[ply].pvLength = 0;
+    info.stack[ply].pvLength = 0;
     // if it's a repeated position, it's a draw
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
     // time check every 4096 nodes
@@ -346,10 +346,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     }
     
     const bool inCheck = board.isInCheck();
-    stack[ply].inCheck = inCheck;
+    info.stack[ply].inCheck = inCheck;
     // activate q search if at the end of a branch
     if(depth <= 0 && !inCheck) return qSearch(board, alpha, beta, ply);
-    const bool inSingularSearch = stack[ply].excluded != Move();
+    const bool inSingularSearch = info.stack[ply].excluded != Move();
     const bool isPV = beta > alpha + 1;
     const uint64_t hash = board.getZobristHash();
 
@@ -393,24 +393,24 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     auto nonPawnHash = board.getNonPawnHash();
     auto majorHash = board.getMajorHash();
     auto minorHash = board.getMinorHash();
-    staticEval = corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash);
+    staticEval = info.corrhist.correct(ctm, chpawnHash, staticEval, nonPawnHash, majorHash, minorHash);
     auto correction = staticEval - originalStaticEval;
     bool corrhistUncertain = std::abs(correction) > chUncertaintyMargin.value;
     
-    stack[ply].staticEval = staticEval;
+    info.stack[ply].staticEval = staticEval;
     bool improving = false;
     if(inCheck) {
         improving = false;
-    } else if(ply > 1 && !stack[ply - 2].inCheck) {
-        improving = staticEval > stack[ply - 2].staticEval;
-    } else if(ply > 3 && !stack[ply - 4].inCheck) {
-        improving = staticEval > stack[ply - 4].staticEval;
+    } else if(ply > 1 && !info.stack[ply - 2].inCheck) {
+        improving = staticEval > info.stack[ply - 2].staticEval;
+    } else if(ply > 3 && !info.stack[ply - 4].inCheck) {
+        improving = staticEval > info.stack[ply - 4].staticEval;
     } else {
         improving = true;
     }
     bool opponent_worsening = false;
     if(!inCheck && ply > 0) {
-        opponent_worsening = stack[ply].staticEval + stack[ply - 1].staticEval > 1;
+        opponent_worsening = info.stack[ply].staticEval + info.stack[ply - 1].staticEval > 1;
     }
 
     // adjust staticEval to TT score if it's good enough
@@ -430,7 +430,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         }
     }
 
-    if(!isPV && !inCheck && ply > 0 && stack[ply - 1].reduction >= 3 && !opponent_worsening) {
+    if(!isPV && !inCheck && ply > 0 && info.stack[ply - 1].reduction >= 3 && !opponent_worsening) {
         ++depth;
     }
 
@@ -441,8 +441,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     // Things to test: !isPV, alternate formulas, etc
     // "I could probably detect zugzwang here but ehhhhh" -Me, a few months ago
     if(!isPV && !inSingularSearch && !board.isPKEndgame() && nmpAllowed && depth >= nmpDepthCondition.value && !inCheck && staticEval >= beta && staticEval >= beta + 175 - 25 * depth) {
-        stack[ply].ch_entry = &(*conthistTable)[0][0][0][0];
-        stack[ply].move = Move();
+        info.stack[ply].ch_entry = &(*info.conthistTable)[0][0][0][0];
+        info.stack[ply].move = Move();
         board.changeColor();
         const int score = -negamax(board, depth - 3 - depth / 3 - std::min((staticEval - beta) / int(nmpDivisor.value), int(nmpSubtractor.value)), 0-beta, 1-beta, ply + 1, false, !isCutNode);
         board.undoChangeColor();
@@ -451,7 +451,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         }
     }
 
-    if(ply > 0) stack[ply].doubleExtensions = stack[ply - 1].doubleExtensions;
+    if(ply > 0) info.stack[ply].doubleExtensions = info.stack[ply - 1].doubleExtensions;
 
     // get the moves
     std::array<Move, 256> moves;
@@ -492,7 +492,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
         // information gathering
         Move move = moves[i];
-        if(move == stack[ply].excluded) continue;
+        if(move == info.stack[ply].excluded) continue;
         int moveStartSquare = move.getStartSquare();
         int movedPiece = board.pieceAtIndex(moveStartSquare);
         int moveEndSquare = move.getEndSquare();
@@ -522,14 +522,14 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             const auto sBeta = std::max(matedScore, int16_t(entry->score - depth * int(sinDepthScale.value) / 16));
             const auto sDepth = (depth - 1) / 2;
 
-            stack[ply].excluded = entry->bestMove;
+            info.stack[ply].excluded = entry->bestMove;
             const auto score = negamax(board, sDepth, sBeta - 1, sBeta, ply, true, isCutNode);
-            stack[ply].excluded = Move();
+            info.stack[ply].excluded = Move();
             if(score < sBeta) {
-                if (!isPV && score < sBeta - dexMargin.value && stack[ply].doubleExtensions <= dexLimit.value) {
+                if (!isPV && score < sBeta - dexMargin.value && info.stack[ply].doubleExtensions <= dexLimit.value) {
                     TTExtensions = 2 + (score < sBeta - texMargin.value);
                     depth += (depth < deiDepth.value);
-                    stack[ply].doubleExtensions++;
+                    info.stack[ply].doubleExtensions++;
                 } else {
                     TTExtensions = 1;
                 }
@@ -553,8 +553,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             continue;
         }
 
-        stack[ply].ch_entry = &(*conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare][moveVictim];
-        stack[ply].move = move;
+        info.stack[ply].ch_entry = &(*info.conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare][moveVictim];
+        info.stack[ply].move = move;
         testedMoves[legalMoves] = move;
         legalMoves++;
         nodes++;
@@ -573,7 +573,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 if(isQuiet) {
                     lmr -= moveValues[i] / int(hmrDivisor.value);
                 } else {
-                    lmr -= noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack] / int(cmrDivisor.value);
+                    lmr -= info.noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack] / int(cmrDivisor.value);
                 }
                 lmr += isCutNode * 2;
                 lmr -= improving;
@@ -583,10 +583,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 lmr = std::clamp(lmr, 0, depth - 1);
             }
 
-            stack[ply].reduction = lmr;
+            info.stack[ply].reduction = lmr;
             // this is more PVS stuff, searching with a reduced margin
             score = -negamax(board, depth - lmr - 1, -alpha - 1, -alpha, ply + 1, true, true);
-            stack[ply].reduction = 0;
+            info.stack[ply].reduction = 0;
             // and then if it fails high or low we search again with the original bounds
             if(score > alpha && (score < beta || lmr > 0)) {
                 score = -negamax(board, depth - 1, -beta, -alpha, ply + 1, true, false);
@@ -610,10 +610,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 bestIsCapture = isCapture;
                 if(ply == 0) rootBestMove = move;
                 if(isPV) {
-                    stack[ply].pvTable[0] = move;
-                    stack[ply].pvLength = stack[ply + 1].pvLength + 1;
-                    for (int i = 0; i < stack[ply + 1].pvLength; i++)
-                        stack[ply].pvTable[i + 1] = stack[ply + 1].pvTable[i];
+                    info.stack[ply].pvTable[0] = move;
+                    info.stack[ply].pvLength = info.stack[ply + 1].pvLength + 1;
+                    for (int i = 0; i < info.stack[ply + 1].pvLength; i++)
+                        info.stack[ply].pvTable[i + 1] = info.stack[ply + 1].pvTable[i];
                 }
                 // Fail-high
                 if(score >= beta) {
@@ -631,8 +631,8 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                         int end = moveEndSquare;
                         int piece = getType(board.pieceAtIndex(start));
                         updateHistory(colorToMove, start, end, piece, bonus, ply, hash, board.squareIsUnderAttack(start), moveEndAttack);
-                        stack[ply].killer = move;
-                        if(ply > 0) counterMoves[stack[ply - 1].move.getStartSquare()][stack[ply - 1].move.getEndSquare()] = move;
+                        info.stack[ply].killer = move;
+                        if(ply > 0) info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()] = move;
                     } else if (move.getFlag() < promotions[0] || move.getFlag() == promotions[3]) {
                         const int end = move.getEndSquare();
                         const int piece = getType(board.pieceAtIndex(move.getStartSquare()));
@@ -664,7 +664,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     // checkmate / stalemate detection, if I did legal move generation instead of pseudolegal I could probably do this first
     if(legalMoves == 0) {
-        if(stack[ply].excluded != Move()) {
+        if(info.stack[ply].excluded != Move()) {
             return alpha;
         }
         if(inCheck) {
@@ -673,7 +673,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         return 0;
     }
     if(!inCheck && (bestMove == Move() || !bestIsCapture) && !(bestScore >= beta && bestScore <= staticEval) && !(bestMove == Move() && bestScore >= staticEval)) {
-        corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nonPawnHash, majorHash, minorHash);
+        info.corrhist.push(chpawnHash, ctm, bestScore, staticEval, depth, nonPawnHash, majorHash, minorHash);
     }
 
     // push to TT
@@ -690,14 +690,14 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 // finally being replaced!!
 std::string Engine::getPV() {
     std::string pv;
-    for(int i = 0; i < stack[0].pvLength; i++) {
-        pv += toLongAlgebraic(stack[0].pvTable[i]) + " ";
+    for(int i = 0; i < info.stack[0].pvLength; i++) {
+        pv += toLongAlgebraic(info.stack[0].pvTable[i]) + " ";
     }
     return pv;
 }
 
 void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTime) {
-    //std::cout << "root pv length: " << stack[0].pvLength << std::endl;
+    //std::cout << "root pv length: " << info.stack[0].pvLength << std::endl;
     std::string scoreString = " score ";
     if(abs(score) < abs(matedScore + 256)) {
         scoreString += "cp ";
@@ -715,8 +715,8 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
 }
 
 // the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
-Move Engine::think(Board board, int softBound, int hardBound, bool info) {
-    stack[0].doubleExtensions = 0;
+Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
+    info.stack[0].doubleExtensions = 0;
     //ageHistory();
     //clearHistory();
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
@@ -765,13 +765,13 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
         if(timesUp.load(std::memory_order_relaxed)) rootBestMove = previousBest;
-        if(info) {
+        if(printInfo) {
             const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
             // soft time bounds check
             double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
             if(timesUp.load(std::memory_order_relaxed) || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * bmStabilityNumbers[std::min(stability, 6)]->value) break;
             // outputs info which is picked up by the user
-            if(info) outputInfo(board, score, depth, elapsedTime);
+            outputInfo(board, score, depth, elapsedTime);
             //if(elapsedTime > softBound) break;
         }
     }
@@ -798,7 +798,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
         }
     }
     
-    if(info) {
+    if(printInfo) {
         timesUp.store(true);
         stopOtherThreads();
         std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
@@ -809,7 +809,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool info) {
 
 // searches done for bench, returns the number of nodes searched.
 int Engine::benchSearch(Board board, int depthToSearch) {
-    stack[0].doubleExtensions = 0;
+    info.stack[0].doubleExtensions = 0;
     //clearHistory();
     nodes = 0;
     hardLimit = 1215752192;
@@ -857,8 +857,8 @@ int Engine::benchSearch(Board board, int depthToSearch) {
 }
 
 // searches to a fixed depth when the user says go depth x
-Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
-    stack[0].doubleExtensions = 0;
+Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool printInfo) {
+    info.stack[0].doubleExtensions = 0;
     //ageHistory();
     //clearHistory();
     nodes = 0;
@@ -901,7 +901,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
             break;
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        if(info) outputInfo(board, score, depth, elapsedTime);
+        if(printInfo) outputInfo(board, score, depth, elapsedTime);
         previousBest = rootBestMove;
     }
 
@@ -927,7 +927,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
         }
     }
 
-    if(info) {
+    if(printInfo) {
         timesUp.store(true);
         stopOtherThreads();
         std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
@@ -937,7 +937,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool info) {
 }
 
 std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
-    stack[0].doubleExtensions = 0;
+    info.stack[0].doubleExtensions = 0;
     //clearHistory();
     useNodeCap = true;
     nodes = 0;
@@ -1016,8 +1016,8 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     return std::pair<Move, int>(rootBestMove, score);
 }
 
-Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
-    stack[0].doubleExtensions = 0;
+Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
+    info.stack[0].doubleExtensions = 0;
     nodes = 0;
     hardNodeCap = nodeCount;
     useNodeCap = true;
@@ -1058,7 +1058,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
-        if(info) outputInfo(board, score, depth, elapsedTime);
+        if(printInfo) outputInfo(board, score, depth, elapsedTime);
         //if(elapsedTime > softBound) break;
         if(timesUp) {
             rootBestMove = previousBest;
@@ -1088,7 +1088,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool info) {
         }
     }
     
-    if(info) {
+    if(printInfo) {
         timesUp.store(true);
         stopOtherThreads();
         std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;

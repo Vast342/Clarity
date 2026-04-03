@@ -19,30 +19,11 @@
 
 #include "globals.h"
 #include "tt.h"
-#include "corrhist.h"
+#include "info.h"
 
 extern std::atomic<bool> timesUp;
 
-constexpr int depthLimit = 120;
-
 constexpr int16_t matedScore = -32000;
-
-struct StackEntry {
-    std::array<Move, depthLimit> pvTable;
-    int pvLength;
-    // conthist!
-    CHEntry *ch_entry;
-    Move move;
-    // killer move
-    Move killer;
-    // static eval used for improving
-    int staticEval;
-    bool inCheck;
-    // excluded move
-    Move excluded;
-    int doubleExtensions;
-    int reduction;
-};
 
 struct Engine {
     public: 
@@ -54,7 +35,6 @@ struct Engine {
         std::pair<Move, int> dataGenSearch(Board board, uint64_t nodeCap);
         Move fixedNodesSearch(Board board, int nodeCount, bool info);
         Engine(TranspositionTable *tt) {
-            conthistTable = std::make_unique<CHTable>();
             TT = tt;
         }
 
@@ -68,17 +48,9 @@ struct Engine {
 
         int seldepth = 0;
 
-        std::array<StackEntry, depthLimit> stack;
-
         TranspositionTable* TT;
 
-        std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 64>, 2>, 64>, 2> historyTable;
-        std::array<std::array<std::array<std::array<std::array<int16_t, 2>, 7>, 64>, 6>, 2> noisyHistoryTable;
-        std::array<std::array<std::array<std::array<int16_t, 7>, 64>, 6>, 2> qsHistoryTable;
-        std::array<std::array<std::array<std::array<int16_t, 64>, 6>, 2>, 32768> pawnHistoryTable;
-        Corrhist corrhist;
-        std::unique_ptr<CHTable> conthistTable;
-        std::array<std::array<Move, 64>, 64> counterMoves;
+        SearchInfo info;
 
         std::array<std::array<int, 64>, 64> nodeTMTable;
 
