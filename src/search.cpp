@@ -402,12 +402,12 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         }
         // this should really be made into a function, maybe a function of SearchInfo
         const auto colorToMove = board.getColorToMove();
-        int moveValue = isCapture ? info.noisyHistoryTable[colorToMove][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack]
-                        : (info.historyTable[colorToMove][moveStartSquare][board.squareIsUnderAttack(moveStartSquare)][moveEndSquare][board.squareIsUnderAttack(moveEndSquare)]
+        int moveValue = isQuiet ? (info.historyTable[colorToMove][moveStartSquare][board.squareIsUnderAttack(moveStartSquare)][moveEndSquare][board.squareIsUnderAttack(moveEndSquare)]
                         + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
                         + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
                         + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
-                        + info.pawnHistoryTable[chpawnHash][colorToMove][movedPiece][moveEndSquare]);
+                        + info.pawnHistoryTable[chpawnHash][colorToMove][movedPiece][moveEndSquare])
+                        : info.noisyHistoryTable[colorToMove][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack];
         bool isQuietOrBadCapture = (moveValue <= historyCap * 5);
 
         // move loop prunings:
