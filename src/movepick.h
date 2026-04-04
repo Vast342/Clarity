@@ -69,7 +69,7 @@ public:
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
                 idx = 0;
-                scoreMoves();
+                scoreMovesQS();
 
                 ++stage;
                 [[fallthrough]];
@@ -94,10 +94,6 @@ private:
     explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const bool isQs, const int ply) : stage(stage),
     board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply), isQs(isQs) {}
     void scoreMoves() {
-        if(isQs) {
-            scoreMovesQS();
-            return;
-        }
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
         for(int i = 0; i < totalMoves; i++) {

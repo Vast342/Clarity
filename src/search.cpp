@@ -402,7 +402,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         }
         // this should really be made into a function, maybe a function of SearchInfo
         const auto colorToMove = board.getColorToMove();
-        int moveValue = isCapture ? info.noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack]
+        int moveValue = isCapture ? info.noisyHistoryTable[colorToMove][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack]
                         : (info.historyTable[colorToMove][moveStartSquare][board.squareIsUnderAttack(moveStartSquare)][moveEndSquare][board.squareIsUnderAttack(moveEndSquare)]
                         + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
                         + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
