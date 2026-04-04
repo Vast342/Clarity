@@ -124,7 +124,9 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     std::array<Move, 256> testedMoves;
     MovePicker picker = MovePicker::qsearch(board, entry->bestMove, info);
     // loop though all the moves
-    while(const auto move = picker.next()) {
+    while (true) {
+        auto [move, unused] = picker.next();
+        if (!move) break;
         // this detects bad captures
         if(!see(board, move, 0)) {
             continue;
@@ -387,10 +389,11 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     int legalMoves = 0;
     std::array<Move, 256> testedMoves;
     MovePicker picker = MovePicker::search(board, inSingularSearch ? Move() : entry->bestMove, info, ply);
-    while(const auto move = picker.next()) {
+    while (true) {
+        auto [move, moveValue] = picker.next();
+        if (!move) break;
         if(move == info.stack[ply].excluded) continue;
         int moveStartSquare = move.getStartSquare();
-        int movedPiece = board.pieceAtIndex(moveStartSquare);
         int moveEndSquare = move.getEndSquare();
         bool moveEndAttack = board.squareIsUnderAttack(moveEndSquare);
         int moveFlag = move.getFlag();
@@ -400,14 +403,6 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         if(isCapture) {
             moveVictim = getType(board.pieceAtIndex(moveEndSquare));
         }
-        // this should really be made into a function, maybe a function of SearchInfo
-        const auto colorToMove = board.getColorToMove();
-        int moveValue = isQuiet ? (info.historyTable[colorToMove][moveStartSquare][board.squareIsUnderAttack(moveStartSquare)][moveEndSquare][board.squareIsUnderAttack(moveEndSquare)]
-                        + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
-                        + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
-                        + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
-                        + info.pawnHistoryTable[chpawnHash][colorToMove][movedPiece][moveEndSquare])
-                        : info.noisyHistoryTable[colorToMove][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack];
         bool isQuietOrBadCapture = (moveValue <= historyCap * 5);
 
         // move loop prunings:
@@ -476,7 +471,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 if(isQuiet) {
                     lmr -= moveValue / int(hmrDivisor.value);
                 } else {
-                    lmr -= moveValue / int(cmrDivisor.value);
+                    lmr -= info.historyTable[1 - board.getColorToMove()][moveStartSquare][board.squareIsUnderAttack(moveStartSquare)][moveEndSquare][board.squareIsUnderAttack(moveEndSquare)] / int(cmrDivisor.value);
                 }
                 lmr += isCutNode * 2;
                 lmr -= improving;
@@ -682,7 +677,9 @@ Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
     if(rootBestMove == Move()) {
         MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        while(const auto move = picker.next()) {
+        while (true) {
+            auto [move, score] = picker.next();
+            if (!move) break;
             if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
                 rootBestMove = move;
@@ -801,7 +798,9 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool printInfo) {
     if(rootBestMove == Move()) {
         MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        while(const auto move = picker.next()) {
+        while (true) {
+            auto [move, score] = picker.next();
+            if (!move) break;
             if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
                 rootBestMove = move;
@@ -877,7 +876,9 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     if(rootBestMove == Move()) {
         MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        while(const auto move = picker.next()) {
+        while (true) {
+            auto [move, score] = picker.next();
+            if (!move) break;
             if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
                 rootBestMove = move;
@@ -942,7 +943,9 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
     if(rootBestMove == Move()) {
         MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        while(const auto move = picker.next()) {
+        while (true) {
+            auto [move, score] = picker.next();
+            if (!move) break;
             if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
                 rootBestMove = move;

@@ -42,12 +42,12 @@ inline MovegenStage& operator++(MovegenStage& v) {
 
 class MovePicker {
 public:
-     Move next() {
+     std::pair<Move, int> next() {
         switch(stage) {
             case MovegenStage::TTMove: {
                 ++stage;
                 if(ttMove && board.isPseudolegal(ttMove)) {
-                    return ttMove;
+                    return {ttMove, 1000000000};
                 }
                 [[fallthrough]];
             }
@@ -60,11 +60,14 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::All: {
-                auto move = getNextInternal();
-                // skips tt move because its staged
-                if(move == ttMove) move = getNextInternal();
+                auto [move, score] = getNextInternal();
 
-                return move;
+                // skip TT move
+                while(move == ttMove && idx < totalMoves) {
+                    std::tie(move, score) = getNextInternal();
+                }
+
+                return {move, score};
             }
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
@@ -78,7 +81,7 @@ public:
                 return getNextInternal();
             }
             default:
-                return Move();
+                return {Move(), 0};
         }
     }
     static MovePicker search(const Board &board, const Move ttMove, SearchInfo &tables, const int ply) {
@@ -149,7 +152,9 @@ private:
             }
         }
     }
-    Move getNextInternal() {
+    std::pair<Move, int> getNextInternal() {
+        if (idx >= totalMoves) return {Move(), 0};
+
         int bestIdx = idx;
         for(int j = idx + 1; j < totalMoves; j++) {
             if(moveScores[j] > moveScores[bestIdx]) {
@@ -162,7 +167,7 @@ private:
             std::swap(moves[bestIdx], moves[idx]);
         }
 
-        return moves[idx++];
+        return {moves[idx], moveScores[idx++]};
     }
     MovegenStage stage;
     const Board &board;
