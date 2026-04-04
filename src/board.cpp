@@ -389,7 +389,7 @@ uint64_t Board::getOccupiedBitboard() const {
 }
 
 // fills up the array and then returns the number of moves to be looped through later.
-int Board::getMoves(std::array<Move, 256> &moves) {
+int Board::getMoves(std::array<Move, 256> &moves) const {
     uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     // castling
@@ -517,7 +517,7 @@ int Board::getMoves(std::array<Move, 256> &moves) {
     return totalMoves;
 }
 
-int Board::getMovesQSearch(std::array<Move, 256> &moves) {
+int Board::getMovesQSearch(std::array<Move, 256> &moves) const {
     const uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     uint64_t mask = stateHistory.back().coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
@@ -611,7 +611,7 @@ uint8_t Board::getColorToMove() const {
     return colorToMove;
 }
 
-bool Board::isInCheck() {
+bool Board::isInCheck() const {
     return squareIsUnderAttack(stateHistory.back().kingSquares[colorToMove]);
 }
 
@@ -1040,4 +1040,155 @@ int Board::getMajorHash() const {
 
 int Board::getMinorHash() const {
     return stateHistory.back().minorHash & Corrhist::mask;
+}
+
+bool Board::isPseudolegal(Move move) const {
+    const auto from = move.getStartSquare();
+    const auto to = move.getEndSquare();
+    const auto flag = move.getFlag();
+    const auto piece = pieceAtIndex(from);
+    const auto victim = pieceAtIndex(to);
+
+    if(piece == None || getColor(piece) != colorToMove) {
+        return false;
+    }
+
+    // ignoring another condition that would otherwise go here because my castling moves aren't encoded as king takes rook
+    // if capturing own piece or king, that's a bad thing
+    if(victim != None && (getColor(victim) == colorToMove || getType(victim) == King)) {
+        return false;
+    }
+
+
+    if(flag >= castling[0] && flag <= castling[3]) {
+        if(getType(piece) != King || isInCheck()) {
+            return false;
+        }
+
+        // if the rank is wrong
+        const auto home = colorToMove == 0 ? 7 : 0;
+        if(from / 8 != home || to / 8 != home) {
+            return false;
+        }
+
+        // movegen checks
+        // Check if any castling rights exist for the current player
+        if((stateHistory.back().castlingRights & kingRightMasks[1 - colorToMove]) == 0) {
+            return false;
+        }
+
+        const auto occ = getOccupiedBitboard();
+        // Check specific castling move types
+        if(colorToMove == 1) { // White to move
+            if(from == 4 && to == 6 && flag == castling[0]) { // White kingside castling
+                return (stateHistory.back().castlingRights & 1) != 0 &&
+                       (occ & 0x60) == 0 &&
+                       !squareIsUnderAttack(5);
+            }
+            else if(from == 4 && to == 2 && flag == castling[1]) { // White queenside castling
+                return (stateHistory.back().castlingRights & 2) != 0 &&
+                       (occ & 0xE) == 0 &&
+                       !squareIsUnderAttack(3);
+            }
+        } else { // Black to move
+            if(from == 60 && to == 62 && flag == castling[2]) { // Black kingside castling
+                return (stateHistory.back().castlingRights & 4) != 0 &&
+                       (occ & 0x6000000000000000) == 0 &&
+                       !squareIsUnderAttack(61);
+            }
+            else if(from == 60 && to == 58 && flag == castling[3]) { // Black queenside castling
+                return (stateHistory.back().castlingRights & 8) != 0 &&
+                       (occ & 0xE00000000000000) == 0 &&
+                       !squareIsUnderAttack(59);
+            }
+        }
+        return false;
+    }
+
+    if(getType(piece) == Pawn) {
+        if(flag == EnPassant) {
+            return to == stateHistory.back().enPassantIndex && (getPawnAttacks(from, colorToMove) & (1ULL << to)) != 0;
+        }
+
+        const auto fromRank = from / 8;
+        const auto toRank = to / 8;
+        // moving backwards is bad
+        if((colorToMove == 0 && toRank >= fromRank) || (colorToMove == 1 && toRank <= fromRank)) {
+            return false;
+        }
+
+        const auto promoRank = colorToMove == 0 ? 0 : 7;
+        // promotion to wrong rank or nonpromotion on back rank
+        if((flag >= promotions[0]) != (toRank == promoRank)) {
+            return false;
+        }
+
+        const auto fromFile = from % 8;
+        const auto toFile = to % 8;
+        if(fromFile != toFile) {
+            const auto pawnAttacks = getPawnAttacks(from, colorToMove);
+            const auto enemyPieces = getColoredBitboard(1 - colorToMove);
+            const auto attackedEnemies = pawnAttacks & enemyPieces;
+
+            if (!(attackedEnemies & (1ULL << to))) {
+                return false;
+            }
+        } else if(victim != None) {
+            // forward capture
+            return false;
+        }
+
+        const auto rankDelta = std::abs(toRank - fromRank);
+        int maxDelta;
+        if(colorToMove == 0) {
+            maxDelta = fromRank == 6 ? 2 : 1;
+        } else {
+            maxDelta = fromRank == 1 ? 2 : 1;
+        }
+
+        if(rankDelta > maxDelta) {
+            return false;
+        }
+
+        // incorrect delta
+        if(rankDelta == 2 && flag != DoublePawnPush) {
+            return false;
+        }
+
+        if(rankDelta == 1 && flag == DoublePawnPush) {
+            return false;
+        }
+
+        // blocked double pawn push
+        if(rankDelta == 2 && (getOccupiedBitboard() & (1ULL << (to + (colorToMove == 1 ? -8 : 8))))) {
+            return false;
+        }
+    } else {
+        // can't do ep or promote without a pawn
+        if(flag == EnPassant || flag >= promotions[0] || flag == DoublePawnPush) {
+            return false;
+        }
+        auto total = 0ULL;
+        const auto occ = getOccupiedBitboard();
+        const auto currentType = getType(piece);
+        if(currentType == Knight) {
+            total = getKnightAttacks(from);
+        } else if(currentType == Bishop) {
+            total = getBishopAttacks(from, occ);
+        } else if(currentType == Rook) {
+            total = getRookAttacks(from, occ);
+        } else if(currentType == Queen) {
+            total = getRookAttacks(from, occ) | getBishopAttacks(from, occ);
+        } else if(currentType == King) {
+            total = getKingAttacks(from);
+        } else {
+            __builtin_unreachable();
+        }
+
+        if((total & (1ULL << to)) == 0) {
+            return false;
+        }
+    }
+
+    return true;
 }

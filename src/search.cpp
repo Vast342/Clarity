@@ -23,21 +23,13 @@
 #include "uci.h"
 #include "tunables.h"
 #include "see.h"
+#include "movepick.h"
 
 std::atomic<bool> timesUp = false;
 
 bool mainThreadDone = false;
 
 uint64_t hardNodeCap = 400000;
-
-constexpr int historyCap = 16384;
-
-// Tunable Values
-constexpr int killerScore = 81922;
-constexpr int counterScore = 81921;
-
-constexpr int goodCaptureBonus= 500000;
-// The main search functions
 
 // resets the history, done when ucinewgame is sent, and at the start of each turn
 // thanks zzzzz
@@ -61,74 +53,6 @@ void Engine::resetEngine() {
     std::memset(info.counterMoves.data(), 0, sizeof(info.counterMoves));
     clearHistory(); 
 }
-
-/* orders the moves based on the following order:
-    1: TT Best move: the result of a previous search, if any
-    2: Good Captures: Sorted by the victim piece value + value from capture history
-    3: Killer moves: moves that are proven to be good from earlier, being indexed by ply
-    4: History: scores of how many times a move has caused a beta cutoff
-    5: Bad captures: captures that result in bad exchanges.
-*/
-void Engine::scoreMoves(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove, int16_t ply) {
-    const uint64_t occupied = board.getOccupiedBitboard();
-    const int colorToMove = board.getColorToMove();
-    for(int i = 0; i < numMoves; i++) {
-        Move move = moves[i];
-        const int end = move.getEndSquare();
-        const int start = move.getStartSquare();
-        const int piece = getType(board.pieceAtIndex(start));
-        if(move == ttMove) {
-            values[i] = 1000000000;
-        } else if((occupied & (1ULL << end)) != 0) {
-            // Captures!
-            const int victim = getType(board.pieceAtIndex(end));
-            // Capthist!
-            values[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
-            // see!
-            // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-            if(see(board, move, 0)) {
-                // good captures
-                values[i] += goodCaptureBonus;
-            }
-        } else {
-            // if not in qsearch, killers
-            if(move == info.stack[ply].killer) {
-                values[i] = killerScore;
-            } else if(ply > 0 && move == info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()]) {
-                values[i] = counterScore;   
-            } else {
-                int hash = board.getPawnHashIndex();
-                // read from history
-                values[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
-                    + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
-                    + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
-                    + info.pawnHistoryTable[hash][colorToMove][piece][end];
-            }
-        }
-    }
-}
-
-void Engine::scoreMovesQS(const Board& board, std::array<Move, 256> &moves, std::array<int, 256> &values, int numMoves, Move ttMove) {
-    const int colorToMove = board.getColorToMove();
-    for(int i = 0; i < numMoves; i++) {
-        Move move = moves[i];
-        const int end = move.getEndSquare();
-        const int start = move.getStartSquare();
-        const int piece = getType(board.pieceAtIndex(start));
-        if(move == ttMove) {
-            values[i] = 1000000000;
-        } else {
-            // Captures!
-            const int victim = getType(board.pieceAtIndex(end));
-            // Capthist!
-            values[i] = MVV_values[victim]->value + info.qsHistoryTable[colorToMove][piece][end][victim];
-        }
-    }
-}
-
-// ice4 deltas
-//constexpr int deltas[] = {814, 139, 344, 403, 649, 867, 0};
 
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
@@ -192,28 +116,15 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     if(bestScore >= beta) return bestScore;
     if(alpha < bestScore) alpha = bestScore;
 
-    // get the legal moves and sort them
-    std::array<Move, 256> moves;
-    std::array<Move, 256> testedMoves;
-    const int totalMoves = board.getMovesQSearch(moves);
-    std::array<int, 256> moveValues;
-    scoreMovesQS(board, moves, moveValues, totalMoves, entry->bestMove);
-
     // values useful for writing to TT later
     Move bestMove;
     int flag = FailLow;
     
     int legalMoves = 0;
+    std::array<Move, 256> testedMoves;
+    MovePicker picker = MovePicker::qsearch(board, entry->bestMove, info);
     // loop though all the moves
-    for(int i = 0; i < totalMoves; i++) {
-        for(int j = i + 1; j < totalMoves; j++) {
-            if(moveValues[j] > moveValues[i]) {
-                std::swap(moveValues[j], moveValues[i]);
-                std::swap(moves[j], moves[i]);
-            }
-        }
-        Move move = moves[i];
-
+    while(const auto move = picker.next()) {
         // this detects bad captures
         if(!see(board, move, 0)) {
             continue;
@@ -453,13 +364,6 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
     if(ply > 0) info.stack[ply].doubleExtensions = info.stack[ply - 1].doubleExtensions;
 
-    // get the moves
-    std::array<Move, 256> moves;
-    std::array<Move, 256> testedMoves;
-    const int totalMoves = board.getMoves(moves);
-    std::array<int, 256> moveValues;
-    scoreMoves(board, moves, moveValues, totalMoves, inSingularSearch ? Move() : entry->bestMove, ply);
-
     // values useful for writing to TT later
     int bestScore = matedScore;
     Move bestMove;
@@ -481,17 +385,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     const uint64_t capturable = board.getOccupiedBitboard();
     // loop through the moves
     int legalMoves = 0;
-    for(int i = 0; i < totalMoves; i++) {
-        // gets the best move (according to move ordering) from the list, incrementally sorting it.
-        for(int j = i + 1; j < totalMoves; j++) {
-            if(moveValues[j] > moveValues[i]) {
-                std::swap(moveValues[j], moveValues[i]);
-                std::swap(moves[j], moves[i]);
-            }
-        }
-
-        // information gathering
-        Move move = moves[i];
+    std::array<Move, 256> testedMoves;
+    MovePicker picker = MovePicker::search(board, inSingularSearch ? Move() : entry->bestMove, info, ply);
+    while(const auto move = picker.next()) {
         if(move == info.stack[ply].excluded) continue;
         int moveStartSquare = move.getStartSquare();
         int movedPiece = board.pieceAtIndex(moveStartSquare);
@@ -500,7 +396,19 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         int moveFlag = move.getFlag();
         bool isCapture = ((capturable & (1ULL << moveEndSquare)) != 0) || moveFlag == EnPassant;
         bool isQuiet = (!isCapture && (moveFlag <= DoublePawnPush));
-        bool isQuietOrBadCapture = (moveValues[i] <= historyCap * 5);
+        int moveVictim = None;
+        if(isCapture) {
+            moveVictim = getType(board.pieceAtIndex(moveEndSquare));
+        }
+        // this should really be made into a function, maybe a function of SearchInfo
+        const auto colorToMove = board.getColorToMove();
+        int moveValue = isCapture ? info.noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack]
+                        : (info.historyTable[colorToMove][moveStartSquare][board.squareIsUnderAttack(moveStartSquare)][moveEndSquare][board.squareIsUnderAttack(moveEndSquare)]
+                        + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
+                        + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
+                        + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][movedPiece][moveEndSquare] : 0)
+                        + info.pawnHistoryTable[chpawnHash][colorToMove][movedPiece][moveEndSquare]);
+        bool isQuietOrBadCapture = (moveValue <= historyCap * 5);
 
         // move loop prunings:
         // futility pruning
@@ -510,7 +418,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         // see pruning
         if(depth <= sprDepthCondition.value && isQuietOrBadCapture && bestScore > matedScore + 256 && !see(board, move, depth * (isCapture ? sprCaptureThreshold.value : sprQuietThreshold.value))) continue;
         // History Pruning
-        if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValues[i] < hipDepthMultiplier.value * depth) break;
+        if(ply > 0 && !isPV && isQuiet && depth <= hipDepthCondition.value && moveValue < hipDepthMultiplier.value * depth) break;
 
         // TT prefetching
         uint64_t afterKey = board.keyAfter(move);
@@ -544,11 +452,6 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             }
         }
 
-        int moveVictim = None;
-        if(isCapture) {
-            moveVictim = getType(board.pieceAtIndex(moveEndSquare));
-        }
-
         if(!board.makeMove<true>(move)) {
             continue;
         }
@@ -571,9 +474,9 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 lmr = reductions[depth][legalMoves];
                 lmr -= isPV;
                 if(isQuiet) {
-                    lmr -= moveValues[i] / int(hmrDivisor.value);
+                    lmr -= moveValue / int(hmrDivisor.value);
                 } else {
-                    lmr -= info.noisyHistoryTable[1 - board.getColorToMove()][getType(movedPiece)][moveEndSquare][moveVictim][moveEndAttack] / int(cmrDivisor.value);
+                    lmr -= moveValue / int(cmrDivisor.value);
                 }
                 lmr += isCutNode * 2;
                 lmr -= improving;
@@ -777,22 +680,12 @@ Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
     }
 
     if(rootBestMove == Move()) {
-        std::array<Move, 256> moves;
-        int totalMoves = board.getMoves(moves);
-        std::array<int, 256> moveValues;
-        Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        for(int i = 0; i < totalMoves; i++) {
-            for(int j = i + 1; j < totalMoves; j++) {
-                if(moveValues[j] > moveValues[i]) {
-                    std::swap(moveValues[j], moveValues[i]);
-                    std::swap(moves[j], moves[i]);
-                }
-            }
-            if(board.makeMove<true>(moves[i])) {
+        while(const auto move = picker.next()) {
+            if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
-                rootBestMove = moves[i];
+                rootBestMove = move;
                 break;
             }
         }
@@ -906,22 +799,12 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool printInfo) {
     }
 
     if(rootBestMove == Move()) {
-        std::array<Move, 256> moves;
-        int totalMoves = board.getMoves(moves);
-        std::array<int, 256> moveValues;
-        Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        for(int i = 0; i < totalMoves; i++) {
-            for(int j = i + 1; j < totalMoves; j++) {
-                if(moveValues[j] > moveValues[i]) {
-                    std::swap(moveValues[j], moveValues[i]);
-                    std::swap(moves[j], moves[i]);
-                }
-            }
-            if(board.makeMove<true>(moves[i])) {
+        while(const auto move = picker.next()) {
+            if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
-                rootBestMove = moves[i];
+                rootBestMove = move;
                 break;
             }
         }
@@ -992,22 +875,12 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     }
 
     if(rootBestMove == Move()) {
-        std::array<Move, 256> moves;
-        int totalMoves = board.getMoves(moves);
-        std::array<int, 256> moveValues;
-        Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        for(int i = 0; i < totalMoves; i++) {
-            for(int j = i + 1; j < totalMoves; j++) {
-                if(moveValues[j] > moveValues[i]) {
-                    std::swap(moveValues[j], moveValues[i]);
-                    std::swap(moves[j], moves[i]);
-                }
-            }
-            if(board.makeMove<true>(moves[i])) {
+        while(const auto move = picker.next()) {
+            if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
-                rootBestMove = moves[i];
+                rootBestMove = move;
                 break;
             }
         }
@@ -1067,22 +940,12 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
     }
 
     if(rootBestMove == Move()) {
-        std::array<Move, 256> moves;
-        int totalMoves = board.getMoves(moves);
-        std::array<int, 256> moveValues;
-        Transposition* entry = TT->getEntry(board.getZobristHash());
-        scoreMoves(board, moves, moveValues, totalMoves, entry->bestMove, 0);
+        MovePicker picker = MovePicker::search(board, Move(), info, 0);
 
-        for(int i = 0; i < totalMoves; i++) {
-            for(int j = i + 1; j < totalMoves; j++) {
-                if(moveValues[j] > moveValues[i]) {
-                    std::swap(moveValues[j], moveValues[i]);
-                    std::swap(moves[j], moves[i]);
-                }
-            }
-            if(board.makeMove<true>(moves[i])) {
+        while(const auto move = picker.next()) {
+            if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
-                rootBestMove = moves[i];
+                rootBestMove = move;
                 break;
             }
         }

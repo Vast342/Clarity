@@ -97,6 +97,9 @@ struct Move {
         Move(std::string longAlgebraic, const Board& board);
         Move(int startSquare, int endSquare, int promote, int ep, const Board &board);
         [[nodiscard]] constexpr auto operator==(const Move &other) const -> bool = default;
+        [[nodiscard]] explicit constexpr operator bool() const {
+            return value != 0;
+        }
     private: 
         uint16_t value;
 };
@@ -110,10 +113,10 @@ struct Board {
         Board(BoardState s, int ctm);
         template <bool PushNNUE> bool makeMove(Move move);
         template <bool PushNNUE> void undoMove();
-        int getMoves(std::array<Move, 256> &moves);
-        int getMovesQSearch(std::array<Move, 256> &moves);
+        int getMoves(std::array<Move, 256> &moves) const;
+        int getMovesQSearch(std::array<Move, 256> &moves) const;
         std::string getFenString();
-        bool isInCheck();
+        bool isInCheck() const;
         bool squareIsUnderAttack(int square) const;
         void toString();
         uint8_t getColorToMove() const;
@@ -145,6 +148,7 @@ struct Board {
         int getPawnHashIndex() const;
         uint64_t getThreats() const;
         uint64_t calculateThreats();
+        bool isPseudolegal(Move move) const;
     private:
         int plyCount;
         uint8_t colorToMove;
