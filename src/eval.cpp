@@ -17,6 +17,7 @@
 */
 #include "globals.h"
 #include "immintrin.h"
+#include "simd.h"
 
 #ifdef _MSC_VER
 #define SP_MSVC
@@ -233,109 +234,31 @@ int getBucket(int pieceCount) {
     on twice as many numbers at once, leading to a pretty sizeable speedup
 */
 
-#if defined(__AVX512F__) && defined(__AVX512BW__)
-using Vector = __m512i;
-constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
-// SCReLU!
 int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
-    Vector sum = _mm512_setzero_si512();
-    Vector vector0, vector1;
     const int bucketIncrement = 2 * layer1Size * bucket;
-
-    for(int i = 0; i < layer1Size / weightsPerVector; ++i)
+    const Vector zero   = simd_zero();
+    const Vector maxVal = simd_set1_epi16(Qa);
+ 
+    Vector sum = simd_zero();
+ 
+    for (int i = 0; i < layer1Size / weightsPerVector; ++i)
     {
         // us
-        vector0 = _mm512_max_epi16(_mm512_min_epi16(_mm512_load_si512(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm512_set1_epi16(Qa)), _mm512_setzero_si512());
-        vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
-        vector1 = _mm512_madd_epi16(vector0, vector1);
-        sum = _mm512_add_epi32(sum, vector1);
-        
+        Vector u = simd_load(reinterpret_cast<const Vector *>(&us[i * weightsPerVector]));
+        u = simd_max_epi16(simd_min_epi16(u, maxVal), zero);
+        Vector uw = simd_load(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement]));
+        sum = simd_add_epi32(sum, simd_madd_epi16(u, simd_mullo_epi16(u, uw)));
+ 
         // them
-        vector0 = _mm512_max_epi16(_mm512_min_epi16(_mm512_load_si512(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm512_set1_epi16(Qa)), _mm512_setzero_si512());
-        vector1 = _mm512_mullo_epi16(vector0, _mm512_load_si512(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
-        vector1 = _mm512_madd_epi16(vector0, vector1);
-        sum = _mm512_add_epi32(sum, vector1);
+        Vector t = simd_load(reinterpret_cast<const Vector *>(&them[i * weightsPerVector]));
+        t = simd_max_epi16(simd_min_epi16(t, maxVal), zero);
+        Vector tw = simd_load(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement]));
+        sum = simd_add_epi32(sum, simd_madd_epi16(t, simd_mullo_epi16(t, tw)));
     }
-
-    return _mm512_reduce_add_epi32(sum);
+ 
+    return simd_reduce_add_epi32(sum);
 }
 
-#elif defined(__AVX2__)
-using Vector = __m256i;
-constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
-// SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
-    Vector sum = _mm256_setzero_si256();
-    Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * bucket;
-
-    for(int i = 0; i < layer1Size / weightsPerVector; ++i)
-    {
-        // us
-        vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
-        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
-        vector1 = _mm256_madd_epi16(vector0, vector1);
-        sum = _mm256_add_epi32(sum, vector1);
-        
-        // them
-        vector0 = _mm256_max_epi16(_mm256_min_epi16(_mm256_load_si256(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm256_set1_epi16(Qa)), _mm256_setzero_si256());
-        vector1 = _mm256_mullo_epi16(vector0, _mm256_load_si256(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
-        vector1 = _mm256_madd_epi16(vector0, vector1);
-        sum = _mm256_add_epi32(sum, vector1);
-    }
-
-    __m128i sum0;
-    __m128i sum1;
-    // divide into halves
-    sum0 = _mm256_castsi256_si128(sum);
-    sum1 = _mm256_extracti128_si256(sum, 1);
-    // add the halves
-    sum0 = _mm_add_epi32(sum0, sum1);
-    // get half of the result
-    sum1 = _mm_unpackhi_epi64(sum0, sum0);
-    // add the halves:
-    sum0 = _mm_add_epi32(sum0, sum1);
-    // reorder so it's right
-    sum1 = _mm_shuffle_epi32(sum0, _MM_SHUFFLE(2, 3, 0, 1));
-    // final add
-    sum0 = _mm_add_epi32(sum0, sum1);
-    // cast back to int
-    return _mm_cvtsi128_si32(sum0);
-}
-#else
-using Vector = __m128i;
-constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t);
-// SCReLU!
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
-    Vector sum = _mm_setzero_si128();
-    Vector vector0, vector1;
-    const int bucketIncrement = 2 * layer1Size * bucket;
-
-    for(int i = 0; i < layer1Size / weightsPerVector; ++i)
-    {
-        // us
-        vector0 = _mm_max_epi16(_mm_min_epi16(_mm_load_si128(reinterpret_cast<const Vector *>(&us[i * weightsPerVector])), _mm_set1_epi16(Qa)), _mm_setzero_si128());
-        vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement])));
-        vector1 = _mm_madd_epi16(vector0, vector1);
-        sum = _mm_add_epi32(sum, vector1);
-        
-        // them
-        vector0 = _mm_max_epi16(_mm_min_epi16(_mm_load_si128(reinterpret_cast<const Vector *>(&them[i * weightsPerVector])), _mm_set1_epi16(Qa)), _mm_setzero_si128());
-        vector1 = _mm_mullo_epi16(vector0, _mm_load_si128(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement])));
-        vector1 = _mm_madd_epi16(vector0, vector1);
-        sum = _mm_add_epi32(sum, vector1);
-    }
-
-    const auto high64 = _mm_unpackhi_epi64(sum, sum);
-    const auto sum64 = _mm_add_epi32(sum, high64);
-
-    const auto high32 = _mm_shuffle_epi32(sum64, _MM_SHUFFLE(2, 3, 0, 1));
-    const auto sum32 = _mm_add_epi32(sum64, high32);
-
-    return _mm_cvtsi128_si32(sum32);
-}
-
-#endif
 void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
     activateFeatureSingle(square, piece, 0, blackKing);
     activateFeatureSingle(square, piece, 1, whiteKing);
@@ -371,6 +294,7 @@ void NetworkState::disableFeature(int square, int piece, int blackKing, int whit
     disableFeatureSingle(square, piece, 0, blackKing);
     disableFeatureSingle(square, piece, 1, whiteKing);
 }
+
 void NetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
     const int index = getFeatureIndex(square, piece, color, king);
 
@@ -386,6 +310,7 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
     }
 }
 
+// todo: 
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
     const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network->outputWeights) : forward(bucket, stack[current].white, stack[current].black, network->outputWeights);
