@@ -85,17 +85,17 @@ public:
         }
     }
     static MovePicker search(const Board &board, const Move ttMove, SearchInfo &tables, const int ply) {
-        return MovePicker(board, ttMove, tables, MovegenStage::TTMove, false, ply);
+        return MovePicker(board, ttMove, tables, MovegenStage::TTMove, ply);
     }
     static MovePicker qsearch(const Board &board, const Move ttMove, SearchInfo &tables) {
-        return MovePicker(board, ttMove, tables, MovegenStage::QSGenAll, true, 0);
+        return MovePicker(board, ttMove, tables, MovegenStage::QSGenAll, 0);
     }
     int getTotalMoves() const {
         return totalMoves;
     }
 private:
-    explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const bool isQs, const int ply) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply), isQs(isQs) {}
+    explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const int ply) : stage(stage),
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply) {}
     void scoreMoves() {
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
@@ -178,5 +178,4 @@ private:
     int ply;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
-    bool isQs;
 };

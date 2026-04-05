@@ -17,10 +17,6 @@
 */
 #include "globals.h"
 
-enum UpdateType {
-    NoUpdate, Add, Subtract
-};
-
 struct NetworkUpdate {
     NetworkUpdate(int s, int p) {
         square = s;
