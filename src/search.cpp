@@ -131,6 +131,8 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
         if(!see(board, move, 0)) {
             continue;
         }
+        
+        if(legalMoves > 2) break;
 
         // TT prefetching
         uint64_t afterKey = board.keyAfter(move);
