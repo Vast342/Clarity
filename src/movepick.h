@@ -34,7 +34,7 @@ enum class MovegenStage : int {
     Killer,
     Counter,
     GenerateQuiet,
-    Else,
+    Quiets,
     BadNoisy,
     QSGenAll,
     QSAll,
@@ -65,16 +65,21 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::GoodNoisy: {
-                auto [move, score] = getNextInternal();
+                while(idx < totalMoves) {
+                    const auto [move, score] = getNextInternal();
 
-                // skip TT move
-                while(move && move == ttMove && idx < totalMoves) {
-                    std::tie(move, score) = getNextInternal();
+                    if(move == ttMove) continue;
+
+                    // to test later: see threshold here (failed before i think)
+                    if(!see(board, move, 0)) {
+                        moves[badNoisyEnd] = moves[idx];
+                        moveScores[badNoisyEnd] = moveScores[idx];
+                        badNoisyEnd++;
+                    } else {
+                        return {move, score};
+                    }
                 }
 
-                if(score > (goodCaptureBonus - historyCap)) {
-                    return {move, score};
-                }
                 ++stage;
                 [[fallthrough]];
             }
@@ -91,7 +96,7 @@ public:
                 if(ply > 0) {
                     const auto counter = info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()];
                     if(counter && board.isPseudolegal(counter)) {
-                        return {counter, killerScore};
+                        return {counter, counterScore};
                     }
                 }
                 [[fallthrough]];
@@ -103,19 +108,22 @@ public:
                 ++stage;
                 [[fallthrough]];
             }
-            case MovegenStage::Else: {
-                auto [move, score] = getNextInternal();
-
-                // skip TT move, killer, & counter moves
-                const Move counter = (ply > 0)
-                    ? info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()]
-                    : Move();
-                while(move && (move == ttMove || move == info.stack[ply].killer || move == counter)
-                    && idx < totalMoves) {
-                    std::tie(move, score) = getNextInternal();
+            case MovegenStage::Quiets: {
+                const auto counter = info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()];
+                const auto killer = info.stack[ply].killer;
+                while(idx < totalMoves) {
+                    const auto [move, score] = getNextInternal();
+                    if(move == ttMove || move == killer || move == counter) continue;
+                    return {move, score};
                 }
 
-                return {move, score};
+                idx = 0;
+                totalMoves = badNoisyEnd;
+                ++stage;
+                [[fallthrough]];
+            }
+            case MovegenStage::BadNoisy: {
+                return getNextInternal();
             }
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
@@ -147,7 +155,7 @@ private:
     void scoreMoves() {
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
-        for(int i = 0; i < totalMoves; i++) {
+        for(int i = idx; i < totalMoves; i++) {
             Move move = moves[i];
             const int end = move.getEndSquare();
             const int start = move.getStartSquare();
@@ -159,12 +167,6 @@ private:
                 const int victim = getType(board.pieceAtIndex(end));
                 // Capthist!
                 moveScores[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
-                // see!
-                // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-                if(see(board, move, 0)) {
-                    // good captures
-                    moveScores[i] += goodCaptureBonus;
-                }
             } else {
                 // if not in qsearch, killers
                 if(move == info.stack[ply].killer) {
@@ -183,6 +185,7 @@ private:
             }
         }
     }
+
     void scoreMovesQS() {
         const int colorToMove = board.getColorToMove();
         for(int i = 0; i < totalMoves; i++) {
@@ -226,4 +229,5 @@ private:
     int ply;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
+    int badNoisyEnd{};
 };
