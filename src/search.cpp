@@ -22,7 +22,6 @@
 #include "external/fathom/tbprobe.h"
 #include "uci.h"
 #include "tunables.h"
-#include "see.h"
 #include "movepick.h"
 
 std::atomic<bool> timesUp = false;

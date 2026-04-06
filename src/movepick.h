@@ -109,7 +109,7 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::Quiets: {
-                const auto counter = info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()];
+                const auto counter = ply > 0 ? info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()] : Move();
                 const auto killer = info.stack[ply].killer;
                 while(idx < totalMoves) {
                     const auto [move, score] = getNextInternal();
