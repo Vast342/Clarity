@@ -72,8 +72,8 @@ public:
 
                     // to test later: see threshold here (failed before i think)
                     if(!see(board, move, 0)) {
-                        moves[badNoisyEnd] = moves[idx];
-                        moveScores[badNoisyEnd] = moveScores[idx];
+                        moves[badNoisyEnd] = move;
+                        moveScores[badNoisyEnd] = score;
                         badNoisyEnd++;
                     } else {
                         return {move, score};
@@ -151,7 +151,7 @@ public:
     }
 private:
     explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const int ply) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply) {}
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply), badNoisyEnd(0) {}
     void scoreMoves() {
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
