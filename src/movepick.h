@@ -86,7 +86,7 @@ public:
             case MovegenStage::Killer: {
                 ++stage;
                 const auto killer = info.stack[ply].killer;
-                if(killer && board.isPseudolegal(killer)) {
+                if(killer && board.isPseudolegal(killer) && killer != ttMove) {
                     return {killer, killerScore};
                 }
                 [[fallthrough]];
@@ -95,7 +95,7 @@ public:
                 ++stage;
                 if(ply > 0) {
                     const auto counter = info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()];
-                    if(counter && board.isPseudolegal(counter)) {
+                    if(counter && board.isPseudolegal(counter) && counter != ttMove && counter != info.stack[ply].killer) {
                         return {counter, counterScore};
                     }
                 }
