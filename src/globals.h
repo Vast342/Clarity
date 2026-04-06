@@ -149,6 +149,8 @@ struct Board {
         uint64_t getThreats() const;
         uint64_t calculateThreats();
         bool isPseudolegal(Move move) const;
+        int getNoisies(std::array<Move, 256> &moves, int totalMoves) const;
+        int getQuiets(std::array<Move, 256> &moves, int totalMoves) const;
     private:
         int plyCount;
         uint8_t colorToMove;

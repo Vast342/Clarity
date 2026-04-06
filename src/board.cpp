@@ -1192,3 +1192,154 @@ bool Board::isPseudolegal(Move move) const {
 
     return true;
 }
+
+int Board::getNoisies(std::array<Move, 256> &moves, int totalMoves) const {
+    uint64_t occupiedBitboard = getOccupiedBitboard();
+
+    uint64_t mask = stateHistory.back().coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
+    while (mask != 0) {
+        uint8_t startSquare = popLSB(mask);
+        uint8_t currentType = getType(pieceAtIndex(startSquare));
+        uint64_t total = 0;
+        if (currentType == Knight)      total = getKnightAttacks(startSquare);
+        else if (currentType == Bishop) total = getBishopAttacks(startSquare, occupiedBitboard);
+        else if (currentType == Rook)   total = getRookAttacks(startSquare, occupiedBitboard);
+        else if (currentType == Queen)  total = getRookAttacks(startSquare, occupiedBitboard) | getBishopAttacks(startSquare, occupiedBitboard);
+        else if (currentType == King)   total = getKingAttacks(startSquare);
+
+        total &= stateHistory.back().coloredBitboards[1 - colorToMove];
+        while (total != 0) {
+            moves[totalMoves] = Move(startSquare, popLSB(total), Normal);
+            totalMoves++;
+        }
+    }
+
+    uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
+    uint64_t capturable = stateHistory.back().coloredBitboards[1 - colorToMove];
+    if (stateHistory.back().enPassantIndex != 64)
+        capturable |= squareToBitboard[stateHistory.back().enPassantIndex];
+
+    uint64_t leftCaptures = (colorToMove == 0 ? pawnBitboard >> 9 : pawnBitboard << 7);
+    leftCaptures &= ~getFileMask(7);
+    leftCaptures &= capturable;
+    uint64_t leftCapturePromotions = leftCaptures & getRankMask(7 * colorToMove);
+    leftCaptures ^= leftCapturePromotions;
+
+    uint64_t rightCaptures = (colorToMove == 0 ? pawnBitboard >> 7 : pawnBitboard << 9);
+    rightCaptures &= ~getFileMask(0);
+    rightCaptures &= capturable;
+    uint64_t rightCapturePromotions = rightCaptures & getRankMask(7 * colorToMove);
+    rightCaptures ^= rightCapturePromotions;
+
+    while (leftCaptures != 0) {
+        int index = popLSB(leftCaptures);
+        int startSquare = index + (colorToMove == 0 ? 9 : -7);
+        moves[totalMoves] = Move(startSquare, index, (index == stateHistory.back().enPassantIndex ? EnPassant : Normal));
+        totalMoves++;
+    }
+    while (rightCaptures != 0) {
+        int index = popLSB(rightCaptures);
+        int startSquare = index + (colorToMove == 0 ? 7 : -9);
+        moves[totalMoves] = Move(startSquare, index, (index == stateHistory.back().enPassantIndex ? EnPassant : Normal));
+        totalMoves++;
+    }
+    while (leftCapturePromotions != 0) {
+        int index = popLSB(leftCapturePromotions);
+        int startSquare = index + (colorToMove == 0 ? 9 : -7);
+        for (int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type - 1]);
+            totalMoves++;
+        }
+    }
+    while (rightCapturePromotions != 0) {
+        int index = popLSB(rightCapturePromotions);
+        int startSquare = index + (colorToMove == 0 ? 7 : -9);
+        for (int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type - 1]);
+            totalMoves++;
+        }
+    }
+
+    uint64_t emptyBitboard = ~occupiedBitboard;
+    uint64_t pawnPushes = getPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
+    uint64_t pawnPushPromotions = pawnPushes & getRankMask(7 * colorToMove);
+    while(pawnPushPromotions != 0) {
+        uint8_t index = popLSB(pawnPushPromotions);
+        uint8_t startSquare = (index + directionalOffsets[colorToMove]);
+        for(int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
+            totalMoves++;
+        }
+    }
+
+    return totalMoves;
+}
+
+int Board::getQuiets(std::array<Move, 256> &moves, int totalMoves) const {
+    uint64_t occupiedBitboard = getOccupiedBitboard();
+
+    if ((stateHistory.back().castlingRights & kingRightMasks[1 - colorToMove]) != 0) {
+        if (!isInCheck()) {
+            if (colorToMove == 1) {
+                if ((stateHistory.back().castlingRights & 1) != 0 && (occupiedBitboard & 0x60) == 0 && !squareIsUnderAttack(5)) {
+                    moves[totalMoves] = Move(4, 6, castling[0]);
+                    totalMoves++;
+                }
+                if ((stateHistory.back().castlingRights & 2) != 0 && (occupiedBitboard & 0xE) == 0 && !squareIsUnderAttack(3)) {
+                    moves[totalMoves] = Move(4, 2, castling[1]);
+                    totalMoves++;
+                }
+            } else {
+                if ((stateHistory.back().castlingRights & 4) != 0 && (occupiedBitboard & 0x6000000000000000) == 0 && !squareIsUnderAttack(61)) {
+                    moves[totalMoves] = Move(60, 62, castling[2]);
+                    totalMoves++;
+                }
+                if ((stateHistory.back().castlingRights & 8) != 0 && (occupiedBitboard & 0xE00000000000000) == 0 && !squareIsUnderAttack(59)) {
+                    moves[totalMoves] = Move(60, 58, castling[3]);
+                    totalMoves++;
+                }
+            }
+        }
+    }
+
+    uint64_t mask = stateHistory.back().coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
+    while (mask != 0) {
+        uint8_t startSquare = popLSB(mask);
+        uint8_t currentType = getType(pieceAtIndex(startSquare));
+        uint64_t total = 0;
+        if (currentType == Knight)      total = getKnightAttacks(startSquare);
+        else if (currentType == Bishop) total = getBishopAttacks(startSquare, occupiedBitboard);
+        else if (currentType == Rook)   total = getRookAttacks(startSquare, occupiedBitboard);
+        else if (currentType == Queen)  total = getRookAttacks(startSquare, occupiedBitboard) | getBishopAttacks(startSquare, occupiedBitboard);
+        else if (currentType == King)   total = getKingAttacks(startSquare);
+
+        total &= ~occupiedBitboard;
+        while (total != 0) {
+            moves[totalMoves] = Move(startSquare, popLSB(total), Normal);
+            totalMoves++;
+        }
+    }
+
+    uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
+    uint64_t emptyBitboard = ~occupiedBitboard;
+    uint64_t pawnPushes = getPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
+    uint64_t doublePawnPushes = getDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
+    uint64_t pawnPushPromotions = pawnPushes & getRankMask(7 * colorToMove);
+    pawnPushes ^= pawnPushPromotions;
+
+    while (pawnPushes != 0) {
+        uint8_t index = popLSB(pawnPushes);
+        uint8_t startSquare = index + directionalOffsets[colorToMove];
+        moves[totalMoves] = Move(startSquare, index, Normal);
+        totalMoves++;
+    }
+    while (doublePawnPushes != 0) {
+        uint8_t index = popLSB(doublePawnPushes);
+        uint8_t startSquare = index + (directionalOffsets[colorToMove] * 2);
+        assert(getType(pieceAtIndex(startSquare)) == Pawn);
+        moves[totalMoves] = Move(startSquare, index, DoublePawnPush);
+        totalMoves++;
+    }
+
+    return totalMoves;
+}

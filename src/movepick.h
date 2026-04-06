@@ -29,8 +29,13 @@ constexpr int goodCaptureBonus= 500000;
 
 enum class MovegenStage : int {
     TTMove = 0,
-    GenAll,
-    All,
+    GenerateNoisy,
+    GoodNoisy,
+    Killer,
+    Counter,
+    GenerateQuiet,
+    Else,
+    BadNoisy,
     QSGenAll,
     QSAll,
 };
@@ -51,19 +56,62 @@ public:
                 }
                 [[fallthrough]];
             }
-            case MovegenStage::GenAll: {
-                totalMoves = board.getMoves(moves);
+            case MovegenStage::GenerateNoisy: {
+                totalMoves = board.getNoisies(moves, 0);
                 idx = 0;
                 scoreMoves();
 
                 ++stage;
                 [[fallthrough]];
             }
-            case MovegenStage::All: {
+            case MovegenStage::GoodNoisy: {
                 auto [move, score] = getNextInternal();
 
                 // skip TT move
-                while(move == ttMove && idx < totalMoves) {
+                while(move && move == ttMove && idx < totalMoves) {
+                    std::tie(move, score) = getNextInternal();
+                }
+
+                if(score > (goodCaptureBonus - historyCap)) {
+                    return {move, score};
+                }
+                ++stage;
+                [[fallthrough]];
+            }
+            case MovegenStage::Killer: {
+                ++stage;
+                const auto killer = info.stack[ply].killer;
+                if(killer && board.isPseudolegal(killer)) {
+                    return {killer, killerScore};
+                }
+                [[fallthrough]];
+            }
+            case MovegenStage::Counter: {
+                ++stage;
+                if(ply > 0) {
+                    const auto counter = info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()];
+                    if(counter && board.isPseudolegal(counter)) {
+                        return {counter, killerScore};
+                    }
+                }
+                [[fallthrough]];
+            }
+            case MovegenStage::GenerateQuiet: {
+                totalMoves = board.getQuiets(moves, totalMoves);
+                scoreMoves();
+
+                ++stage;
+                [[fallthrough]];
+            }
+            case MovegenStage::Else: {
+                auto [move, score] = getNextInternal();
+
+                // skip TT move, killer, & counter moves
+                const Move counter = (ply > 0)
+                    ? info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()]
+                    : Move();
+                while(move && (move == ttMove || move == info.stack[ply].killer || move == counter)
+                    && idx < totalMoves) {
                     std::tie(move, score) = getNextInternal();
                 }
 
