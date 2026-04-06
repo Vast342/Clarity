@@ -31,6 +31,7 @@ enum class MovegenStage : int {
     TTMove = 0,
     GenAll,
     All,
+    QSTTMove,
     QSGenAll,
     QSAll,
 };
@@ -69,6 +70,13 @@ public:
 
                 return {move, score};
             }
+            case MovegenStage::QSTTMove: {
+                ++stage;
+                if(ttMove && board.isPseudolegal(ttMove)) {
+                    return {ttMove, 1000000000};
+                }
+                [[fallthrough]];
+            }
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
                 idx = 0;
@@ -78,7 +86,14 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::QSAll: {
-                return getNextInternal();
+                auto [move, score] = getNextInternal();
+
+                // skip TT move
+                while(move == ttMove && idx < totalMoves) {
+                    std::tie(move, score) = getNextInternal();
+                }
+
+                return {move, score};
             }
             default:
                 return {Move(), 0};
@@ -88,7 +103,7 @@ public:
         return MovePicker(board, ttMove, tables, MovegenStage::TTMove, ply);
     }
     static MovePicker qsearch(const Board &board, const Move ttMove, SearchInfo &tables) {
-        return MovePicker(board, ttMove, tables, MovegenStage::QSGenAll, 0);
+        return MovePicker(board, ttMove, tables, MovegenStage::QSTTMove, 0);
     }
     int getTotalMoves() const {
         return totalMoves;
