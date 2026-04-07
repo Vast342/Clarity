@@ -85,7 +85,6 @@ public:
             }
             case MovegenStage::Killer: {
                 ++stage;
-                const auto killer = info.stack[ply].killer;
                 if(killer && board.isPseudolegal(killer) && killer != ttMove) {
                     return {killer, killerScore};
                 }
@@ -93,11 +92,8 @@ public:
             }
             case MovegenStage::Counter: {
                 ++stage;
-                if(ply > 0) {
-                    const auto counter = info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()];
-                    if(counter && board.isPseudolegal(counter) && counter != ttMove && counter != info.stack[ply].killer) {
-                        return {counter, counterScore};
-                    }
+                if(counter && board.isPseudolegal(counter) && counter != ttMove && counter != info.stack[ply].killer) {
+                    return {counter, counterScore};
                 }
                 [[fallthrough]];
             }
@@ -109,8 +105,6 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::Quiets: {
-                const auto counter = ply > 0 ? info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()] : Move();
-                const auto killer = info.stack[ply].killer;
                 while(idx < totalMoves) {
                     const auto [move, score] = getNextInternal();
                     if(move == ttMove || move == killer || move == counter) continue;
@@ -151,7 +145,7 @@ public:
     }
 private:
     explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const int ply) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply), badNoisyEnd(0) {}
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, killer{info.stack[ply].killer}, counter{ply > 0 ? info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()] : Move()}, ply(ply), badNoisyEnd(0) {}
     void scoreMoves() {
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
@@ -226,6 +220,8 @@ private:
     int idx;
     int totalMoves;
     SearchInfo &info;
+    Move killer;
+    Move counter;
     int ply;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
