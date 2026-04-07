@@ -92,7 +92,7 @@ public:
             }
             case MovegenStage::Counter: {
                 ++stage;
-                if(counter && board.isPseudolegal(counter) && counter != ttMove && counter != info.stack[ply].killer) {
+                if(counter && board.isPseudolegal(counter) && counter != ttMove && counter != killer) {
                     return {counter, counterScore};
                 }
                 [[fallthrough]];
