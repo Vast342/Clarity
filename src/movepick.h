@@ -154,28 +154,19 @@ private:
             const int end = move.getEndSquare();
             const int start = move.getStartSquare();
             const int piece = getType(board.pieceAtIndex(start));
-            if(move == ttMove) {
-                moveScores[i] = 1000000000;
-            } else if((occupied & (1ULL << end)) != 0) {
+            if((occupied & (1ULL << end)) != 0) {
                 // Captures!
                 const int victim = getType(board.pieceAtIndex(end));
                 // Capthist!
                 moveScores[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
             } else {
-                // if not in qsearch, killers
-                if(move == info.stack[ply].killer) {
-                    moveScores[i] = killerScore;
-                } else if(ply > 0 && move == info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()]) {
-                    moveScores[i] = counterScore;   
-                } else {
-                    int hash = board.getPawnHashIndex();
-                    // read from history
-                    moveScores[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
-                        + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                        + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
-                        + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
-                        + info.pawnHistoryTable[hash][colorToMove][piece][end];
-                }
+                int hash = board.getPawnHashIndex();
+                // read from history
+                moveScores[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
+                    + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
+                    + info.pawnHistoryTable[hash][colorToMove][piece][end];
             }
         }
     }
