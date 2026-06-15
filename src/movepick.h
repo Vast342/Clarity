@@ -29,8 +29,11 @@ constexpr int goodCaptureBonus= 500000;
 
 enum class MovegenStage : int {
     TTMove = 0,
-    GenAll,
-    All,
+    GenNoisy,
+    GoodNoisy,
+    GenQuiet,
+    Quiet,
+    BadNoisy,
     QSGenAll,
     QSAll,
 };
@@ -51,23 +54,16 @@ public:
                 }
                 [[fallthrough]];
             }
-            case MovegenStage::GenAll: {
-                totalMoves = board.getMoves(moves);
-                idx = 0;
-                scoreMoves();
+            case MovegenStage::GenNoisy: {
 
                 ++stage;
                 [[fallthrough]];
             }
-            case MovegenStage::All: {
-                auto [move, score] = getNextInternal();
+            case MovegenStage::Noisy: {
 
-                // skip TT move
-                while(move == ttMove && idx < totalMoves) {
-                    std::tie(move, score) = getNextInternal();
-                }
+            }
+            case MovegenStage::GenQuiet: {
 
-                return {move, score};
             }
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
