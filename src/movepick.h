@@ -30,10 +30,9 @@ constexpr int goodCaptureBonus= 500000;
 enum class MovegenStage : int {
     TTMove = 0,
     GenNoisy,
-    GoodNoisy,
+    Noisy,
     GenQuiet,
     Quiet,
-    BadNoisy,
     QSGenAll,
     QSAll,
 };
@@ -55,15 +54,39 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::GenNoisy: {
-
+                idx = 0;
+                totalMoves = board.getNoisies(moves, 0);
+                scoreMoves();
+                std::cout << "noisies generated" << std::endl;
                 ++stage;
                 [[fallthrough]];
             }
             case MovegenStage::Noisy: {
-
+                while(idx < totalMoves) {
+                    auto [move, score] = getNextInternal();
+                    if(move == ttMove) continue;
+                    return {move, score};
+                }
+                
+                std::cout << "noisies done" << std::endl;
+                ++stage;
+                [[fallthrough]];
             }
             case MovegenStage::GenQuiet: {
-
+                totalMoves = board.getQuiets(moves, totalMoves);
+                scoreMoves();
+                std::cout << "quiets generated: " << std::to_string(totalMoves) << ", " << std::to_string(idx) << std::endl;
+                ++stage;
+                [[fallthrough]];
+            }
+            case MovegenStage::Quiet: {
+                while(idx < totalMoves) {
+                    auto [move, score] = getNextInternal();
+                    if(move == ttMove) continue;
+                    return {move, score};
+                }
+                std::cout << "quiets done" << std::endl;
+                return {Move(), 0};
             }
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
@@ -95,7 +118,7 @@ private:
     void scoreMoves() {
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
-        for(int i = 0; i < totalMoves; i++) {
+        for(int i = idx; i < totalMoves; i++) {
             Move move = moves[i];
             const int end = move.getEndSquare();
             const int start = move.getStartSquare();

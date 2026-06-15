@@ -104,7 +104,7 @@ Board::Board(std::string fen) {
     stateHistory.clear();
     stateHistory.reserve(256);
     stateHistory.push_back(BoardState());
-    //nnueState.reset();
+    nnueState.reset();
     stateHistory.back().zobristHash = 0;
 	stateHistory.back().pawnHash = 0;
     stateHistory.back().nonPawnHashes[0] = 0;
@@ -220,8 +220,8 @@ Board::Board(std::string fen) {
     stateHistory.back().hundredPlyCounter = 0;
     // ply count, segment 6
     plyCount = std::stoi(segments[5]) * 2 - colorToMove;
-    //nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
-    //nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
+    nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
+    nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
     stateHistory.back().threats = calculateThreats();
 }
 
@@ -792,9 +792,9 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
         return false;
     } else {
         if constexpr(PushNNUE) {
-            //nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+            nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         } else {
-            //nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
+            nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
         }
         // otherwise it's good, move on
         colorToMove = 1 - colorToMove;

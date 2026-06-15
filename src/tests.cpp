@@ -17,15 +17,19 @@
 */
 #include "testessentials.h"
 #include "testsuites.h"
+#include "movepick.h"
+
+SearchInfo info = {};
 
 // runs a single perft test
 int perft(Board &board, int depth) {
     if(depth == 0) return 1;
-    std::array<Move, 256> moves;
-    const int numMoves = board.getMoves(moves);
+    MovePicker picker = MovePicker::search(board, Move(), info, 0);
     int result = 0;
-    for(int i = 0; i < numMoves; i++) {
-        if(board.makeMove<false>(moves[i])) {
+    while (true) {
+        auto [move, moveValue] = picker.next();
+        if (!move) break;
+        if(board.makeMove<false>(move)) {
             result += perft(board, depth-1);
             board.undoMove<false>();
         }
