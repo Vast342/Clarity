@@ -31,6 +31,8 @@ enum class MovegenStage : int {
     TTMove = 0,
     GenNoisy,
     GoodNoisy,
+    Killer,
+    Counter,
     GenQuiet,
     Quiet,
     BadNoisy,
@@ -55,6 +57,7 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::GenNoisy: {
+
                 idx = 0;
                 badNoisyCount = 0;
                 totalMoves = board.getNoisies(moves, 0);
@@ -66,7 +69,10 @@ public:
             case MovegenStage::GoodNoisy: {
                 while(idx < totalMoves) {
                     auto [move, score] = getNextInternal();
+
                     if(move == ttMove) continue;
+                    if(move == killer) killerGenerated = true;
+                    if(move == counter) counterGenerated = true;
 
                     // to test later: see threshold for this (i think it has failed before for me?)
                     if(!see(board, move, 0)) {
@@ -81,6 +87,21 @@ public:
                 ++stage;
                 [[fallthrough]];
             }
+            case MovegenStage::Killer: {
+                ++stage;
+                if(killer && board.isPseudolegal(killer) && killer != ttMove && !killerGenerated) {
+                    killerGenerated = true;
+                    return {killer, killerScore};
+                }
+                [[fallthrough]];
+            }
+            case MovegenStage::Counter: {
+                ++stage;
+                if(counter && board.isPseudolegal(counter) && counter != ttMove && counter != killer && !counterGenerated) {
+                    return {counter, counterScore};
+                }
+                [[fallthrough]];
+            }
             case MovegenStage::GenQuiet: {
                 totalMoves = board.getQuiets(moves, totalMoves);
                 scoreMoves();
@@ -91,7 +112,7 @@ public:
             case MovegenStage::Quiet: {
                 while(idx < totalMoves) {
                     auto [move, score] = getNextInternal();
-                    if(move == ttMove) continue;
+                    if(move == ttMove || move == killer || move == counter) continue;
                     return {move, score};
                 }
                 
@@ -103,7 +124,7 @@ public:
             case MovegenStage::BadNoisy: {
                 while(idx < totalMoves) {
                     auto [move, score] = getNextInternal();
-                    if(move == ttMove) continue;
+                    if(move == ttMove || move == counter || move == killer) continue;
                     return {move, score};
                 }
                 
@@ -135,7 +156,9 @@ public:
     }
 private:
     explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const int ply) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply), badNoisyCount(0) {}
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, killer{info.stack[ply].killer}, 
+    counter{ply > 0 ? info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()] : Move()}, 
+    ply(ply), badNoisyCount(0) {}
     void scoreMoves() {
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
@@ -144,28 +167,19 @@ private:
             const int end = move.getEndSquare();
             const int start = move.getStartSquare();
             const int piece = getType(board.pieceAtIndex(start));
-            if(move == ttMove) {
-                moveScores[i] = 1000000000;
-            } else if((occupied & (1ULL << end)) != 0) {
+            if((occupied & (1ULL << end)) != 0) {
                 // Captures!
                 const int victim = getType(board.pieceAtIndex(end));
                 // Capthist!
                 moveScores[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
             } else {
-                // if not in qsearch, killers
-                if(move == info.stack[ply].killer) {
-                    moveScores[i] = killerScore;
-                } else if(ply > 0 && move == info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()]) {
-                    moveScores[i] = counterScore;   
-                } else {
-                    int hash = board.getPawnHashIndex();
-                    // read from history
-                    moveScores[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
-                        + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                        + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
-                        + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
-                        + info.pawnHistoryTable[hash][colorToMove][piece][end];
-                }
+                int hash = board.getPawnHashIndex();
+                // read from history
+                moveScores[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
+                    + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
+                    + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
+                    + info.pawnHistoryTable[hash][colorToMove][piece][end];
             }
         }
     }
@@ -209,6 +223,10 @@ private:
     int idx;
     int totalMoves;
     SearchInfo &info;
+    Move killer;
+    Move counter;
+    bool killerGenerated = false;
+    bool counterGenerated = false;
     int ply;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
