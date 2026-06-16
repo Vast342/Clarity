@@ -74,7 +74,7 @@ public:
                         moveScores[badNoisyCount] = score;
                         badNoisyCount++;
                     } else {
-                        return {move, score};
+                        return {move, score + goodCaptureBonus};
                     }
                 }
                 
@@ -151,12 +151,6 @@ private:
                 const int victim = getType(board.pieceAtIndex(end));
                 // Capthist!
                 moveScores[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
-                // see!
-                // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-                if(see(board, move, 0)) {
-                    // good captures
-                    moveScores[i] += goodCaptureBonus;
-                }
             } else {
                 // if not in qsearch, killers
                 if(move == info.stack[ply].killer) {
