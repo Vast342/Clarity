@@ -326,7 +326,7 @@ template <bool UpdateNNUE> void Board::addPiece(int square, int type) {
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = type;
     assert(pieceAtIndex(square) == type);
-    //if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) nnueState.activateFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -349,7 +349,7 @@ template <bool UpdateNNUE> void Board::removePiece(int square, int type) {
     stateHistory.back().coloredBitboards[getColor(type)] ^= bitboardSquare;
     stateHistory.back().pieceBitboards[getType(type)] ^= bitboardSquare;
     stateHistory.back().mailbox[square] = None;
-    //if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
+    if constexpr(UpdateNNUE) nnueState.disableFeature(square, type, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     stateHistory.back().zobristHash ^= zobTable[square][type];
     if(getType(type) == Pawn) {
         stateHistory.back().pawnHash ^= zobTable[square][type];
@@ -808,7 +808,7 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
 template <bool PushNNUE> void Board::undoMove() {
     //std::cout << "undomove\n";
     stateHistory.pop_back();
-    //if constexpr(PushNNUE) nnueState.pop();
+    if constexpr(PushNNUE) nnueState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
     //std::cout << "position fen " << getFenString() << std::endl;

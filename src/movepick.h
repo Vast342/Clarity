@@ -30,9 +30,10 @@ constexpr int goodCaptureBonus= 500000;
 enum class MovegenStage : int {
     TTMove = 0,
     GenNoisy,
-    Noisy,
+    GoodNoisy,
     GenQuiet,
     Quiet,
+    BadNoisy,
     QSGenAll,
     QSAll,
 };
@@ -55,27 +56,35 @@ public:
             }
             case MovegenStage::GenNoisy: {
                 idx = 0;
+                badNoisyCount = 0;
                 totalMoves = board.getNoisies(moves, 0);
                 scoreMoves();
-                std::cout << "noisies generated" << std::endl;
+                
                 ++stage;
                 [[fallthrough]];
             }
-            case MovegenStage::Noisy: {
+            case MovegenStage::GoodNoisy: {
                 while(idx < totalMoves) {
                     auto [move, score] = getNextInternal();
                     if(move == ttMove) continue;
-                    return {move, score};
+
+                    // to test later: see threshold for this (i think it has failed before for me?)
+                    if(!see(board, move, 0)) {
+                        moves[badNoisyCount] = move;
+                        moveScores[badNoisyCount] = score;
+                        badNoisyCount++;
+                    } else {
+                        return {move, score};
+                    }
                 }
                 
-                std::cout << "noisies done" << std::endl;
                 ++stage;
                 [[fallthrough]];
             }
             case MovegenStage::GenQuiet: {
                 totalMoves = board.getQuiets(moves, totalMoves);
                 scoreMoves();
-                std::cout << "quiets generated: " << std::to_string(totalMoves) << ", " << std::to_string(idx) << std::endl;
+                
                 ++stage;
                 [[fallthrough]];
             }
@@ -85,7 +94,19 @@ public:
                     if(move == ttMove) continue;
                     return {move, score};
                 }
-                std::cout << "quiets done" << std::endl;
+                
+                idx = 0;
+                totalMoves = badNoisyCount;
+                ++stage;
+                [[fallthrough]];
+            }
+            case MovegenStage::BadNoisy: {
+                while(idx < totalMoves) {
+                    auto [move, score] = getNextInternal();
+                    if(move == ttMove) continue;
+                    return {move, score};
+                }
+                
                 return {Move(), 0};
             }
             case MovegenStage::QSGenAll: {
@@ -114,7 +135,7 @@ public:
     }
 private:
     explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const int ply) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply) {}
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply), badNoisyCount(0) {}
     void scoreMoves() {
         const uint64_t occupied = board.getOccupiedBitboard();
         const int colorToMove = board.getColorToMove();
@@ -197,4 +218,5 @@ private:
     int ply;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
+    int badNoisyCount;
 };
