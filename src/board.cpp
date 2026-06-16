@@ -1193,6 +1193,7 @@ bool Board::isPseudolegal(Move move) const {
     return true;
 }
 
+// currently only generating captures, should perhaps generate pawn promotions as well but it's fine
 int Board::getNoisies(std::array<Move, 256> &moves, int totalMoves) const {
     uint64_t occupiedBitboard = getOccupiedBitboard();
 
@@ -1260,18 +1261,6 @@ int Board::getNoisies(std::array<Move, 256> &moves, int totalMoves) const {
         }
     }
 
-    uint64_t emptyBitboard = ~occupiedBitboard;
-    uint64_t pawnPushes = getPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
-    uint64_t pawnPushPromotions = pawnPushes & getRankMask(7 * colorToMove);
-    while(pawnPushPromotions != 0) {
-        uint8_t index = popLSB(pawnPushPromotions);
-        uint8_t startSquare = (index + directionalOffsets[colorToMove]);
-        for(int type = Knight; type < King; type++) {
-            moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
-            totalMoves++;
-        }
-    }
-
     return totalMoves;
 }
 
@@ -1320,25 +1309,33 @@ int Board::getQuiets(std::array<Move, 256> &moves, int totalMoves) const {
         }
     }
 
+    // pawn pushes
     uint64_t pawnBitboard = getColoredPieceBitboard(colorToMove, Pawn);
     uint64_t emptyBitboard = ~occupiedBitboard;
     uint64_t pawnPushes = getPawnPushes(pawnBitboard, emptyBitboard, colorToMove);
     uint64_t doublePawnPushes = getDoublePawnPushes(pawnPushes, emptyBitboard, colorToMove);
     uint64_t pawnPushPromotions = pawnPushes & getRankMask(7 * colorToMove);
     pawnPushes ^= pawnPushPromotions;
-
-    while (pawnPushes != 0) {
+    while(pawnPushes != 0) {
         uint8_t index = popLSB(pawnPushes);
-        uint8_t startSquare = index + directionalOffsets[colorToMove];
+        uint8_t startSquare = (index + directionalOffsets[colorToMove]);
         moves[totalMoves] = Move(startSquare, index, Normal);
         totalMoves++;
     }
-    while (doublePawnPushes != 0) {
+    while(doublePawnPushes != 0) {
         uint8_t index = popLSB(doublePawnPushes);
-        uint8_t startSquare = index + (directionalOffsets[colorToMove] * 2);
+        uint8_t startSquare = (index + (directionalOffsets[colorToMove] * 2));
         assert(getType(pieceAtIndex(startSquare)) == Pawn);
         moves[totalMoves] = Move(startSquare, index, DoublePawnPush);
         totalMoves++;
+    }
+    while(pawnPushPromotions != 0) {
+        uint8_t index = popLSB(pawnPushPromotions);
+        uint8_t startSquare = (index + directionalOffsets[colorToMove]);
+        for(int type = Knight; type < King; type++) {
+            moves[totalMoves] = Move(startSquare, index, promotions[type-1]);
+            totalMoves++;
+        }
     }
 
     return totalMoves;
