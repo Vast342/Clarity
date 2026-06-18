@@ -34,7 +34,7 @@ endif
 CXXFLAGS += -DNetworkFile=\"$(EVALFILE)\"
 
 # Debug compiler flags
-DEBUG_CXXFLAGS := -g3 -O1 -DDEBUG
+DEBUG_CXXFLAGS := -g3 -O1 -DDEBUG -fsanitize=address,undefined
 BUILD_CXXFLAGS := -DNDEBUG -O3
 
 # Directories

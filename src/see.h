@@ -20,7 +20,7 @@
 #include "globals.h"
 #include "tunables.h"
 
-int estimateMoveValue(const Board& board, const int end, const int flag) {
+inline int estimateMoveValue(const Board& board, const int end, const int flag) {
     // starting with the end square piece
     int value = SEE_values[getType(board.pieceAtIndex(end))]->value;
     // promotions! pawn--, newpiece++
@@ -39,7 +39,7 @@ int estimateMoveValue(const Board& board, const int end, const int flag) {
     return value;
 }
 
-bool see(const Board& board, Move move, int threshold) {
+inline bool see(const Board& board, Move move, int threshold) {
     // establishing stuff
     const int start = move.getStartSquare();
     const int end = move.getEndSquare();

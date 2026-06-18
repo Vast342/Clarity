@@ -23,14 +23,18 @@
 #include "see.h"
 
 constexpr int historyCap = 16384;
-constexpr int killerScore = 81922;
-constexpr int counterScore = 81921;
+constexpr int killerScore = historyCap * 5 + 2;
+constexpr int counterScore = historyCap * 5 + 1;
 constexpr int goodCaptureBonus= 500000;
 
 enum class MovegenStage : int {
     TTMove = 0,
-    GenAll,
-    All,
+    GenNoisy,
+    GoodNoisy,
+    Killer,
+    Counter,
+    GenQuiet,
+    Else,
     QSGenAll,
     QSAll,
 };
@@ -51,23 +55,64 @@ public:
                 }
                 [[fallthrough]];
             }
-            case MovegenStage::GenAll: {
-                totalMoves = board.getMoves(moves);
+            case MovegenStage::GenNoisy: {
                 idx = 0;
-                scoreMoves();
+                totalMoves = board.getNoisies(moves, 0);
+                noisyEnd = totalMoves;
+                scoreNoisies();
 
                 ++stage;
                 [[fallthrough]];
             }
-            case MovegenStage::All: {
-                auto [move, score] = getNextInternal();
+            case MovegenStage::GoodNoisy: {
+                while(idx < totalMoves) {
+                    auto [move, score] = getNextInternal();
 
-                // skip TT move
-                while(move == ttMove && idx < totalMoves) {
-                    std::tie(move, score) = getNextInternal();
+                    if(move == ttMove) continue;
+                    if(move == killer) killerGenerated = true;
+                    if(move == counter) counterGenerated = true;
+
+                    if(score > (goodCaptureBonus - historyCap - MVV_values[Queen]->value)) {
+                        return {move, score};
+                    } else {
+                        idx--;
+                        break;
+                    }
                 }
-
-                return {move, score};
+                
+                ++stage;
+                [[fallthrough]];
+            }
+            case MovegenStage::Killer: {
+                ++stage;
+                if(killer && board.isPseudolegal(killer) && killer != ttMove && !killerGenerated) {
+                    return {killer, killerScore};
+                }
+                [[fallthrough]];
+            }
+            case MovegenStage::Counter: {
+                ++stage;
+                if(counter && board.isPseudolegal(counter) && counter != ttMove && counter != killer && !counterGenerated) {
+                    return {counter, counterScore};
+                }
+                [[fallthrough]];
+            }
+            case MovegenStage::GenQuiet: {
+                totalMoves = board.getQuiets(moves, totalMoves);
+                // scores the newly generated quiets
+                scoreQuiets();
+                ++stage;
+                
+                [[fallthrough]];
+            }
+            case MovegenStage::Else: {
+                while(idx < totalMoves) {
+                    auto [move, score] = getNextInternal();
+                    if(move == ttMove || move == killer || move == counter) continue;
+                    return {move, score};
+                }
+                
+                return {Move(), 0};
             }
             case MovegenStage::QSGenAll: {
                 totalMoves = board.getMovesQSearch(moves);
@@ -95,44 +140,42 @@ public:
     }
 private:
     explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const int ply) : stage(stage),
-    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, ply(ply) {}
-    void scoreMoves() {
-        const uint64_t occupied = board.getOccupiedBitboard();
+    board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, killer{info.stack[ply].killer}, 
+    counter{ply > 0 ? info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()] : Move()}, 
+    ply(ply) {}
+    void scoreNoisies() {
         const int colorToMove = board.getColorToMove();
-        for(int i = 0; i < totalMoves; i++) {
+        for(int i = idx; i < totalMoves; i++) {
             Move move = moves[i];
             const int end = move.getEndSquare();
             const int start = move.getStartSquare();
             const int piece = getType(board.pieceAtIndex(start));
-            if(move == ttMove) {
-                moveScores[i] = 1000000000;
-            } else if((occupied & (1ULL << end)) != 0) {
-                // Captures!
-                const int victim = getType(board.pieceAtIndex(end));
-                // Capthist!
-                moveScores[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
-                // see!
-                // if the capture results in a good exchange then we can add a big boost to the score so that it's preferred over the quiet moves.
-                if(see(board, move, 0)) {
-                    // good captures
-                    moveScores[i] += goodCaptureBonus;
-                }
-            } else {
-                // if not in qsearch, killers
-                if(move == info.stack[ply].killer) {
-                    moveScores[i] = killerScore;
-                } else if(ply > 0 && move == info.counterMoves[info.stack[ply - 1].move.getStartSquare()][info.stack[ply - 1].move.getEndSquare()]) {
-                    moveScores[i] = counterScore;   
-                } else {
-                    int hash = board.getPawnHashIndex();
-                    // read from history
-                    moveScores[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
-                        + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
-                        + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
-                        + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
-                        + info.pawnHistoryTable[hash][colorToMove][piece][end];
-                }
+            // Captures!
+            const int victim = getType(board.pieceAtIndex(end));
+            // Capthist!
+            moveScores[i] = MVV_values[victim]->value + info.noisyHistoryTable[colorToMove][piece][end][victim][board.squareIsUnderAttack(end)];
+            // see!
+            // try a threshold here someday
+            if(see(board, move, 0)) {
+                // good captures
+                moveScores[i] += goodCaptureBonus;
             }
+        }
+    }
+    void scoreQuiets() {
+        const int colorToMove = board.getColorToMove();
+        for(int i = noisyEnd; i < totalMoves; i++) {
+            Move move = moves[i];
+            const int end = move.getEndSquare();
+            const int start = move.getStartSquare();
+            const int piece = getType(board.pieceAtIndex(start));
+            int hash = board.getPawnHashIndex();
+            // read from history
+            moveScores[i] = info.historyTable[colorToMove][start][board.squareIsUnderAttack(start)][end][board.squareIsUnderAttack(end)]
+                + (ply > 0 ? (*info.stack[ply - 1].ch_entry)[colorToMove][piece][end] : 0)
+                + (ply > 1 ? (*info.stack[ply - 2].ch_entry)[colorToMove][piece][end] : 0)
+                + (ply > 3 ? (*info.stack[ply - 4].ch_entry)[colorToMove][piece][end] : 0)
+                + info.pawnHistoryTable[hash][colorToMove][piece][end];
         }
     }
     void scoreMovesQS() {
@@ -175,7 +218,12 @@ private:
     int idx;
     int totalMoves;
     SearchInfo &info;
+    Move killer;
+    Move counter;
+    bool killerGenerated = false;
+    bool counterGenerated = false;
     int ply;
+    int noisyEnd = 0;
     std::array<Move, 256> moves;
     std::array<int, 256> moveScores;
 };
