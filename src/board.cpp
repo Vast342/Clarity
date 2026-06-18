@@ -1373,7 +1373,7 @@ bool Board::hasUpcomingRepetition(int ply) {
 
         const auto move = moves[slot];
         if((occupied & getBetweenRays(move.getStartSquare(), move.getEndSquare())) == 0) {
-            if(ply > depth) return true;
+            if(ply >= depth) return true;
 
             for(int i = depth + 2; i <= end; i++) {
                 if(currentKey == previousKey(i)) {

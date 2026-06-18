@@ -152,6 +152,7 @@ struct Board {
         int getNoisies(std::array<Move, 256> &moves, int totalMoves) const;
         int getQuiets(std::array<Move, 256> &moves, int totalMoves) const;
         bool hasUpcomingRepetition(int ply);
+        bool hasUpcomingRepetitionNaive();
     private:
         int plyCount;
         uint8_t colorToMove;
