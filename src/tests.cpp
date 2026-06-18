@@ -69,16 +69,17 @@ void runPerftSuite(int number) {
 
 // runs perft split by what the first move that is done is
 void splitPerft(Board board, int depth) {
-    std::array<Move, 256> moves;
-    int numMoves = board.getMoves(moves);
     int total = 0;
     clock_t start = clock();
-    for(int i = 0; i < numMoves; i++) {
-        if(board.makeMove<false>(moves[i])) {
+    MovePicker picker = MovePicker::search(board, Move(), info, 0);
+    while (true) {
+        auto [move, moveValue] = picker.next();
+        if (!move) break;
+        if(board.makeMove<false>(move)) {
             int result = perft(board, depth - 1);
             board.undoMove<false>();
             total += result;
-            std::cout << toLongAlgebraic(moves[i]) << ": " << std::to_string(result) << '\n';
+            std::cout << toLongAlgebraic(move) << ": " << std::to_string(result) << '\n';
         }
     }
     clock_t end = clock();

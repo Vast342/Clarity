@@ -961,3 +961,15 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
     }
     return rootBestMove;
 }
+
+void Engine::printMoves(Board board) {
+    const uint64_t hash = board.getZobristHash();
+    Transposition* entry = TT->getEntry(hash);
+    printMPInfo = true;
+    MovePicker picker = MovePicker::search(board, entry->bestMove, info, 0);
+    while (true) {
+        auto [move, moveValue] = picker.next();
+        if (!move) break;
+        std::cout << toLongAlgebraic(move) << " | " << std::to_string(moveValue) << std::endl;
+    }
+}
