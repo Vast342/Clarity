@@ -27,8 +27,6 @@ constexpr int killerScore = historyCap * 5 + 2;
 constexpr int counterScore = historyCap * 5 + 1;
 constexpr int goodCaptureBonus= 500000;
 
-inline bool printMPInfo = false;
-
 enum class MovegenStage : int {
     TTMove = 0,
     GenNoisy,

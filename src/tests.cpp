@@ -17,19 +17,15 @@
 */
 #include "testessentials.h"
 #include "testsuites.h"
-#include "movepick.h"
-
-SearchInfo info = {};
 
 // runs a single perft test
 int perft(Board &board, int depth) {
     if(depth == 0) return 1;
-    MovePicker picker = MovePicker::search(board, Move(), info, 0);
+    std::array<Move, 256> moves;
+    int numMoves = board.getMoves(moves);
     int result = 0;
-    while (true) {
-        auto [move, moveValue] = picker.next();
-        if (!move) break;
-        if(board.makeMove<false>(move)) {
+    for(int i = 0; i < numMoves; i++) {
+        if(board.makeMove<false>(moves[i])) {
             result += perft(board, depth-1);
             board.undoMove<false>();
         }
@@ -43,8 +39,8 @@ void runPerftSuite(int number) {
         int i = 0;
         int passed = 0;
         int failed = 0;
-        uint64_t total = 0;
-        auto start = std::chrono::steady_clock::now();
+        double total = 0;
+        clock_t start = clock();
         for(PerftTest test : etherealSuite) {
             i++;
             Board board(test.fen);
@@ -58,28 +54,26 @@ void runPerftSuite(int number) {
                 failed++;
             }
         }
-        auto end = std::chrono::steady_clock::now();
-        double elapsed = std::chrono::duration<double>(end - start).count();
+        clock_t end = clock();
         std::cout << "Passed " << std::to_string(passed) << ", Failed " << std::to_string(failed) << '\n';
-        std::cout << "Tests took: " << elapsed << " seconds\n";
-        std::cout << "Total nodes: " << std::to_string(total) << '\n';
-        std::cout << "NPS: " << (double)total / elapsed << '\n';
+        std::cout << "Tests took: " << std::to_string((end-start)/static_cast<double>(1000)) << '\n';
+        std::cout << "Total nodes: " << std::to_string(static_cast<int>(total)) << '\n';
+        std::cout << "NPS: " << std::to_string(total / ((end-start)/static_cast<double>(1000))) << '\n';
     }
 }
 
 // runs perft split by what the first move that is done is
 void splitPerft(Board board, int depth) {
+    std::array<Move, 256> moves;
+    int numMoves = board.getMoves(moves);
     int total = 0;
     clock_t start = clock();
-    MovePicker picker = MovePicker::search(board, Move(), info, 0);
-    while (true) {
-        auto [move, moveValue] = picker.next();
-        if (!move) break;
-        if(board.makeMove<false>(move)) {
+    for(int i = 0; i < numMoves; i++) {
+        if(board.makeMove<false>(moves[i])) {
             int result = perft(board, depth - 1);
             board.undoMove<false>();
             total += result;
-            std::cout << toLongAlgebraic(move) << ": " << std::to_string(result) << '\n';
+            std::cout << toLongAlgebraic(moves[i]) << ": " << std::to_string(result) << '\n';
         }
     }
     clock_t end = clock();

@@ -37,7 +37,6 @@ struct Engine {
         Engine(TranspositionTable *tt) {
             TT = tt;
         }
-        void printMoves(Board board);
 
         uint64_t nodes = 0;
     private:
