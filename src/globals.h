@@ -151,6 +151,7 @@ struct Board {
         bool isPseudolegal(Move move) const;
         int getNoisies(std::array<Move, 256> &moves, int totalMoves) const;
         int getQuiets(std::array<Move, 256> &moves, int totalMoves) const;
+        bool hasUpcomingRepetition(int ply);
     private:
         int plyCount;
         uint8_t colorToMove;
@@ -197,3 +198,6 @@ constexpr std::array<uint8_t, 4> castling = {0b0001, 0b0010, 0b0011, 0b0100};
 constexpr uint8_t EnPassant = 0b0101;
 constexpr uint8_t DoublePawnPush = 0b0110;
 constexpr std::array<uint8_t, 4> promotions = {0b0111, 0b1000, 0b1001, 0b1010};
+
+extern std::array<std::array<uint64_t, 14>, 64> zobTable;
+extern uint64_t zobColorToMove;

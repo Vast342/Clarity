@@ -71,6 +71,14 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
             }
         }
     }
+
+    if(alpha < 0 && board.hasUpcomingRepetition(ply)) {
+        alpha = 0;
+        if(alpha >= beta) {
+            return alpha;
+        }
+    }
+
     if(ply > seldepth) seldepth = ply;
     const uint64_t hash = board.getZobristHash();
     // TT check
@@ -254,6 +262,13 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 timesUp.store(true);
                 return 0;
             }
+        }
+    }
+
+    if(ply != 0 && alpha < 0 && board.hasUpcomingRepetition(ply)) {
+        alpha = 0;
+        if(alpha >= beta) {
+            return alpha;
         }
     }
     

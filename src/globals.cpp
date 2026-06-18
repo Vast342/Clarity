@@ -18,6 +18,8 @@
 #include "tunables.h"
 #include "globals.h"
 #include "slidey.h"
+#include "cuckoo.h"
+#include "rays.h"
 
 // takes a piece number and gets the type of it
 int getType(int value) {
@@ -94,17 +96,21 @@ void generateSquareToBitboard() {
     }
 }
 
-/*ran on startup, does 4 things:
+/*ran on startup, does 5 things:
 1: generates the lookups for sliding pieces
 2: generates the numbers used for zobrist hashing
 3: calculates the numbers for LMR
 4: calculates numbers for square to bitboard lookups
+5: initializes the values for repetition prediction later
+6: calculates attack rays
  */
 void initialize() {
     generateSquareToBitboard();
     generateLookups();
     initializeZobrist();
     calculateReductions();
+    initCuckoo();
+    initRays();
 }
 
 // splits a string into segments based on the seperator

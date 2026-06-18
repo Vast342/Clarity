@@ -18,6 +18,8 @@
 #include "globals.h"
 #include "corrhist.h"
 #include <cstdlib>
+#include "cuckoo.h"
+#include "rays.h"
 
 template bool Board::makeMove<false>(Move move);
 template void Board::undoMove<false>();
@@ -1339,4 +1341,47 @@ int Board::getQuiets(std::array<Move, 256> &moves, int totalMoves) const {
     }
 
     return totalMoves;
+}
+
+bool Board::hasUpcomingRepetition(int ply) {
+    const auto &state = stateHistory.back();
+    const auto end = std::min((int)state.hundredPlyCounter, 256);
+    if(end < 3) return false;
+
+    // ok this lines cool I always forget that you can do this in c++
+    const auto previousKey = [&](int depth) { return stateHistory[stateHistory.size() - depth].zobristHash; };
+    const auto occupied = getOccupiedBitboard();
+    const auto originalKey = state.zobristHash;
+
+    auto other = originalKey ^ previousKey(1);
+    for(int depth = 3; depth <= end; depth += 2) {
+        const auto currentKey = previousKey(depth);
+
+        other ^= currentKey ^ previousKey(depth - 1);
+        if(other != 0) {
+            continue;
+        }
+
+        const auto diff = originalKey & currentKey;
+        auto slot = h1(diff);
+        if(diff != keys[slot]) {
+            slot = h2(diff);
+        }
+        if(diff != keys[slot]) {
+            continue;
+        }
+
+        const auto move = moves[slot];
+        if((occupied & getBetweenRays(move.getStartSquare(), move.getEndSquare())) == 0) {
+            if(ply > depth) return true;
+
+            for(int i = depth + 2; i <= end; i++) {
+                if(currentKey == previousKey(i)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
