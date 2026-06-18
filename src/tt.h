@@ -63,10 +63,10 @@ struct TranspositionTable {
     public:
         Transposition* getEntry(uint64_t zkey);
         void setEntry(uint64_t zkey, Transposition &entry);
-        void clearTable();
-        void resize(size_t newSizeMB);
+        void clearTable(int numThreads);
+        void resize(size_t newSizeMB, int threadCount);
         TranspositionTable(uint64_t initSize = defaultSize) {
-            resize(initSize);
+            resize(initSize, 1);
         }
         size_t size;
     private:
