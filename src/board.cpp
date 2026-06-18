@@ -1349,7 +1349,7 @@ bool Board::hasUpcomingRepetition(int ply) {
     if(end < 3) return false;
 
     // ok this lines cool I always forget that you can do this in c++
-    const auto previousKey = [&](int depth) { return stateHistory[stateHistory.size() - depth].zobristHash; };
+    const auto previousKey = [&](int depth) { return stateHistory[stateHistory.size() - depth - 1].zobristHash; };
     const auto occupied = getOccupiedBitboard();
     const auto originalKey = state.zobristHash;
 
@@ -1362,7 +1362,7 @@ bool Board::hasUpcomingRepetition(int ply) {
             continue;
         }
 
-        const auto diff = originalKey & currentKey;
+        const auto diff = originalKey ^ currentKey;
         auto slot = h1(diff);
         if(diff != keys[slot]) {
             slot = h2(diff);
