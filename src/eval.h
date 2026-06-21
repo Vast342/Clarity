@@ -21,28 +21,28 @@
 
 /*
 Current Net: cn_028
-Arch: (768x6->1024)x2->1x8
+Arch: (768x8->1024)x2->1x8
 Activation: SCReLU
 Special Details: 
  - Horizontal Mirroring
  - Few more buckets, let's see if we can get some improvement from finny tables now
 */ 
 constexpr int inputSize = 768;
-constexpr int inputBucketCount = 6;
+constexpr int inputBucketCount = 8;
 constexpr int layer1Size = 1024;
 constexpr int outputBucketCount = 8;
 
 
 constexpr std::array<int, 64> inputBuckets = []{
     constexpr std::array<int, 32> rawInputBuckets = {
-        0, 0, 1, 1,
-        2, 2, 3, 3,
-        4, 4, 4, 4,
-        4, 4, 4, 4,
-        5, 5, 5, 5,
-        5, 5, 5, 5,
-        5, 5, 5, 5,
-        5, 5, 5, 5
+        0, 1, 2, 3,
+        4, 4, 5, 5,
+        6, 6, 6, 6,
+        6, 6, 6, 6,
+        7, 7, 7, 7, 
+        7, 7, 7, 7, 
+        7, 7, 7, 7, 
+        7, 7, 7, 7
     };
 
     std::array<int, 64> result = {};
