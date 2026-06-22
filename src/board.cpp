@@ -18,10 +18,12 @@
 #include "globals.h"
 #include "corrhist.h"
 #include <cstdlib>
+#include "rays.h"
 
-template bool Board::makeMove<false>(Move move);
+
+template void Board::makeMove<false>(Move move);
 template void Board::undoMove<false>();
-template bool Board::makeMove<true>(Move move);
+template void Board::makeMove<true>(Move move);
 template void Board::undoMove<true>();
 template void Board::addPiece<false>(int square, int type);
 template void Board::removePiece<false>(int square, int type);
@@ -35,7 +37,7 @@ std::array<std::array<uint64_t, 14>, 64> zobTable;
 // if black is to move this value is xor'ed
 uint64_t zobColorToMove;
 
-// masks for caslting rights, used to update the castling rights faster after a rook or king move
+// masks for castling rights, used to update the castling rights faster after a rook or king move
 constexpr std::array<uint8_t, 64> rookRightMasks = {
 0b1101,255,255,255,255,255,255,0b1110,
 255,   255,255,255,255,255,255,   255,
@@ -223,6 +225,7 @@ Board::Board(std::string fen) {
     nnueState.refreshAccumulator(0, stateHistory.back(), stateHistory.back().kingSquares[0]);
     nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
     stateHistory.back().threats = calculateThreats();
+    updatePinsAndCheckers();
 }
 
 std::string Board::getFenString() {
@@ -648,7 +651,7 @@ bool Board::squareIsUnderAttack(int square) const {
     }
 }
 
-template <bool PushNNUE> bool Board::makeMove(Move move) {
+template <bool PushNNUE> void Board::makeMove(Move move) {
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     //std::cout << "makemove " << toLongAlgebraic(move) << std::endl;
     // push to vectors
@@ -783,26 +786,15 @@ template <bool PushNNUE> bool Board::makeMove(Move move) {
             break;
     }
     plyCount++;
-    // if in check, move was illegal
-    if(isInCheck()) {
-        // so you must undo it and return false
-        undoMove<false>();
-        colorToMove = 1 - colorToMove;
-        //std::cout << "Changing Color To Move, move was illegal\n";
-        return false;
+    if constexpr(PushNNUE) {
+        nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
     } else {
-        if constexpr(PushNNUE) {
-            nnueState.performUpdatesAndPush(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
-        } else {
-            nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
-        }
-        // otherwise it's good, move on
-        colorToMove = 1 - colorToMove;
-        stateHistory.back().threats = calculateThreats();
-        //std::cout << "Changing Color To Move, move was legal\n";
-        stateHistory.back().zobristHash ^= zobColorToMove;
-        return true;
+        nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
     }
+    colorToMove = 1 - colorToMove;
+    stateHistory.back().threats = calculateThreats();
+    stateHistory.back().zobristHash ^= zobColorToMove;
+    updatePinsAndCheckers();
 }
 
 template <bool PushNNUE> void Board::undoMove() {
@@ -901,15 +893,6 @@ bool Board::isRepeatedPosition() {
         if(stateHistory[i].zobristHash == stateHistory.back().zobristHash) {
             return true;
         }
-    }
-    return false;
-}
-
-bool Board::isLegalMove(const Move& move) {
-    std::array<Move, 256> moves;
-    const int totalMoves = getMoves(moves);
-    for(int i = 0; i < totalMoves; i++) {
-        if(moves[i] == move) return true;
     }
     return false;
 }
@@ -1339,4 +1322,103 @@ int Board::getQuiets(std::array<Move, 256> &moves, int totalMoves) const {
     }
 
     return totalMoves;
+}
+
+bool Board::isLegal(Move move) const {
+    const auto from = move.getStartSquare();
+    const auto to = move.getEndSquare();
+    const auto flag = move.getFlag();
+
+    const auto king = stateHistory.back().kingSquares[colorToMove];
+
+    if(flag >= castling[0] && flag <= castling[3]) {
+        const auto fromFile = from % 8;
+        const auto toFile = to % 8;
+        const auto fromRank = from / 8;
+        const auto kingDestination = 8 * fromRank + (fromFile < toFile ? 6 : 2);
+        return !(stateHistory.back().threats & (1ULL << kingDestination));
+    } else if(flag == EnPassant) {
+        auto rank = to / 8;
+        const auto file = to % 8;
+        rank = rank == 2 ? 3 : 4;
+        const auto captureSquare = (8 * rank + file);
+        const auto postMoveOcc = getOccupiedBitboard() ^ (1ULL << from) ^ (1ULL << to) ^ (1ULL << captureSquare);
+        const auto oppQueens = getColoredPieceBitboard(1 - colorToMove, Queen);
+
+        return ((getBishopAttacks(king, postMoveOcc) & (oppQueens | getColoredPieceBitboard(1 - colorToMove, Bishop))) == 0 &&
+            (getRookAttacks(king, postMoveOcc) & (oppQueens | getColoredPieceBitboard(1 - colorToMove, Rook))) == 0);
+    }
+
+    const auto piece = pieceAtIndex(from);
+
+    if(getType(piece) == King) {
+        const auto kinglessOcc = getOccupiedBitboard() ^ (1ULL << king);
+        const auto oppQueens = getColoredPieceBitboard(1 - colorToMove, Queen);
+
+        return ((stateHistory.back().threats & (1ULL << to)) == 0) &&
+               ((getBishopAttacks(to, kinglessOcc) & (oppQueens | getColoredPieceBitboard(1 - colorToMove, Bishop))) == 0) &&
+               ((getRookAttacks(to, kinglessOcc) & (oppQueens | getColoredPieceBitboard(1 - colorToMove, Rook))) == 0);
+    }
+
+    // piece is guaranteed to not be king because prior condition
+    if (__builtin_popcountll(stateHistory.back().checkers) >= 2 ||
+    (((stateHistory.back().orthogonal_pins | stateHistory.back().diagonal_pins) & (1ULL << from)) &&
+     (intersectingRays[from][to] & (1ULL << king)) == 0)) {
+        return false;
+     }
+
+    if(stateHistory.back().checkers == 0) {
+        return true;
+    }
+
+    const auto checker = std::countr_zero(stateHistory.back().checkers);
+    return (betweenRays[king][checker] | (1ULL << checker)) & (1ULL << to);
+}
+
+void Board::updatePinsAndCheckers() {
+    // while other engines were playing chess, CLARITY WAS PLAYING CHECKERS
+    // (yes I'm bringing that bad joke back)
+    stateHistory.back().checkers = getOppAttacks(stateHistory.back().kingSquares[colorToMove]);
+    stateHistory.back().diagonal_pins = 0;
+    stateHistory.back().orthogonal_pins = 0;
+
+    // info gathering
+    const auto opps = 1 - colorToMove;
+    const auto us = getColoredBitboard(colorToMove);
+    const auto them = getColoredBitboard(opps);
+    const auto ourKing = stateHistory.back().kingSquares[colorToMove];
+
+    const auto oppQueens = getColoredPieceBitboard(opps, Queen);
+    const auto oppDiago = oppQueens | getColoredPieceBitboard(opps, Bishop);
+    const auto oppOrtho = oppQueens | getColoredPieceBitboard(opps, Rook);
+
+    auto potentialDiagoPinners = oppDiago & getBishopAttacks(ourKing, them);
+    auto potentialOrthoPinners = oppOrtho & getRookAttacks(ourKing, them);
+
+    while(potentialDiagoPinners != 0) {
+        const auto pinner = popLSB(potentialDiagoPinners);
+        const auto potentiallyPinned = betweenRays[ourKing][pinner] | (1ULL << pinner);
+        if(__builtin_popcountll(potentiallyPinned & us) == 1) {
+            stateHistory.back().diagonal_pins |= potentiallyPinned;
+        }
+    }
+
+    while(potentialOrthoPinners != 0) {
+        const auto pinner = popLSB(potentialOrthoPinners);
+        const auto potentiallyPinned = betweenRays[ourKing][pinner] | (1ULL << pinner);
+        if(__builtin_popcountll(potentiallyPinned & us) == 1) {
+            stateHistory.back().orthogonal_pins |= potentiallyPinned;
+        }
+    }
+}
+
+uint64_t Board::getOppAttacks(int square) const {
+    const auto opponent = 1 - colorToMove;
+    const auto queens = getColoredPieceBitboard(opponent, Queen);
+
+    return (getRookAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Rook)))
+         | (getBishopAttacks(square, getOccupiedBitboard()) & (queens | getColoredPieceBitboard(opponent, Bishop)))
+         | (getKnightAttacks(square) & getColoredPieceBitboard(opponent, Knight))
+         | (getPawnAttacks(square, colorToMove) & getColoredPieceBitboard(opponent, Pawn))
+         | (getKingAttacks(square) & getColoredPieceBitboard(opponent, King));
 }
