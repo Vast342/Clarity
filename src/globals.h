@@ -118,7 +118,7 @@ struct Board {
         template <bool PushNNUE> void undoMove();
         int getMoves(std::array<Move, 256> &moves) const;
         int getMovesQSearch(std::array<Move, 256> &moves) const;
-        std::string getFenString();
+        std::string getFenString() const;
         bool isInCheck() const;
         bool squareIsUnderAttack(int square) const;
         void toString();

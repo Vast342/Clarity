@@ -228,7 +228,7 @@ Board::Board(std::string fen) {
     updatePinsAndCheckers();
 }
 
-std::string Board::getFenString() {
+std::string Board::getFenString() const {
     // essentially copy and pasted from my c# engine lol
     std::string fen = "";
     for(int rank = 7; rank >= 0; rank--) {
@@ -615,7 +615,7 @@ uint8_t Board::getColorToMove() const {
 }
 
 bool Board::isInCheck() const {
-    return squareIsUnderAttack(stateHistory.back().kingSquares[colorToMove]);
+    return (stateHistory.back().checkers != 0);
 }
 
 // thanks ciekce, shoutout stormphrax
@@ -820,6 +820,7 @@ void Board::changeColor() {
     colorToMove = 1 - colorToMove;
     stateHistory.back().threats = calculateThreats();
     stateHistory.back().zobristHash ^= zobColorToMove;
+    updatePinsAndCheckers();
 }
 
 void Board::undoChangeColor() {
