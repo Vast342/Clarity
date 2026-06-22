@@ -126,6 +126,9 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     while (true) {
         auto [move, unused] = picker.next();
         if (!move) break;
+
+        if(!board.isLegal(move)) continue;
+
         // this detects bad captures
         if(!see(board, move, 0)) {
             continue;
@@ -137,9 +140,7 @@ int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
 
         // History Pruning
         //if(moveValues[i] < qhpDepthMultiplier.value * qDepth) break;
-        if(!board.makeMove<true>(move)) {
-            continue;
-        }
+        board.makeMove<true>(move);
         testedMoves[legalMoves] = move;
         legalMoves++;
         nodes++;
@@ -391,7 +392,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     while (true) {
         auto [move, moveValue] = picker.next();
         if (!move) break;
+
         if(move == info.stack[ply].excluded) continue;
+        if(!board.isLegal(move)) continue;
+
         int moveStartSquare = move.getStartSquare();
         int moveEndSquare = move.getEndSquare();
         bool moveEndAttack = board.squareIsUnderAttack(moveEndSquare);
@@ -446,9 +450,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             }
         }
 
-        if(!board.makeMove<true>(move)) {
-            continue;
-        }
+        board.makeMove<true>(move);
 
         info.stack[ply].ch_entry = &(*info.conthistTable)[board.getColorToMove()][getType(board.pieceAtIndex(moveEndSquare))][moveEndSquare][moveVictim];
         info.stack[ply].move = move;
@@ -679,8 +681,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
         while (true) {
             auto [move, score] = picker.next();
             if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
+            if(board.isLegal(move)) {
                 rootBestMove = move;
                 break;
             }
@@ -800,8 +801,7 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool printInfo) {
         while (true) {
             auto [move, score] = picker.next();
             if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
+            if(board.isLegal(move)) {
                 rootBestMove = move;
                 break;
             }
@@ -878,8 +878,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         while (true) {
             auto [move, score] = picker.next();
             if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
+            if(board.isLegal(move)) {
                 rootBestMove = move;
                 break;
             }
@@ -945,8 +944,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
         while (true) {
             auto [move, score] = picker.next();
             if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
+            if(board.isLegal(move)) {
                 rootBestMove = move;
                 break;
             }
