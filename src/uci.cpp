@@ -306,6 +306,8 @@ void interpretCommand(std::string command) {
         std::cout << board.getThreats() << std::endl; 
     } else if(bits[0] == "calcthreats") {
         std::cout << board.calculateThreats() << std::endl;   
+    } else if(bits[0] == "printpins") {
+        board.printPins();
     } else {
         std::cout << "invalid or unsupported command\n";
     }
