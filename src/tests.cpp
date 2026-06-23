@@ -41,7 +41,7 @@ void runPerftSuite(int number) {
         int passed = 0;
         int failed = 0;
         double total = 0;
-        clock_t start = clock();
+        auto start = std::chrono::steady_clock::now();
         for(PerftTest test : etherealSuite) {
             i++;
             Board board(test.fen);
@@ -55,11 +55,13 @@ void runPerftSuite(int number) {
                 failed++;
             }
         }
-        clock_t end = clock();
+        auto end = std::chrono::steady_clock::now();
+        double elapsed = std::chrono::duration<double>(end - start).count();
         std::cout << "Passed " << std::to_string(passed) << ", Failed " << std::to_string(failed) << '\n';
-        std::cout << "Tests took: " << std::to_string((end-start)/static_cast<double>(1000)) << '\n';
-        std::cout << "Total nodes: " << std::to_string(static_cast<int>(total)) << '\n';
-        std::cout << "NPS: " << std::to_string(total / ((end-start)/static_cast<double>(1000))) << '\n';
+        std::cout << "Tests took: " << elapsed << " seconds\n";
+        std::cout << "Total nodes: " << std::to_string(static_cast<uint64_t>(total)) << '\n';
+        uint64_t nps = static_cast<uint64_t>(std::llround(total / elapsed));
+        std::cout << "NPS: " << nps << '\n';
     }
 }
 

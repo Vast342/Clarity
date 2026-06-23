@@ -226,6 +226,7 @@ Board::Board(std::string fen) {
     nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
     stateHistory.back().threats = calculateThreats();
     updatePinsAndCheckers();
+        std::cout << "loaded fen " << fen << std::endl;
 }
 
 std::string Board::getFenString() const {
@@ -615,7 +616,12 @@ uint8_t Board::getColorToMove() const {
 }
 
 bool Board::isInCheck() const {
-    return (stateHistory.back().checkers != 0);
+    const bool resultOld = squareIsUnderAttack(stateHistory.back().kingSquares[colorToMove]);
+    const bool resultNew = stateHistory.back().checkers != 0;
+    if(resultNew != resultOld) {
+        std::cout << "failure in position " << getFenString() << ", old says " << std::to_string(resultOld) << ", new says " << std::to_string(resultNew) << std::endl;
+    }
+    return stateHistory.back().checkers != 0;
 }
 
 // thanks ciekce, shoutout stormphrax
@@ -652,6 +658,7 @@ bool Board::squareIsUnderAttack(int square) const {
 }
 
 template <bool PushNNUE> void Board::makeMove(Move move) {
+    std::cout << "making move " << toLongAlgebraic(move) << std::endl;
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
     //std::cout << "makemove " << toLongAlgebraic(move) << std::endl;
     // push to vectors
@@ -791,10 +798,16 @@ template <bool PushNNUE> void Board::makeMove(Move move) {
     } else {
         nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
     }
+    if(squareIsUnderAttack(stateHistory.back().kingSquares[colorToMove])) {
+        std::cout << "you dumbfuck, you did move " << toLongAlgebraic(move) << " and now you have position " << getFenString() << std::endl;
+        printPins();
+        std::abort();
+    }
     colorToMove = 1 - colorToMove;
     stateHistory.back().threats = calculateThreats();
     stateHistory.back().zobristHash ^= zobColorToMove;
     updatePinsAndCheckers();
+    printPins();
 }
 
 template <bool PushNNUE> void Board::undoMove() {
@@ -820,7 +833,6 @@ void Board::changeColor() {
     colorToMove = 1 - colorToMove;
     stateHistory.back().threats = calculateThreats();
     stateHistory.back().zobristHash ^= zobColorToMove;
-    updatePinsAndCheckers();
 }
 
 void Board::undoChangeColor() {
@@ -1422,4 +1434,11 @@ uint64_t Board::getOppAttacks(int square) const {
          | (getKnightAttacks(square) & getColoredPieceBitboard(opponent, Knight))
          | (getPawnAttacks(square, colorToMove) & getColoredPieceBitboard(opponent, Pawn))
          | (getKingAttacks(square) & getColoredPieceBitboard(opponent, King));
+}
+
+void Board::printPins() const {
+    std::cout << "checkers: " << stateHistory.back().checkers << std::endl;
+    std::cout << "ortho: " << stateHistory.back().orthogonal_pins << std::endl;
+    std::cout << "diagonal: " << stateHistory.back().diagonal_pins << std::endl;
+    std::cout << "fen: " << getFenString() << std::endl;
 }

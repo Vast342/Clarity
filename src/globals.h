@@ -156,6 +156,7 @@ struct Board {
         bool isLegal(Move move) const;
         void updatePinsAndCheckers();
         uint64_t getOppAttacks(int square) const;
+        void printPins() const;
     private:
         int plyCount;
         uint8_t colorToMove;
