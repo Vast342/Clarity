@@ -50,8 +50,8 @@ inline Tunable rfpMultiplier("RFP_Multiplier", 85, 1);
 inline Tunable iirDepthCondition("IIR_DepthCondition", 2, 1);
 
 inline Tunable fpDepthCondition("FP_DepthCondition", 6, 1);
-inline Tunable fpBase("FP_Base", 347, 1);
-inline Tunable fpMultiplier("FP_Multiplier", 44, 1);
+inline Tunable fpBase("FP_Base", 250, 1);
+inline Tunable fpMultiplier("FP_Multiplier", 65, 1);
 
 inline Tunable lmpBase("LMP_Base", 3, 1);
 
