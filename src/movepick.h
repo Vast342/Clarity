@@ -98,9 +98,11 @@ public:
                 [[fallthrough]];
             }
             case MovegenStage::GenQuiet: {
-                totalMoves = board.getQuiets(moves, totalMoves);
-                // scores the newly generated quiets
-                scoreQuiets();
+                if(!skipQuiets) {
+                    totalMoves = board.getQuiets(moves, totalMoves);
+                    // scores the newly generated quiets
+                    scoreQuiets();
+                }
                 ++stage;
                 
                 [[fallthrough]];
@@ -109,6 +111,12 @@ public:
                 while(idx < totalMoves) {
                     auto [move, score] = getNextInternal();
                     if(move == ttMove || move == killer || move == counter) continue;
+                    if(skipQuiets) {
+                        const uint64_t capturable = board.getOccupiedBitboard();
+                        bool isCapture = ((capturable & (1ULL << move.getEndSquare())) != 0) || move.getFlag() == EnPassant;
+                        bool isQuiet = (!isCapture && (move.getFlag() <= DoublePawnPush));
+                        if(isQuiet) continue;
+                    }
                     return {move, score};
                 }
                 
@@ -138,6 +146,7 @@ public:
     int getTotalMoves() const {
         return totalMoves;
     }
+    bool skipQuiets = false;
 private:
     explicit MovePicker(const Board &board, const Move ttMove, SearchInfo &tables, const MovegenStage stage, const int ply) : stage(stage),
     board{board}, ttMove(ttMove), idx{0}, totalMoves{0}, info{tables}, killer{info.stack[ply].killer}, 

@@ -406,7 +406,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
 
         // move loop prunings:
         // futility pruning
-        if(bestScore > matedScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) break;
+        if(!picker.skipQuiets && bestScore > matedScore && !inCheck && depth <= fpDepthCondition.value && staticEval + fpBase.value + depth * fpMultiplier.value <= alpha) picker.skipQuiets = true;
         // Late Move Pruning
         if(!isPV && isQuiet && bestScore > matedScore + 256 && legalMoves > (lmpBase.value + depth * depth) / (2 - improving)) break;
         // see pruning
