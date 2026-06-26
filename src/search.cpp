@@ -373,8 +373,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
             if (!move) break;
 
             if(!board.makeMove<true>(move)) continue;
-            const auto score = -qSearch(board, -probcutBeta, -probcutBeta + 1, ply + 1);
-            // to do here: second search
+
+            auto score = -qSearch(board, -probcutBeta, -probcutBeta + 1, ply + 1);
+            if(score >= probcutBeta) score = -negamax(board, depth - 4, -probcutBeta, -probcutBeta + 1, ply + 1, true, !isCutNode);
+
             board.undoMove<true>();
 
             if(score >= probcutBeta) return score;
