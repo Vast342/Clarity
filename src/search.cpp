@@ -363,6 +363,24 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
         }
     }
 
+    // probcut!
+    const auto probcutBeta = beta + 220; // to make tunable later?
+    if(!isPV && !inSingularSearch && depth >= 5 && -std::abs(beta) > matedScore && shrink(hash) == entry->zobristKey && !(entry->depth >= depth - 3 && entry->score < probcutBeta)) {
+        MovePicker picker = MovePicker::qsearch(board, entry->bestMove, info);
+
+        while (true) {
+            const auto [move, moveValue] = picker.next();
+            if (!move) break;
+
+            if(!board.makeMove<true>(move)) continue;
+            const auto score = -qSearch(board, -probcutBeta, -probcutBeta + 1, ply + 1);
+            // to do here: second search
+            board.undoMove<true>();
+
+            if(score >= probcutBeta) return score;
+        }
+    }
+
     if(ply > 0) info.stack[ply].doubleExtensions = info.stack[ply - 1].doubleExtensions;
 
     // values useful for writing to TT later
