@@ -128,40 +128,42 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
             while(added) {
                 const int sq = popLSB(added);
                 const int index = getFeatureIndex(sq, c * 8 + piece, color, king);
-                //std::cout << "sq " << sq << " p " << p << std::endl;
-                // change values for all of them
-                if(color == 0) {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.black[i] += network->featureWeights[index * layer1Size + i];
-                    }
-                } else {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.white[i] += network->featureWeights[index * layer1Size + i];
-                    }
+                
+                // copying this from the search rewrite, reportedly this was to fix my speed when compiling on windows?
+                // I don't know but i should probably bring it back anyway.
+                const int16_t *__restrict__ weights = network->featureWeights.data();
+                int16_t *__restrict__ acc =
+                    (color == 0 ? entry.accumulator.black.data()
+                                : entry.accumulator.white.data());
+
+                const int16_t *__restrict__ w = weights + index * layer1Size;
+
+                for (int i = 0; i < layer1Size; ++i) {
+                    acc[i] += w[i];
                 }
             }
 
             while(removed) {
                 const int sq = popLSB(removed);
                 const int index = getFeatureIndex(sq, c * 8 + piece, color, king);
-                //std::cout << "sq " << sq << " p " << p << std::endl;
-                // change values for all of them
-                if(color == 0) {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.black[i] -= network->featureWeights[index * layer1Size + i];
-                    }
-                } else {
-                    for(int i = 0; i < layer1Size; ++i) {
-                        entry.accumulator.white[i] -= network->featureWeights[index * layer1Size + i];
-                    }
+
+                const int16_t *__restrict__ weights = network->featureWeights.data();
+                int16_t *__restrict__ acc =
+                    (color == 0 ? entry.accumulator.black.data()
+                                : entry.accumulator.white.data());
+
+                const int16_t *__restrict__ w = weights + index * layer1Size;
+
+                for (int i = 0; i < layer1Size; ++i) {
+                    acc[i] -= w[i];
                 }
             }
         }
     }
     if(color == 0) {
-        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<std::int16_t, layer1Size>));
+        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<int16_t, layer1Size>));
     } else {
-        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<std::int16_t, layer1Size>));
+        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<int16_t, layer1Size>));
     }
     std::memcpy(&prevBoards, &state, sizeof(BoardState));
 }
@@ -267,26 +269,32 @@ void NetworkState::activateFeature(int square, int piece, int blackKing, int whi
 void NetworkState::activateFeatureSingle(int square, int piece, int color, int king){ 
     const int index = getFeatureIndex(square, piece, color, king);
 
-    // change values for all of them
-    if(color == 0) {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].black[i] += network->featureWeights[index * layer1Size + i];
-        }
-    } else {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].white[i] += network->featureWeights[index * layer1Size + i];
-        }
+    const int16_t *__restrict__ weights = network->featureWeights.data();
+    int16_t *__restrict__ acc =
+        (color == 0 ? stack[current].black.data()
+                    : stack[current].white.data());
+
+    for (int i = 0; i < layer1Size; ++i) {
+        acc[i] += weights[index * layer1Size + i];
     }
 }
 
 void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing){ 
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece, blackKing, whiteKing);
 
-    // change values for all of them
-    for(int i = 0; i < layer1Size; ++i) {
-        stack[current + 1].black[i] = stack[current].black[i] + network->featureWeights[blackIdx * layer1Size + i];
-        stack[current + 1].white[i] = stack[current].white[i] + network->featureWeights[whiteIdx * layer1Size + i];
+    const int16_t *__restrict__ weights = network->featureWeights.data();
+
+    const int16_t *__restrict__ blackPrev = stack[current].black.data();
+    const int16_t *__restrict__ whitePrev = stack[current].white.data();
+
+    int16_t *__restrict__ blackNext = stack[current + 1].black.data();
+    int16_t *__restrict__ whiteNext = stack[current + 1].white.data();
+
+    for (int i = 0; i < layer1Size; ++i) {
+        blackNext[i] = blackPrev[i] + weights[blackIdx * layer1Size + i];
+        whiteNext[i] = whitePrev[i] + weights[whiteIdx * layer1Size + i];
     }
+
     current++;
 }
 
@@ -298,15 +306,13 @@ void NetworkState::disableFeature(int square, int piece, int blackKing, int whit
 void NetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
     const int index = getFeatureIndex(square, piece, color, king);
 
-    // change values for all of them
-    if(color == 0) {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].black[i] -= network->featureWeights[index * layer1Size + i];
-        }
-    } else {
-        for(int i = 0; i < layer1Size; ++i) {
-            stack[current].white[i] -= network->featureWeights[index * layer1Size + i];
-        }
+    const int16_t *__restrict__ weights = network->featureWeights.data();
+    int16_t *__restrict__ acc =
+        (color == 0 ? stack[current].black.data()
+                    : stack[current].white.data());
+
+    for (int i = 0; i < layer1Size; ++i) {
+        acc[i] -= weights[index * layer1Size + i];
     }
 }
 
