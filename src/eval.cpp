@@ -94,11 +94,11 @@ void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, 
     }
 }
 
-void Accumulator::initialize(std::span<const int16_t, layer1Size> bias) {
+void Accumulator::initialize(std::span<const int16_t, ftSize> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());
 }
-void Accumulator::initHalf(std::span<const int16_t, layer1Size> bias, int color) {
+void Accumulator::initHalf(std::span<const int16_t, ftSize> bias, int color) {
     std::copy(bias.begin(), bias.end(), color == 0 ? black.begin() : white.begin());
 }
 
@@ -136,9 +136,9 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
                     (color == 0 ? entry.accumulator.black.data()
                                 : entry.accumulator.white.data());
 
-                const int16_t *__restrict__ w = weights + index * layer1Size;
+                const int16_t *__restrict__ w = weights + index * ftSize;
 
-                for (int i = 0; i < layer1Size; ++i) {
+                for (int i = 0; i < ftSize; ++i) {
                     acc[i] += w[i];
                 }
             }
@@ -152,18 +152,18 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
                     (color == 0 ? entry.accumulator.black.data()
                                 : entry.accumulator.white.data());
 
-                const int16_t *__restrict__ w = weights + index * layer1Size;
+                const int16_t *__restrict__ w = weights + index * ftSize;
 
-                for (int i = 0; i < layer1Size; ++i) {
+                for (int i = 0; i < ftSize; ++i) {
                     acc[i] -= w[i];
                 }
             }
         }
     }
     if(color == 0) {
-        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<int16_t, layer1Size>));
+        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<int16_t, ftSize>));
     } else {
-        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<int16_t, layer1Size>));
+        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<int16_t, ftSize>));
     }
     std::memcpy(&prevBoards, &state, sizeof(BoardState));
 }
@@ -201,9 +201,6 @@ void RefreshTable::init() {
 constexpr uint32_t ColorStride = 64 * 6;
 constexpr uint32_t PieceStride = 64;
 constexpr int Scale = 400;
-constexpr int Qa = 256;
-constexpr int Qb = 64;
-constexpr int Qab = Qa * Qb;
 
 
 std::pair<uint32_t, uint32_t> NetworkState::getFeatureIndices(int square, int piece, int blackKing, int whiteKing) {
@@ -228,37 +225,43 @@ int getBucket(int pieceCount) {
     return (pieceCount - 2) / divisor;
 }
 
-/*
-    A technique that I am using here was invented yesterday (as of writing this) by SomeLizard, developer of the engine Lizard
-    I am using the SCReLU activation function, which is CReLU(x)^2 * W
-    the technique is to use CReLU(x) * w * CReLU(x) which allows you (assuming weight is in (-127, 127))
-    to fit the resulting number in a 16 bit integer, allowing you to perform the remaining functions
-    on twice as many numbers at once, leading to a pretty sizeable speedup
-*/
-
-int NetworkState::forward(const int bucket, const std::span<int16_t, layer1Size> us, const std::span<int16_t, layer1Size> them, const std::span<const int16_t, layer1Size * 2 * outputBucketCount> weights) {
-    const int bucketIncrement = 2 * layer1Size * bucket;
-    const Vector zero   = simd_zero();
-    const Vector maxVal = simd_set1_epi16(Qa);
- 
-    Vector sum = simd_zero();
- 
-    for (int i = 0; i < layer1Size / weightsPerVector; ++i)
-    {
-        // us
-        Vector u = simd_load(reinterpret_cast<const Vector *>(&us[i * weightsPerVector]));
-        u = simd_max_epi16(simd_min_epi16(u, maxVal), zero);
-        Vector uw = simd_load(reinterpret_cast<const Vector *>(&weights[i * weightsPerVector + bucketIncrement]));
-        sum = simd_add_epi32(sum, simd_madd_epi16(u, simd_mullo_epi16(u, uw)));
- 
-        // them
-        Vector t = simd_load(reinterpret_cast<const Vector *>(&them[i * weightsPerVector]));
-        t = simd_max_epi16(simd_min_epi16(t, maxVal), zero);
-        Vector tw = simd_load(reinterpret_cast<const Vector *>(&weights[layer1Size + i * weightsPerVector + bucketIncrement]));
-        sum = simd_add_epi32(sum, simd_madd_epi16(t, simd_mullo_epi16(t, tw)));
+int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize> us, const std::span<int16_t, ftSize> them) {
+    // ft -> pairwise (SCReLU)
+    std::array<int16_t, ftSize> pwAcc;
+    for(int ftNode = 0; ftNode < ftSize / 2; ftNode++) {
+        pwAcc[ftNode] = std::clamp(us[ftNode], int16_t(0), QA) 
+        * std::clamp(us[ftNode + ftSize / 2], int16_t(0), QA);
+        pwAcc[ftNode + ftSize / 2] = std::clamp(them[ftNode], int16_t(0), QA) 
+        * std::clamp(them[ftNode + ftSize / 2], int16_t(0), QA);
     }
- 
-    return simd_reduce_add_epi32(sum);
+
+    // pairwise -> l1 (SCReLU)
+    const int l1BucketIncrement = ftSize * l1Size * bucket;
+    std::array<int32_t, l1Size> l1Acc = network->l1Biases[bucket];
+    for(int pwNode = 0; pwNode < ftSize; pwNode++) {
+        for(int l1Node = 0; l1Node < l1Size; l1Node++) {
+            l1Acc[l1Node] += pwAcc[pwNode] 
+            * network->l1Weights[l1BucketIncrement + pwNode * l1Size + l1Node];
+        }
+    }
+
+    // l1 -> l2 (SCReLU)
+    const int l2BucketIncrement = l1Size * l2Size * bucket;
+    std::array<int32_t, l2Size> l2Acc = network->l2Biases[bucket];
+    for(int l1Node = 0; l1Node < l1Size; l1Node++) {
+        for(int l2Node = 0; l2Node < l2Size; l2Node++) {
+            l2Acc[l2Node] += std::pow(std::clamp(int(l1Acc[l1Node]), 0, QB), 2) 
+            * network->l2Weights[l2BucketIncrement + l1Node * l2Size + l2Node];
+        }
+    }
+
+    // l2 -> l3 (CReLU)
+    const int l3BucketIncrement = l2Size * bucket;
+    int64_t output = network->outputBiases[bucket];
+    for(int l2Node = 0; l2Node < l2Size; l2Node++) {
+        output += std::clamp(l2Acc[l2Node], 0, QC) * network->outputWeights[l3BucketIncrement + l2Node];
+    }
+    return output;
 }
 
 void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
@@ -274,8 +277,8 @@ void NetworkState::activateFeatureSingle(int square, int piece, int color, int k
         (color == 0 ? stack[current].black.data()
                     : stack[current].white.data());
 
-    for (int i = 0; i < layer1Size; ++i) {
-        acc[i] += weights[index * layer1Size + i];
+    for (int i = 0; i < ftSize; ++i) {
+        acc[i] += weights[index * ftSize + i];
     }
 }
 
@@ -290,9 +293,9 @@ void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, 
     int16_t *__restrict__ blackNext = stack[current + 1].black.data();
     int16_t *__restrict__ whiteNext = stack[current + 1].white.data();
 
-    for (int i = 0; i < layer1Size; ++i) {
-        blackNext[i] = blackPrev[i] + weights[blackIdx * layer1Size + i];
-        whiteNext[i] = whitePrev[i] + weights[whiteIdx * layer1Size + i];
+    for (int i = 0; i < ftSize; ++i) {
+        blackNext[i] = blackPrev[i] + weights[blackIdx * ftSize + i];
+        whiteNext[i] = whitePrev[i] + weights[whiteIdx * ftSize + i];
     }
 
     current++;
@@ -311,14 +314,14 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
         (color == 0 ? stack[current].black.data()
                     : stack[current].white.data());
 
-    for (int i = 0; i < layer1Size; ++i) {
-        acc[i] -= weights[index * layer1Size + i];
+    for (int i = 0; i < ftSize; ++i) {
+        acc[i] -= weights[index * ftSize + i];
     }
 }
 
 // todo: lazy updates (oh no)
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
-    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white, network->outputWeights) : forward(bucket, stack[current].white, stack[current].black, network->outputWeights);
-    return (output / Qa + network->outputBiases[bucket]) * Scale / Qab;
+    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white) : forward(bucket, stack[current].white, stack[current].black);
+    return (output + network->outputBiases[bucket]) * int64_t(Scale) / std::pow(int64_t(QC), 4);
 }

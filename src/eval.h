@@ -20,18 +20,31 @@
 #include "globals.h"
 
 /*
-Current Net: cn_028
-Arch: (768x8->1024)x2->1x8
-Activation: SCReLU
+Current Net: mlt_01
+Arch: (768x8hm->64)x2-pw>(16->32->1)x16
 Special Details: 
- - Horizontal Mirroring
- - Few more buckets, let's see if we can get some improvement from finny tables now
+ - 128 hl test net just to see if naive inference works
+ -FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+EVAL: 78.419914
+FEN: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
+EVAL: -136.21596
+FEN: r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1
+EVAL: 340.42267
+FEN: rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
+EVAL: 45.798145
+FEN: 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1
+EVAL: 476.53342
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 8;
-constexpr int layer1Size = 1024;
-constexpr int outputBucketCount = 8;
+constexpr int ftSize = 64;
+constexpr int l1Size = 16;
+constexpr int l2Size = 32;
+constexpr int outputBucketCount = 16;
 
+constexpr int16_t QA = 256;
+constexpr int QB = 128;
+constexpr int QC = 64;
 
 constexpr std::array<int, 64> inputBuckets = []{
     constexpr std::array<int, 32> rawInputBuckets = {
@@ -67,18 +80,27 @@ constexpr int alignmentAmount = 64;
 constexpr int alignmentAmount = 32;
 #endif
 
+// it would be nice to have a MultiArray here
 struct alignas(alignmentAmount) Network {
-    std::array<std::int16_t, inputSize * inputBucketCount * layer1Size> featureWeights;
-    std::array<std::int16_t, layer1Size> featureBiases;
-    std::array<std::int16_t, layer1Size * 2 * outputBucketCount> outputWeights;
-    std::array<std::int16_t, outputBucketCount> outputBiases;
+    // inputs -> ft
+    std::array<int16_t, inputSize * inputBucketCount * ftSize> featureWeights;
+    std::array<int16_t, ftSize> featureBiases;
+    // pairwised ft -> l1
+    std::array<int8_t, ftSize * l1Size * outputBucketCount> l1Weights;
+    std::array<std::array<int32_t, l1Size>, outputBucketCount> l1Biases;
+    // l1 -> l2
+    std::array<int32_t, l1Size * l2Size * outputBucketCount> l2Weights;
+    std::array<std::array<int32_t, l2Size>, outputBucketCount> l2Biases;
+    // l2 -> output
+    std::array<int32_t, l2Size * outputBucketCount> outputWeights;
+    std::array<int32_t, outputBucketCount> outputBiases;
 };
 
 struct Accumulator {
-    alignas(alignmentAmount) std::array<std::int16_t, layer1Size> black;
-    alignas(alignmentAmount) std::array<std::int16_t, layer1Size> white;
-    void initialize(std::span<const std::int16_t, layer1Size> bias);
-    void initHalf(std::span<const std::int16_t, layer1Size> bias, int color);
+    alignas(alignmentAmount) std::array<int16_t, ftSize> black;
+    alignas(alignmentAmount) std::array<int16_t, ftSize> white;
+    void initialize(std::span<const int16_t, ftSize> bias);
+    void initHalf(std::span<const int16_t, ftSize> bias, int color);
 };
 
 struct RefreshTableEntry {
@@ -127,7 +149,7 @@ class NetworkState {
         std::vector<Accumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type, int blackKing, int whiteKing);
         static int getFeatureIndex(int square, int type, int color, int king);
-        int forward(const int bucket, const std::span<std::int16_t, layer1Size> us, const std::span<std::int16_t, layer1Size> them, const std::span<const std::int16_t, layer1Size * 2 * outputBucketCount> weights);
+        int64_t forward(const int bucket, const std::span<int16_t, ftSize> us, const std::span<int16_t, ftSize> them);
 };
 
 constexpr bool refreshRequired(int color, int oldKingSquare, int newKingSquare) {
