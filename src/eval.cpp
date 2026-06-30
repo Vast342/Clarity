@@ -241,7 +241,7 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize>
     for(int pwNode = 0; pwNode < ftSize; pwNode++) {
         for(int l1Node = 0; l1Node < l1Size; l1Node++) {
             l1AccTemp[l1Node] += ((pwAcc[pwNode])
-            * network->l1Weights[l1BucketIncrement + pwNode * l1Size + l1Node]) >> 8;
+            * network->l1Weights[l1BucketIncrement + pwNode * l1Size + l1Node]);
         }
     }
 

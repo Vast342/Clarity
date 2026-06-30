@@ -42,7 +42,7 @@ constexpr int l1Size = 16;
 constexpr int l2Size = 32;
 constexpr int outputBucketCount = 16;
 
-constexpr int16_t Q0 = 256;
+constexpr int16_t Q0 = 255;
 constexpr int Q1 = 128;
 constexpr int Q = 64;
 constexpr int QTo4 = Q * Q * Q * Q;
