@@ -226,22 +226,22 @@ int getBucket(int pieceCount) {
 }
 
 int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize> us, const std::span<int16_t, ftSize> them) {
-    // ft -> pairwise (SCReLU)
-    std::array<int16_t, ftSize> pwAcc;
+    // ft -> pairwise (SCReLU is done here)
+    std::array<int8_t, ftSize> pwAcc;
     for(int ftNode = 0; ftNode < ftSize / 2; ftNode++) {
-        pwAcc[ftNode] = std::clamp(us[ftNode], int16_t(0), QA) 
-        * std::clamp(us[ftNode + ftSize / 2], int16_t(0), QA);
-        pwAcc[ftNode + ftSize / 2] = std::clamp(them[ftNode], int16_t(0), QA) 
-        * std::clamp(them[ftNode + ftSize / 2], int16_t(0), QA);
+        pwAcc[ftNode] = (std::clamp(us[ftNode], int16_t(0), Q0) 
+        * std::clamp(us[ftNode + ftSize / 2], int16_t(0), Q0)) >> 9;
+        pwAcc[ftNode + ftSize / 2] = (std::clamp(them[ftNode], int16_t(0), Q0) 
+        * std::clamp(them[ftNode + ftSize / 2], int16_t(0), Q0)) >> 9;
     }
 
-    // pairwise -> l1 (SCReLU)
+    // pairwise -> l1
     const int l1BucketIncrement = ftSize * l1Size * bucket;
     std::array<int32_t, l1Size> l1Acc = network->l1Biases[bucket];
     for(int pwNode = 0; pwNode < ftSize; pwNode++) {
         for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-            l1Acc[l1Node] += pwAcc[pwNode] 
-            * network->l1Weights[l1BucketIncrement + pwNode * l1Size + l1Node];
+            l1Acc[l1Node] += ((pwAcc[pwNode])
+            * network->l1Weights[l1BucketIncrement + pwNode * l1Size + l1Node]) >> 8;
         }
     }
 
@@ -249,9 +249,10 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize>
     const int l2BucketIncrement = l1Size * l2Size * bucket;
     std::array<int32_t, l2Size> l2Acc = network->l2Biases[bucket];
     for(int l1Node = 0; l1Node < l1Size; l1Node++) {
+        const auto crelu = std::clamp(int(l1Acc[l1Node]), 0, Q);
+        const auto screlu = crelu * crelu;
         for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-            l2Acc[l2Node] += std::pow(std::clamp(int(l1Acc[l1Node]), 0, QB), 2) 
-            * network->l2Weights[l2BucketIncrement + l1Node * l2Size + l2Node];
+            l2Acc[l2Node] += screlu * network->l2Weights[l2BucketIncrement + l1Node * l2Size + l2Node];
         }
     }
 
@@ -259,7 +260,7 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize>
     const int l3BucketIncrement = l2Size * bucket;
     int64_t output = network->outputBiases[bucket];
     for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-        output += std::clamp(l2Acc[l2Node], 0, QC) * network->outputWeights[l3BucketIncrement + l2Node];
+        output += std::clamp(l2Acc[l2Node], 0, Q*Q*Q) * network->outputWeights[l3BucketIncrement + l2Node];
     }
     return output;
 }
@@ -323,5 +324,5 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
     const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white) : forward(bucket, stack[current].white, stack[current].black);
-    return (output + network->outputBiases[bucket]) * int64_t(Scale) / std::pow(int64_t(QC), 4);
+    return (output + network->outputBiases[bucket]) * int64_t(Scale) / std::pow(int64_t(Q), 4);
 }

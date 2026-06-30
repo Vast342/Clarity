@@ -42,9 +42,9 @@ constexpr int l1Size = 16;
 constexpr int l2Size = 32;
 constexpr int outputBucketCount = 16;
 
-constexpr int16_t QA = 256;
-constexpr int QB = 128;
-constexpr int QC = 64;
+constexpr int16_t Q0 = 256;
+constexpr int Q1 = 128;
+constexpr int Q = 64;
 
 constexpr std::array<int, 64> inputBuckets = []{
     constexpr std::array<int, 32> rawInputBuckets = {
