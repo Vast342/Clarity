@@ -45,6 +45,7 @@ constexpr int outputBucketCount = 16;
 constexpr int16_t Q0 = 256;
 constexpr int Q1 = 128;
 constexpr int Q = 64;
+constexpr int QTo4 = Q * Q * Q * Q;
 
 constexpr std::array<int, 64> inputBuckets = []{
     constexpr std::array<int, 32> rawInputBuckets = {

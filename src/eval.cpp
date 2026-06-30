@@ -237,12 +237,17 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize>
 
     // pairwise -> l1
     const int l1BucketIncrement = ftSize * l1Size * bucket;
-    std::array<int32_t, l1Size> l1Acc = network->l1Biases[bucket];
+    std::array<int32_t, l1Size> l1AccTemp{};
     for(int pwNode = 0; pwNode < ftSize; pwNode++) {
         for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-            l1Acc[l1Node] += ((pwAcc[pwNode])
+            l1AccTemp[l1Node] += ((pwAcc[pwNode])
             * network->l1Weights[l1BucketIncrement + pwNode * l1Size + l1Node]) >> 8;
         }
+    }
+
+    std::array<int32_t, l1Size> l1Acc;
+    for(int l1Node = 0; l1Node < l1Size; l1Node++) {
+        l1Acc[l1Node] += (l1AccTemp[l1Node] >> 8) + network->l1Biases[bucket][l1Node];
     }
 
     // l1 -> l2 (SCReLU)
@@ -324,5 +329,5 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
 int NetworkState::evaluate(int colorToMove, int materialCount) {
     const int bucket = getBucket(materialCount);
     const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white) : forward(bucket, stack[current].white, stack[current].black);
-    return (output + network->outputBiases[bucket]) * int64_t(Scale) / std::pow(int64_t(Q), 4);
+    return output * int64_t(Scale) / QTo4;
 }
