@@ -39,7 +39,7 @@ namespace {
 }
 
 void NetworkState::reset() {
-    std::memset(stack.data(), 0, sizeof(stack));
+    std::fill(stack.begin(), stack.end(), Accumulator{});
     current = 0;
     refreshTable.init();
 
@@ -234,20 +234,27 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize>
         pwAcc[ftNode + ftSize / 2] = (std::clamp(them[ftNode], int16_t(0), Q0) 
         * std::clamp(them[ftNode + ftSize / 2], int16_t(0), Q0)) >> 9;
     }
+    std::cout << std::endl << "l1 act: ";
+    for(int i = 0; i < 16; i++) {
+        std::cout << std::to_string(pwAcc[i]) << " ";
+    }
+    std::cout << std::endl;
 
     // pairwise -> l1
     const int l1BucketIncrement = ftSize * l1Size * bucket;
     std::array<int32_t, l1Size> l1AccTemp{};
-    for(int pwNode = 0; pwNode < ftSize; pwNode++) {
-        for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-            l1AccTemp[l1Node] += ((pwAcc[pwNode])
-            * network->l1Weights[l1BucketIncrement + pwNode * l1Size + l1Node]);
+    for (int pwNode = 0; pwNode < ftSize; pwNode++) {
+        const int inBlock = pwNode / 4;
+        const int k = pwNode % 4;
+        for (int l1Node = 0; l1Node < l1Size; l1Node++) {
+            const int weight = network->l1Weights[l1BucketIncrement + inBlock * (l1Size * 4) + l1Node * 4 + k];
+            l1AccTemp[l1Node] += pwAcc[pwNode] * weight;
         }
     }
 
     std::array<int32_t, l1Size> l1Acc;
     for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-        l1Acc[l1Node] += (l1AccTemp[l1Node] >> 8) + network->l1Biases[bucket][l1Node];
+        l1Acc[l1Node] = (l1AccTemp[l1Node] >> 8) + network->l1Biases[bucket][l1Node];
     }
 
     // l1 -> l2 (SCReLU)
@@ -327,7 +334,8 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
 
 // todo: lazy updates (oh no)
 int NetworkState::evaluate(int colorToMove, int materialCount) {
-    const int bucket = getBucket(materialCount);
+    //const int bucket = getBucket(materialCount);
+    const int bucket = 0;
     const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white) : forward(bucket, stack[current].white, stack[current].black);
     return output * int64_t(Scale) / QTo4;
 }

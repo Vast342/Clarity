@@ -36,11 +36,11 @@ FEN: 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1
 EVAL: 476.53342
 */ 
 constexpr int inputSize = 768;
-constexpr int inputBucketCount = 8;
+constexpr int inputBucketCount = 1;
 constexpr int ftSize = 64;
 constexpr int l1Size = 16;
 constexpr int l2Size = 32;
-constexpr int outputBucketCount = 16;
+constexpr int outputBucketCount = 1;
 
 constexpr int16_t Q0 = 255;
 constexpr int Q1 = 128;
@@ -49,14 +49,14 @@ constexpr int QTo4 = Q * Q * Q * Q;
 
 constexpr std::array<int, 64> inputBuckets = []{
     constexpr std::array<int, 32> rawInputBuckets = {
-        0, 1, 2, 3,
-        4, 4, 5, 5,
-        6, 6, 6, 6,
-        6, 6, 6, 6,
-        7, 7, 7, 7, 
-        7, 7, 7, 7, 
-        7, 7, 7, 7, 
-        7, 7, 7, 7
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
     };
 
     std::array<int, 64> result = {};
@@ -87,7 +87,7 @@ struct alignas(alignmentAmount) Network {
     std::array<int16_t, inputSize * inputBucketCount * ftSize> featureWeights;
     std::array<int16_t, ftSize> featureBiases;
     // pairwised ft -> l1
-    std::array<int8_t, ftSize * l1Size * outputBucketCount> l1Weights;
+    std::array<int16_t, ftSize * l1Size * outputBucketCount> l1Weights;
     std::array<std::array<int32_t, l1Size>, outputBucketCount> l1Biases;
     // l1 -> l2
     std::array<int32_t, l1Size * l2Size * outputBucketCount> l2Weights;
