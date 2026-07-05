@@ -61,11 +61,11 @@ void runPerftSuite(const int cap) {
             uint64_t avgNps = elapsed > 0.0 ? static_cast<uint64_t>(std::llround(total / elapsed)) : 0;
             double eta = progress > 0.0 ? elapsed * (100.0 - progress) / progress : 0.0;
             if(result == test.expectedOutput) {
-                std::cout
-                    << "Test " << i << " Passed"
-                    << " | Progress: " << std::fixed << std::setprecision(2) << progress << "%"
-                    << " | Avg NPS: " << avgNps
-                    << " | ETA: " << std::setprecision(1) << eta << "s\n";
+                printf("Test %i Passed | Progress: %.2f%% | Avg NPS: %llu | ETA: %.1fs\n",
+                i,
+                progress,
+                (unsigned long long)avgNps,
+                eta);
                 passed++;
             } else {
                 std::cout
