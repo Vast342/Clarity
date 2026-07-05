@@ -226,7 +226,7 @@ Board::Board(std::string fen) {
     nnueState.refreshAccumulator(1, stateHistory.back(), stateHistory.back().kingSquares[1]);
     stateHistory.back().threats = calculateThreats();
     updatePinsAndCheckers();
-        std::cout << "loaded fen " << fen << std::endl;
+    //std::cout << "loaded fen " << fen << std::endl;
 }
 
 std::string Board::getFenString() const {
@@ -394,6 +394,7 @@ uint64_t Board::getOccupiedBitboard() const {
 
 // fills up the array and then returns the number of moves to be looped through later.
 int Board::getMoves(std::array<Move, 256> &moves) const {
+    //std::cout << "generating moves for position fen " << getFenString() << std::endl;
     uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     // castling
@@ -522,6 +523,8 @@ int Board::getMoves(std::array<Move, 256> &moves) const {
 }
 
 int Board::getMovesQSearch(std::array<Move, 256> &moves) const {
+    //std::cout << "generating qsearch moves for position fen " << getFenString() << std::endl;
+    //printPins();
     const uint64_t occupiedBitboard = getOccupiedBitboard();
     int totalMoves = 0;
     uint64_t mask = stateHistory.back().coloredBitboards[colorToMove] ^ getColoredPieceBitboard(colorToMove, Pawn);
@@ -616,11 +619,6 @@ uint8_t Board::getColorToMove() const {
 }
 
 bool Board::isInCheck() const {
-    const bool resultOld = squareIsUnderAttack(stateHistory.back().kingSquares[colorToMove]);
-    const bool resultNew = stateHistory.back().checkers != 0;
-    if(resultNew != resultOld) {
-        std::cout << "failure in position " << getFenString() << ", old says " << std::to_string(resultOld) << ", new says " << std::to_string(resultNew) << std::endl;
-    }
     return stateHistory.back().checkers != 0;
 }
 
@@ -658,9 +656,7 @@ bool Board::squareIsUnderAttack(int square) const {
 }
 
 template <bool PushNNUE> void Board::makeMove(Move move) {
-    std::cout << "making move " << toLongAlgebraic(move) << std::endl;
     //std::cout << "move " << toLongAlgebraic(move) << " on position " << getFenString() << std::endl;
-    //std::cout << "makemove " << toLongAlgebraic(move) << std::endl;
     // push to vectors
     stateHistory.push_back(stateHistory.back());
     NetworkUpdates updates;
@@ -798,16 +794,10 @@ template <bool PushNNUE> void Board::makeMove(Move move) {
     } else {
         nnueState.performUpdates(updates, stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1], stateHistory.back());
     }
-    if(squareIsUnderAttack(stateHistory.back().kingSquares[colorToMove])) {
-        std::cout << "you dumbfuck, you did move " << toLongAlgebraic(move) << " and now you have position " << getFenString() << std::endl;
-        printPins();
-        std::abort();
-    }
     colorToMove = 1 - colorToMove;
     stateHistory.back().threats = calculateThreats();
     stateHistory.back().zobristHash ^= zobColorToMove;
     updatePinsAndCheckers();
-    printPins();
 }
 
 template <bool PushNNUE> void Board::undoMove() {
@@ -816,8 +806,6 @@ template <bool PushNNUE> void Board::undoMove() {
     if constexpr(PushNNUE) nnueState.pop();
     plyCount--;
     colorToMove = 1 - colorToMove;
-    //std::cout << "position fen " << getFenString() << std::endl;
-    //std::cout << "Changing Color To Move in undo move\n";
     // no zobrist update here because the saved zobrist hash is before the color changed
 }
 
@@ -833,20 +821,20 @@ void Board::changeColor() {
     colorToMove = 1 - colorToMove;
     stateHistory.back().threats = calculateThreats();
     stateHistory.back().zobristHash ^= zobColorToMove;
+    updatePins();
 }
 
 void Board::undoChangeColor() {
+    //std::cout << "undo null move" << std::endl;
     stateHistory.pop_back();
     nnueState.pop();
     colorToMove = 1 - colorToMove;
 }
 
 int Board::getEvaluation() {   
-    //std::cout << "position fen " << getFenString() << std::endl;
-    //std::cout << "evaluate" << std::endl;
+    //std::cout << "evaluating in position fen " << getFenString() << std::endl;
     int eval = int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()))));
-    //nnueState.fullRefresh(stateHistory.back(), stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
-    //assert(eval == nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard())));
+    
     int phase =  3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Knight])
                + 3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Bishop])
                + 5 * __builtin_popcountll(stateHistory.back().pieceBitboards[Rook])
@@ -1388,10 +1376,7 @@ bool Board::isLegal(Move move) const {
     return (betweenRays[king][checker] | (1ULL << checker)) & (1ULL << to);
 }
 
-void Board::updatePinsAndCheckers() {
-    // while other engines were playing chess, CLARITY WAS PLAYING CHECKERS
-    // (yes I'm bringing that bad joke back)
-    stateHistory.back().checkers = getOppAttacks(stateHistory.back().kingSquares[colorToMove]);
+void Board::updatePins() {
     stateHistory.back().diagonal_pins = 0;
     stateHistory.back().orthogonal_pins = 0;
 
@@ -1423,6 +1408,17 @@ void Board::updatePinsAndCheckers() {
             stateHistory.back().orthogonal_pins |= potentiallyPinned;
         }
     }
+}
+
+void Board::updateCheckers() {
+    // while other engines were playing chess, CLARITY WAS PLAYING CHECKERS
+    // (yes I'm bringing that bad joke back)
+    stateHistory.back().checkers = getOppAttacks(stateHistory.back().kingSquares[colorToMove]);
+}
+
+void Board::updatePinsAndCheckers() {
+    updateCheckers();
+    updatePins();
 }
 
 uint64_t Board::getOppAttacks(int square) const {

@@ -266,10 +266,7 @@ void interpretCommand(std::string command) {
     } else if(bits[0] == "setoption") {
         setOption(bits);
     } else if(bits[0] == "perftsuite") {
-        // not technically necessary since ethereal is the only perft suite I have but I think it's best to have it in case I get any more.
-        if(bits[1] == "ethereal") {
-            runPerftSuite(0);
-        }
+        runPerftSuite();
     } else if(bits[0] == "incheck") {
         std::cout << std::to_string(board.isInCheck()) << '\n';
     } else if(bits[0] == "getfen") {

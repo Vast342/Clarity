@@ -35,34 +35,57 @@ int perft(Board &board, int depth) {
 }
 
 // runs an entire suite of perft tests
-void runPerftSuite(int number) {
-    if(number == 0) {
-        int i = 0;
-        int passed = 0;
-        int failed = 0;
-        double total = 0;
-        auto start = std::chrono::steady_clock::now();
-        for(PerftTest test : etherealSuite) {
-            i++;
+void runPerftSuite(const int cap) {
+    int i = 0;
+    int passed = 0;
+    int failed = 0;
+    double total = 0;
+    uint64_t expectedTotalNodes = 0;
+    uint64_t completedExpectedNodes = 0;
+    for(const auto& test : etherealSuite) {
+        if(test.expectedOutput < cap || cap == 0) {
+            expectedTotalNodes += test.expectedOutput;
+        }
+    }
+    auto start = std::chrono::steady_clock::now();
+    for(const auto& test : etherealSuite) {
+        i++;
+        if(test.expectedOutput < cap || cap == 0) {
             Board board(test.fen);
             int result = perft(board, test.depth);
             total += result;
+            completedExpectedNodes += test.expectedOutput;
+            auto now = std::chrono::steady_clock::now();
+            double elapsed = std::chrono::duration<double>(now - start).count();
+            double progress = 100.0 * completedExpectedNodes / expectedTotalNodes;
+            uint64_t avgNps = elapsed > 0.0 ? static_cast<uint64_t>(std::llround(total / elapsed)) : 0;
+            double eta = progress > 0.0 ? elapsed * (100.0 - progress) / progress : 0.0;
             if(result == test.expectedOutput) {
-                std::cout << "Test " << std::to_string(i) << " Passed\n";
+                std::cout
+                    << "Test " << i << " Passed"
+                    << " | Progress: " << std::fixed << std::setprecision(2) << progress << "%"
+                    << " | Avg NPS: " << avgNps
+                    << " | ETA: " << std::setprecision(1) << eta << "s\n";
                 passed++;
             } else {
-                std::cout << "Test " << std::to_string(i) << " Failed, outputted " << std::to_string(result) << " With fen string "  << test.fen << " and depth " << std::to_string(test.depth) << '\n';
+                std::cout
+                    << "Test " << i
+                    << " Failed, outputted " << result
+                    << " With fen string " << test.fen
+                    << " and depth " << test.depth << '\n';
+
                 failed++;
             }
         }
-        auto end = std::chrono::steady_clock::now();
-        double elapsed = std::chrono::duration<double>(end - start).count();
-        std::cout << "Passed " << std::to_string(passed) << ", Failed " << std::to_string(failed) << '\n';
-        std::cout << "Tests took: " << elapsed << " seconds\n";
-        std::cout << "Total nodes: " << std::to_string(static_cast<uint64_t>(total)) << '\n';
-        uint64_t nps = static_cast<uint64_t>(std::llround(total / elapsed));
-        std::cout << "NPS: " << nps << '\n';
     }
+
+    auto end = std::chrono::steady_clock::now();
+    double elapsed = std::chrono::duration<double>(end - start).count();
+    std::cout << "Passed " << passed << ", Failed " << failed << '\n';
+    std::cout << "Tests took: " << elapsed << " seconds\n";
+    std::cout << "Total nodes: " << static_cast<uint64_t>(total) << '\n';
+    uint64_t nps = static_cast<uint64_t>(std::llround(total / elapsed));
+    std::cout << "NPS: " << nps << '\n';
 }
 
 // runs perft split by what the first move that is done is

@@ -32,7 +32,7 @@ struct PerftTest {
         }
 };
 
-void runPerftSuite(int number);
+void runPerftSuite(const int cap = 5000000);
 int perft(Board &board, int depth);
 void splitPerft(Board board, int depth);
 void individualPerft(Board board, int depth);

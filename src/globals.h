@@ -155,6 +155,8 @@ struct Board {
         int getQuiets(std::array<Move, 256> &moves, int totalMoves) const;
         bool isLegal(Move move) const;
         void updatePinsAndCheckers();
+        void updatePins();
+        void updateCheckers();
         uint64_t getOppAttacks(int square) const;
         void printPins() const;
     private:
