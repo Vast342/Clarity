@@ -220,31 +220,20 @@ int getBucket(int pieceCount) {
 }
 
 int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size> us, const std::span<int16_t, l1Size> them) {
-    // ft -> l1
-    std::array<uint8_t, l1Size * 2> l1Acc;
-    for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-        const int creluUs = std::clamp(them[l1Node], int16_t(0), Q0);
-        const uint8_t usSq = (creluUs * creluUs) >> 9;
-
-        const int creluThem = std::clamp(us[l1Node], int16_t(0), Q0);
-        const uint8_t themSq = (creluThem * creluThem) >> 9;
-
-        l1Acc[l1Node] = usSq;
-        l1Acc[l1Node + l1Size] = themSq;
-    }
-    std::cout << std::endl << "l1 act:";
-    for(int i = 0; i < 16; i++) {
-        std::cout << " " << std::to_string(l1Acc[i]);
+    // pairwise & screlu
+    std::array<int8_t, l1Size> l1Acc;
+    for(int ftNode = 0; ftNode < l1Size / 2; ftNode++) {
+        l1Acc[ftNode] = (std::clamp(us[ftNode], int16_t(0), Q0) 
+        * std::clamp(us[ftNode + l1Size / 2], int16_t(0), Q0)) >> 9;
+        l1Acc[ftNode + l1Size / 2] = (std::clamp(them[ftNode], int16_t(0), Q0) 
+        * std::clamp(them[ftNode + l1Size / 2], int16_t(0), Q0)) >> 9;
     }
 
     // l1 -> l2
     std::array<int32_t, l2Size> l2PartialAcc{};
-    // / 4 * 2
-    for(int l1Node = 0; l1Node < l1Size / 2; l1Node++) {
-        for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-            for(int k = 0; k < 4; k++) {
-                l2PartialAcc[l2Node] += l1Acc[4 * l1Node + k] * network->l2Weights[l1Node][4 * l2Node + k];
-            }
+    for(int l2Node = 0; l2Node < l2Size; l2Node++) {
+        for(int l1Node = 0; l1Node < l1Size; l1Node++) {
+            l2PartialAcc[l2Node] += l1Acc[l1Node] * network->l2Weights[bucket][l2Node][l1Node];
         }
     }
 
@@ -259,18 +248,9 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size>
     std::array<int32_t, l3Size> l3Acc = network->l3Biases[bucket];
     for(int l3Node = 0; l3Node < l3Size; l3Node++) {
         for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-            l3Acc[l3Node] += l2Acc[l2Node] * network->l3Weights[bucket][l2Node][l3Node];
+            l3Acc[l3Node] += l2Acc[l2Node] * network->l3Weights[bucket][l3Node][l2Node];
         }
     }
-    std::cout << std::endl << "l3 val: ";
-    for(int i = 0; i < 32; i++) {
-        std::cout << std::to_string(l3Acc[i]) << " ";
-    }
-    std::cout << std::endl << "l3 act: ";
-    for(int i = 0; i < 32; i++) {
-        std::cout << std::to_string(std::clamp(l3Acc[i], 0, Q*Q*Q)) << " ";
-    }
-    std::cout << std::endl;
 
     // l3 -> output
     int64_t output = 0;
@@ -278,8 +258,6 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size>
         const auto crelu = std::clamp(l3Acc[l3Node], 0, Q*Q*Q);
         output += crelu * network->outputWeights[bucket][l3Node];
     }
-
-    std::cout << "sum w/o bias: " << std::to_string(output);
 
     return output + network->outputBiases[bucket];
 }
@@ -337,8 +315,7 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
 
 // todo: lazy updates (oh no)
 int NetworkState::evaluate(int colorToMove, int materialCount) {
-    //const int bucket = getBucket(materialCount);
-    const int bucket = 0;
+    const int bucket = getBucket(materialCount);
     const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white) : forward(bucket, stack[current].white, stack[current].black);
     return output * int64_t(Scale) / QTo4;
 }

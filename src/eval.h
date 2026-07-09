@@ -23,24 +23,24 @@
 Current Net: mlt_01
 Arch: (768x8hm->64)x2-pw>(16->32->1)x16
 Special Details: 
- - 128 hl test net just to see if naive inference works
- -FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
+ - 64 hl test net just to see if naive inference works
+position startpos
 EVAL: 78.419914
-FEN: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
+position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
 EVAL: -136.21596
-FEN: r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1
+position fen r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1
 EVAL: 340.42267
-FEN: rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
+position fen rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
 EVAL: 45.798145
-FEN: 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1
+position fen 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1
 EVAL: 476.53342
 */ 
 constexpr int inputSize = 768;
-constexpr int inputBucketCount = 1;
+constexpr int inputBucketCount = 8;
 constexpr int l1Size = 64;
 constexpr int l2Size = 16;
 constexpr int l3Size = 32;
-constexpr int outputBucketCount = 1;
+constexpr int outputBucketCount = 16;
 
 constexpr int16_t Q0 = 255;
 constexpr int Q1 = 128;
@@ -51,14 +51,14 @@ constexpr int inputFeatureCount = inputSize * inputBucketCount;
 
 constexpr std::array<int, 64> inputBuckets = []{
     constexpr std::array<int, 32> rawInputBuckets = {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
+        0, 1, 2, 3,
+        4, 4, 5, 5,
+        6, 6, 6, 6,
+        6, 6, 6, 6,
+        7, 7, 7, 7,
+        7, 7, 7, 7,
+        7, 7, 7, 7,
+        7, 7, 7, 7
     };
 
     std::array<int, 64> result = {};
@@ -89,11 +89,10 @@ struct alignas(alignmentAmount) Network {
     std::array<std::array<int16_t, l1Size>, inputFeatureCount> l1Weights;
     std::array<int16_t, l1Size> l1Biases;
     // l1 -> l2
-    // this is dpbusd permuted
-    std::array<std::array<int8_t, l2Size * 4>, 2 * l1Size / 4> l2Weights;
+    std::array<std::array<std::array<int8_t, l1Size>, l2Size>, outputBucketCount> l2Weights;
     std::array<std::array<int32_t, l2Size>, outputBucketCount> l2Biases;
     // l2 -> l3
-    std::array<std::array<std::array<int32_t, l3Size>, l2Size>, outputBucketCount>  l3Weights;
+    std::array<std::array<std::array<int32_t, l2Size>, l3Size>, outputBucketCount>  l3Weights;
     std::array<std::array<int32_t, l3Size>, outputBucketCount> l3Biases;
     // l3 -> output
     std::array<std::array<int32_t, l3Size>, outputBucketCount> outputWeights;
