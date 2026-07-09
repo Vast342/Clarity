@@ -37,15 +37,17 @@ EVAL: 476.53342
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 1;
-constexpr int ftSize = 64;
-constexpr int l1Size = 16;
-constexpr int l2Size = 32;
+constexpr int l1Size = 64;
+constexpr int l2Size = 16;
+constexpr int l3Size = 32;
 constexpr int outputBucketCount = 1;
 
 constexpr int16_t Q0 = 255;
 constexpr int Q1 = 128;
 constexpr int Q = 64;
 constexpr int QTo4 = Q * Q * Q * Q;
+
+constexpr int inputFeatureCount = inputSize * inputBucketCount;
 
 constexpr std::array<int, 64> inputBuckets = []{
     constexpr std::array<int, 32> rawInputBuckets = {
@@ -83,25 +85,26 @@ constexpr int alignmentAmount = 32;
 
 // it would be nice to have a MultiArray here
 struct alignas(alignmentAmount) Network {
-    // inputs -> ft
-    std::array<int16_t, inputSize * inputBucketCount * ftSize> featureWeights;
-    std::array<int16_t, ftSize> featureBiases;
-    // pairwised ft -> l1
-    std::array<int16_t, ftSize * l1Size * outputBucketCount> l1Weights;
-    std::array<std::array<int32_t, l1Size>, outputBucketCount> l1Biases;
+    // inputs -> l1
+    std::array<std::array<int16_t, l1Size>, inputFeatureCount> l1Weights;
+    std::array<int16_t, l1Size> l1Biases;
     // l1 -> l2
-    std::array<int32_t, l1Size * l2Size * outputBucketCount> l2Weights;
+    // this is dpbusd permuted
+    std::array<std::array<int8_t, l2Size * 4>, 2 * l1Size / 4> l2Weights;
     std::array<std::array<int32_t, l2Size>, outputBucketCount> l2Biases;
-    // l2 -> output
-    std::array<int32_t, l2Size * outputBucketCount> outputWeights;
+    // l2 -> l3
+    std::array<std::array<std::array<int32_t, l3Size>, l2Size>, outputBucketCount>  l3Weights;
+    std::array<std::array<int32_t, l3Size>, outputBucketCount> l3Biases;
+    // l3 -> output
+    std::array<std::array<int32_t, l3Size>, outputBucketCount> outputWeights;
     std::array<int32_t, outputBucketCount> outputBiases;
 };
 
 struct Accumulator {
-    alignas(alignmentAmount) std::array<int16_t, ftSize> black;
-    alignas(alignmentAmount) std::array<int16_t, ftSize> white;
-    void initialize(std::span<const int16_t, ftSize> bias);
-    void initHalf(std::span<const int16_t, ftSize> bias, int color);
+    alignas(alignmentAmount) std::array<int16_t, l1Size> black;
+    alignas(alignmentAmount) std::array<int16_t, l1Size> white;
+    void initialize(std::span<const int16_t, l1Size> bias);
+    void initHalf(std::span<const int16_t, l1Size> bias, int color);
 };
 
 struct RefreshTableEntry {
@@ -150,7 +153,7 @@ class NetworkState {
         std::vector<Accumulator> stack;
         static std::pair<uint32_t, uint32_t> getFeatureIndices(int square, int type, int blackKing, int whiteKing);
         static int getFeatureIndex(int square, int type, int color, int king);
-        int64_t forward(const int bucket, const std::span<int16_t, ftSize> us, const std::span<int16_t, ftSize> them);
+        int64_t forward(const int bucket, const std::span<int16_t, l1Size> us, const std::span<int16_t, l1Size> them);
 };
 
 constexpr bool refreshRequired(int color, int oldKingSquare, int newKingSquare) {

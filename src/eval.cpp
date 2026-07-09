@@ -43,7 +43,7 @@ void NetworkState::reset() {
     current = 0;
     refreshTable.init();
 
-    stack[current].initialize(network->featureBiases);
+    stack[current].initialize(network->l1Biases);
 }
 
 void NetworkState::performUpdates(NetworkUpdates updates, int blackKing, int whiteKing, const BoardState &state) {
@@ -94,11 +94,11 @@ void NetworkState::performUpdatesAndPush(NetworkUpdates updates, int blackKing, 
     }
 }
 
-void Accumulator::initialize(std::span<const int16_t, ftSize> bias) {
+void Accumulator::initialize(std::span<const int16_t, l1Size> bias) {
     std::copy(bias.begin(), bias.end(), black.begin());
     std::copy(bias.begin(), bias.end(), white.begin());
 }
-void Accumulator::initHalf(std::span<const int16_t, ftSize> bias, int color) {
+void Accumulator::initHalf(std::span<const int16_t, l1Size> bias, int color) {
     std::copy(bias.begin(), bias.end(), color == 0 ? black.begin() : white.begin());
 }
 
@@ -131,15 +131,12 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
                 
                 // copying this from the search rewrite, reportedly this was to fix my speed when compiling on windows?
                 // I don't know but i should probably bring it back anyway.
-                const int16_t *__restrict__ weights = network->featureWeights.data();
                 int16_t *__restrict__ acc =
                     (color == 0 ? entry.accumulator.black.data()
                                 : entry.accumulator.white.data());
 
-                const int16_t *__restrict__ w = weights + index * ftSize;
-
-                for (int i = 0; i < ftSize; ++i) {
-                    acc[i] += w[i];
+                for(int i = 0; i < l1Size; ++i) {
+                    acc[i] += network->l1Weights[index][i];
                 }
             }
 
@@ -147,23 +144,20 @@ void NetworkState::refreshAccumulator(int color, const BoardState &state, int ki
                 const int sq = popLSB(removed);
                 const int index = getFeatureIndex(sq, c * 8 + piece, color, king);
 
-                const int16_t *__restrict__ weights = network->featureWeights.data();
                 int16_t *__restrict__ acc =
                     (color == 0 ? entry.accumulator.black.data()
                                 : entry.accumulator.white.data());
 
-                const int16_t *__restrict__ w = weights + index * ftSize;
-
-                for (int i = 0; i < ftSize; ++i) {
-                    acc[i] -= w[i];
+                for(int i = 0; i < l1Size; ++i) {
+                    acc[i] -= network->l1Weights[index][i];
                 }
             }
         }
     }
     if(color == 0) {
-        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<int16_t, ftSize>));
+        std::memcpy(&stack[current].black, &entry.accumulator.black, sizeof(std::array<int16_t, l1Size>));
     } else {
-        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<int16_t, ftSize>));
+        std::memcpy(&stack[current].white, &entry.accumulator.white, sizeof(std::array<int16_t, l1Size>));
     }
     std::memcpy(&prevBoards, &state, sizeof(BoardState));
 }
@@ -174,7 +168,7 @@ void NetworkState::fullRefresh(const BoardState &state, int blackKing, int white
 }
 
 void NetworkState::halfRefresh(int color, const BoardState &state, int king) {
-    stack[current].initHalf(network->featureBiases, color);
+    stack[current].initHalf(network->l1Biases, color);
 
     for(int c = 0; c < 2; c++) {
         for(int piece = 0; piece < 6; piece++) {
@@ -193,7 +187,7 @@ void RefreshTable::init() {
     table.clear();
     table.resize(inputBucketCount * 2);
     for(int i = 0; i < inputBucketCount * 2; i++) {
-        table[i].accumulator.initialize(network->featureBiases);
+        table[i].accumulator.initialize(network->l1Biases);
         std::memset(table[i].boards.data(), 0, sizeof(BoardState) * 2);
     }
 }
@@ -225,56 +219,69 @@ int getBucket(int pieceCount) {
     return (pieceCount - 2) / divisor;
 }
 
-int64_t NetworkState::forward(const int bucket, const std::span<int16_t, ftSize> us, const std::span<int16_t, ftSize> them) {
-    // ft -> pairwise (SCReLU is done here)
-    std::array<int8_t, ftSize> pwAcc;
-    for(int ftNode = 0; ftNode < ftSize / 2; ftNode++) {
-        pwAcc[ftNode] = (std::clamp(us[ftNode], int16_t(0), Q0) 
-        * std::clamp(us[ftNode + ftSize / 2], int16_t(0), Q0)) >> 9;
-        pwAcc[ftNode + ftSize / 2] = (std::clamp(them[ftNode], int16_t(0), Q0) 
-        * std::clamp(them[ftNode + ftSize / 2], int16_t(0), Q0)) >> 9;
+int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size> us, const std::span<int16_t, l1Size> them) {
+    // ft -> l1
+    std::array<uint8_t, l1Size * 2> l1Acc;
+    for(int l1Node = 0; l1Node < l1Size; l1Node++) {
+        const int creluUs = std::clamp(them[l1Node], int16_t(0), Q0);
+        const uint8_t usSq = (creluUs * creluUs) >> 9;
+
+        const int creluThem = std::clamp(us[l1Node], int16_t(0), Q0);
+        const uint8_t themSq = (creluThem * creluThem) >> 9;
+
+        l1Acc[l1Node] = usSq;
+        l1Acc[l1Node + l1Size] = themSq;
     }
-    std::cout << std::endl << "l1 act: ";
+    std::cout << std::endl << "l1 act:";
     for(int i = 0; i < 16; i++) {
-        std::cout << std::to_string(pwAcc[i]) << " ";
+        std::cout << " " << std::to_string(l1Acc[i]);
+    }
+
+    // l1 -> l2
+    std::array<int32_t, l2Size> l2PartialAcc{};
+    // / 4 * 2
+    for(int l1Node = 0; l1Node < l1Size / 2; l1Node++) {
+        for(int l2Node = 0; l2Node < l2Size; l2Node++) {
+            for(int k = 0; k < 4; k++) {
+                l2PartialAcc[l2Node] += l1Acc[4 * l1Node + k] * network->l2Weights[l1Node][4 * l2Node + k];
+            }
+        }
+    }
+
+    std::array<int32_t, l2Size> l2Acc;
+    for(int l2Node = 0; l2Node < l2Size; l2Node++) {
+        const auto value = (l2PartialAcc[l2Node] >> 8) + network->l2Biases[bucket][l2Node];
+        const auto crelu = std::clamp(value, 0, Q);
+        l2Acc[l2Node] = crelu * crelu;
+    }
+
+    // l2 -> l3
+    std::array<int32_t, l3Size> l3Acc = network->l3Biases[bucket];
+    for(int l3Node = 0; l3Node < l3Size; l3Node++) {
+        for(int l2Node = 0; l2Node < l2Size; l2Node++) {
+            l3Acc[l3Node] += l2Acc[l2Node] * network->l3Weights[bucket][l2Node][l3Node];
+        }
+    }
+    std::cout << std::endl << "l3 val: ";
+    for(int i = 0; i < 32; i++) {
+        std::cout << std::to_string(l3Acc[i]) << " ";
+    }
+    std::cout << std::endl << "l3 act: ";
+    for(int i = 0; i < 32; i++) {
+        std::cout << std::to_string(std::clamp(l3Acc[i], 0, Q*Q*Q)) << " ";
     }
     std::cout << std::endl;
 
-    // pairwise -> l1
-    const int l1BucketIncrement = ftSize * l1Size * bucket;
-    std::array<int32_t, l1Size> l1AccTemp{};
-    for (int pwNode = 0; pwNode < ftSize; pwNode++) {
-        const int inBlock = pwNode / 4;
-        const int k = pwNode % 4;
-        for (int l1Node = 0; l1Node < l1Size; l1Node++) {
-            const int weight = network->l1Weights[l1BucketIncrement + inBlock * (l1Size * 4) + l1Node * 4 + k];
-            l1AccTemp[l1Node] += pwAcc[pwNode] * weight;
-        }
+    // l3 -> output
+    int64_t output = 0;
+    for(int l3Node = 0; l3Node < l3Size; l3Node++) {
+        const auto crelu = std::clamp(l3Acc[l3Node], 0, Q*Q*Q);
+        output += crelu * network->outputWeights[bucket][l3Node];
     }
 
-    std::array<int32_t, l1Size> l1Acc;
-    for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-        l1Acc[l1Node] = (l1AccTemp[l1Node] >> 8) + network->l1Biases[bucket][l1Node];
-    }
+    std::cout << "sum w/o bias: " << std::to_string(output);
 
-    // l1 -> l2 (SCReLU)
-    const int l2BucketIncrement = l1Size * l2Size * bucket;
-    std::array<int32_t, l2Size> l2Acc = network->l2Biases[bucket];
-    for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-        const auto crelu = std::clamp(int(l1Acc[l1Node]), 0, Q);
-        const auto screlu = crelu * crelu;
-        for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-            l2Acc[l2Node] += screlu * network->l2Weights[l2BucketIncrement + l1Node * l2Size + l2Node];
-        }
-    }
-
-    // l2 -> l3 (CReLU)
-    const int l3BucketIncrement = l2Size * bucket;
-    int64_t output = network->outputBiases[bucket];
-    for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-        output += std::clamp(l2Acc[l2Node], 0, Q*Q*Q) * network->outputWeights[l3BucketIncrement + l2Node];
-    }
-    return output;
+    return output + network->outputBiases[bucket];
 }
 
 void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
@@ -285,20 +292,17 @@ void NetworkState::activateFeature(int square, int piece, int blackKing, int whi
 void NetworkState::activateFeatureSingle(int square, int piece, int color, int king){ 
     const int index = getFeatureIndex(square, piece, color, king);
 
-    const int16_t *__restrict__ weights = network->featureWeights.data();
     int16_t *__restrict__ acc =
         (color == 0 ? stack[current].black.data()
                     : stack[current].white.data());
 
-    for (int i = 0; i < ftSize; ++i) {
-        acc[i] += weights[index * ftSize + i];
+    for(int i = 0; i < l1Size; ++i) {
+        acc[i] += network->l1Weights[index][i];
     }
 }
 
 void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, int whiteKing){ 
     const auto [blackIdx, whiteIdx] = getFeatureIndices(square, piece, blackKing, whiteKing);
-
-    const int16_t *__restrict__ weights = network->featureWeights.data();
 
     const int16_t *__restrict__ blackPrev = stack[current].black.data();
     const int16_t *__restrict__ whitePrev = stack[current].white.data();
@@ -306,9 +310,9 @@ void NetworkState::activateFeatureAndPush(int square, int piece, int blackKing, 
     int16_t *__restrict__ blackNext = stack[current + 1].black.data();
     int16_t *__restrict__ whiteNext = stack[current + 1].white.data();
 
-    for (int i = 0; i < ftSize; ++i) {
-        blackNext[i] = blackPrev[i] + weights[blackIdx * ftSize + i];
-        whiteNext[i] = whitePrev[i] + weights[whiteIdx * ftSize + i];
+    for(int i = 0; i < l1Size; ++i) {
+        blackNext[i] = blackPrev[i] + network->l1Weights[blackIdx][i];
+        whiteNext[i] = whitePrev[i] + network->l1Weights[whiteIdx][i];
     }
 
     current++;
@@ -322,13 +326,12 @@ void NetworkState::disableFeature(int square, int piece, int blackKing, int whit
 void NetworkState::disableFeatureSingle(int square, int piece, int color, int king) {
     const int index = getFeatureIndex(square, piece, color, king);
 
-    const int16_t *__restrict__ weights = network->featureWeights.data();
     int16_t *__restrict__ acc =
         (color == 0 ? stack[current].black.data()
                     : stack[current].white.data());
 
-    for (int i = 0; i < ftSize; ++i) {
-        acc[i] -= weights[index * ftSize + i];
+    for(int i = 0; i < l1Size; ++i) {
+        acc[i] -= network->l1Weights[index][i];
     }
 }
 
