@@ -316,7 +316,7 @@ void interpretCommand(std::string command) {
         for(auto fen : fens) {
             board = Board(fen);
             std::cout << "position fen " << fen << std::endl;
-            std::cout << "evaluation " << board.getEvaluation() << '\n';
+            std::cout << "evaluation " << board.getRawEvaluation() << '\n';
         }
     } else {
         std::cout << "invalid or unsupported command\n";

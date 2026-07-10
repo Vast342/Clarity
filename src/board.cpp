@@ -839,7 +839,7 @@ void Board::undoChangeColor() {
 int Board::getEvaluation() {   
     //std::cout << "position fen " << getFenString() << std::endl;
     //std::cout << "evaluate" << std::endl;
-    int eval = int(double(nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()))));
+    int eval = nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
     //nnueState.fullRefresh(stateHistory.back(), stateHistory.back().kingSquares[0], stateHistory.back().kingSquares[1]);
     //assert(eval == nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard())));
     int phase =  3 * __builtin_popcountll(stateHistory.back().pieceBitboards[Knight])
@@ -852,6 +852,10 @@ int Board::getEvaluation() {
     eval = eval * (200 - stateHistory.back().hundredPlyCounter) / 200;
 
     return eval;
+}
+
+int Board::getRawEvaluation() {
+    return nnueState.evaluate(colorToMove, __builtin_popcountll(getOccupiedBitboard()));
 }
 
 int Board::getCastlingRights() const {

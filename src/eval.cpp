@@ -214,7 +214,12 @@ int NetworkState::getFeatureIndex(int square, int piece, int color, int king) {
     return inputBuckets[king] * inputSize + c * ColorStride + getType(piece) * PieceStride + square;
 }
 
-int64_t NetworkState::forward(const std::span<int16_t, l1Size> us, const std::span<int16_t, l1Size> them) {
+int getBucket(int pieceCount) {
+    const int divisor = (32 + outputBucketCount - 1) / outputBucketCount;
+    return (pieceCount - 2) / divisor;
+}
+
+int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size> us, const std::span<int16_t, l1Size> them) {
     // pairwise & screlu
     std::array<int8_t, l1Size> l1Acc;
     for(int ftNode = 0; ftNode < l1Size / 2; ftNode++) {
@@ -228,22 +233,22 @@ int64_t NetworkState::forward(const std::span<int16_t, l1Size> us, const std::sp
     std::array<int32_t, l2Size> l2PartialAcc{};
     for(int l2Node = 0; l2Node < l2Size; l2Node++) {
         for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-            l2PartialAcc[l2Node] += l1Acc[l1Node] * network->l2Weights[l1Node][l2Node];
+            l2PartialAcc[l2Node] += l1Acc[l1Node] * network->l2Weights[bucket][l2Node][l1Node];
         }
     }
 
     std::array<int32_t, l2Size> l2Acc;
     for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-        const auto value = (l2PartialAcc[l2Node] >> 8) + network->l2Biases[l2Node];
+        const auto value = (l2PartialAcc[l2Node] >> 8) + network->l2Biases[bucket][l2Node];
         const auto crelu = std::clamp(value, 0, Q);
         l2Acc[l2Node] = crelu * crelu;
     }
 
     // l2 -> l3
-    std::array<int32_t, l3Size> l3Acc = network->l3Biases;
+    std::array<int32_t, l3Size> l3Acc = network->l3Biases[bucket];
     for(int l3Node = 0; l3Node < l3Size; l3Node++) {
         for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-            l3Acc[l3Node] += l2Acc[l2Node] * network->l3Weights[l2Node][l3Node];
+            l3Acc[l3Node] += l2Acc[l2Node] * network->l3Weights[bucket][l3Node][l2Node];
         }
     }
 
@@ -251,10 +256,10 @@ int64_t NetworkState::forward(const std::span<int16_t, l1Size> us, const std::sp
     int64_t output = 0;
     for(int l3Node = 0; l3Node < l3Size; l3Node++) {
         const auto crelu = std::clamp(l3Acc[l3Node], 0, Q*Q*Q);
-        output += crelu * network->outputWeights[l3Node];
+        output += crelu * network->outputWeights[bucket][l3Node];
     }
 
-    return output + network->outputBias;
+    return output + network->outputBiases[bucket];
 }
 
 void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
@@ -310,6 +315,7 @@ void NetworkState::disableFeatureSingle(int square, int piece, int color, int ki
 
 // todo: lazy updates (oh no)
 int NetworkState::evaluate(int colorToMove, int materialCount) {
-    const auto output = colorToMove == 0 ? forward(stack[current].black, stack[current].white) : forward(stack[current].white, stack[current].black);
+    const int bucket = getBucket(materialCount);
+    const auto output = colorToMove == 0 ? forward(bucket, stack[current].black, stack[current].white) : forward(bucket, stack[current].white, stack[current].black);
     return output * int64_t(Scale) / QTo4;
 }

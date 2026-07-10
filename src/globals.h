@@ -128,6 +128,7 @@ struct Board {
         void changeColor();
         void undoChangeColor();
         int getEvaluation();
+        int getRawEvaluation();
         int getCastlingRights() const;
         int getEnPassantIndex() const;
         uint64_t fullZobristRegen();
