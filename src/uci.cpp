@@ -41,6 +41,8 @@ std::vector<std::jthread> threads;
 int threadCount = 1;
 int64_t moveOverhead = 10;
 
+constexpr int defaultBenchDepth = 12;
+
 int rootColorToMove;
 
 // resets everything
@@ -282,7 +284,7 @@ void interpretCommand(std::string command) {
         std::cout << "evaluation " << board.getEvaluation() << '\n';
     } else if(bits[0] == "bench") {
         if(bits.size() == 1) {
-            runBench(14);
+            runBench(defaultBenchDepth);
         } else {
             runBench(std::stoi(bits[1]));
         }
@@ -328,7 +330,7 @@ int main(int argc, char* argv[]) {
     newGame();
     std::cout << std::boolalpha;
     if(argc > 1 && std::string(argv[1]) == "bench") {
-        runBench(14);
+        runBench(defaultBenchDepth);
         return 0;
     }
     std::string command;
