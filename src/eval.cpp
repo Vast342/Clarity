@@ -239,7 +239,8 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size>
     const auto castThem = std::span<const Vector, l1Size / weightsPerVector>(
         reinterpret_cast<const Vector*>(them.data()),
         l1Size / weightsPerVector);
-
+    
+    #pragma unroll
     for(int i = 0; i < (l1Size / 2) / bytesPerVector; i++) {
         // us
         Vector a = simd_mulhi_epi16(
@@ -282,7 +283,7 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size>
                 7
             )
         );
-        l1AccV[i] = _mm256_permute4x64_epi64(simd_packus_epi16(a, b), 0b11011000);
+        l1AccV[i] = simd_packus_unpermuted_epi16(a, b);
 
         // them
         a = simd_mulhi_epi16(
@@ -325,7 +326,7 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size>
                 7
             )
         );
-        l1AccV[i + ((l1Size / 2) / bytesPerVector)] = _mm256_permute4x64_epi64(simd_packus_epi16(a, b), 0b11011000);
+        l1AccV[i + ((l1Size / 2) / bytesPerVector)] = simd_packus_unpermuted_epi16(a, b);
     }
 
     // cast it back to array
