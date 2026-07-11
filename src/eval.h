@@ -20,24 +20,14 @@
 #include "globals.h"
 
 /*
-Current Net: mlt_01
-Arch: (768x8hm->64)x2-pw>(16->32->1)x16
+Current Net: cn_032-ml
+Arch: (768x8hm->1024)x2-pw>(16->32->1)x16
 Special Details: 
- - 64 hl test net just to see if naive inference works
-position startpos
-EVAL: 78.419914
-position fen r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
-EVAL: -136.21596
-position fen r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1
-EVAL: 340.42267
-position fen rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8
-EVAL: 45.798145
-position fen 8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1
-EVAL: 476.53342
+ - first multilayer net! (hopefully!)
 */ 
 constexpr int inputSize = 768;
 constexpr int inputBucketCount = 8;
-constexpr int l1Size = 64;
+constexpr int l1Size = 1024;
 constexpr int l2Size = 16;
 constexpr int l3Size = 32;
 constexpr int outputBucketCount = 16;
