@@ -19,7 +19,6 @@ endif
 
 # Build type (can be overridden: make BUILD_TYPE=datagen)
 BUILD_TYPE ?= uci
-
 CXXFLAGS := -std=c++20 -flto $(ARCH) -fexceptions -Wall -Wextra -pthread
 _THIS     := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 _ROOT     := $(_THIS)

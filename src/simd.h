@@ -23,6 +23,7 @@
 
 using Vector = __m512i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t); // 32
+constexpr int bytesPerVector = sizeof(Vector); // 64;
 
 inline Vector simd_zero() {
     return _mm512_setzero_si512();
@@ -60,10 +61,23 @@ inline int simd_reduce_add_epi32(Vector v) {
     return _mm512_reduce_add_epi32(v);
 }
 
+inline Vector simd_packus_epi16(Vector a, Vector b) {
+    return _mm512_packus_epi16(a, b);
+}
+
+inline Vector simd_slli_epi16(Vector a, int count) {
+    return _mm512_slli_epi16(a, count);
+}
+
+inline Vector simd_mulhi_epi16(Vector a, Vector b) {
+    return _mm512_mulhi_epi16(a, b);
+}
+
 #elif defined(__AVX2__)
 
 using Vector = __m256i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t); // 16
+constexpr int bytesPerVector = sizeof(Vector); // 32;
 
 inline Vector simd_zero() {
     return _mm256_setzero_si256();
@@ -97,6 +111,18 @@ inline Vector simd_add_epi32(Vector a, Vector b) {
     return _mm256_add_epi32(a, b);
 }
 
+inline Vector simd_packus_epi16(Vector a, Vector b) {
+    return _mm256_packus_epi16(a, b);
+}
+
+inline Vector simd_slli_epi16(Vector a, int count) {
+    return _mm256_slli_epi16(a, count);
+}
+
+inline Vector simd_mulhi_epi16(Vector a, Vector b) {
+    return _mm256_mulhi_epi16(a, b);
+}
+
 inline int simd_reduce_add_epi32(Vector v) {
     // Fold 256-bit → 128-bit → 64-bit → 32-bit
     __m128i lo  = _mm256_castsi256_si128(v);
@@ -113,6 +139,7 @@ inline int simd_reduce_add_epi32(Vector v) {
 
 using Vector = __m128i;
 constexpr int weightsPerVector = sizeof(Vector) / sizeof(int16_t); // 8
+constexpr int bytesPerVector = sizeof(Vector); // 16;
 
 inline Vector simd_zero() {
     return _mm_setzero_si128();
@@ -144,6 +171,18 @@ inline Vector simd_madd_epi16(Vector a, Vector b) {
 
 inline Vector simd_add_epi32(Vector a, Vector b) {
     return _mm_add_epi32(a, b);
+}
+
+inline Vector simd_packus_epi16(Vector a, Vector b) {
+    return _mm_packus_epi16(a, b);
+}
+
+inline Vector simd_slli_epi16(Vector a, int count) {
+    return _mm_slli_epi16(a, count);
+}
+
+inline Vector simd_mulhi_epi16(Vector a, Vector b) {
+    return _mm_mulhi_epi16(a, b);
 }
 
 inline int simd_reduce_add_epi32(Vector v) {

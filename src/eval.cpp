@@ -221,13 +221,120 @@ int getBucket(int pieceCount) {
 
 int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size> us, const std::span<int16_t, l1Size> them) {
     // pairwise & screlu
-    std::array<int8_t, l1Size> l1Acc;
+    /*std::array<int8_t, l1Size> l1ScalarAcc;
     for(int ftNode = 0; ftNode < l1Size / 2; ftNode++) {
-        l1Acc[ftNode] = (std::clamp(us[ftNode], int16_t(0), Q0) 
+        l1ScalarAcc[ftNode] = (std::clamp(us[ftNode], int16_t(0), Q0) 
         * std::clamp(us[ftNode + l1Size / 2], int16_t(0), Q0)) >> 9;
-        l1Acc[ftNode + l1Size / 2] = (std::clamp(them[ftNode], int16_t(0), Q0) 
+        l1ScalarAcc[ftNode + l1Size / 2] = (std::clamp(them[ftNode], int16_t(0), Q0) 
         * std::clamp(them[ftNode + l1Size / 2], int16_t(0), Q0)) >> 9;
+    }*/
+    // pairwise crelu!
+    // vectors of u8s
+    std::array<Vector, l1Size / bytesPerVector> l1AccV;
+    const Vector q0Vec = simd_set1_epi16(Q0);
+    const Vector zeroVec = simd_zero();
+    const auto castUs = std::span<const Vector, l1Size / weightsPerVector>(
+        reinterpret_cast<const Vector*>(us.data()),
+        l1Size / weightsPerVector);
+    const auto castThem = std::span<const Vector, l1Size / weightsPerVector>(
+        reinterpret_cast<const Vector*>(them.data()),
+        l1Size / weightsPerVector);
+
+    for(int i = 0; i < (l1Size / 2) / bytesPerVector; i++) {
+        // us
+        Vector a = simd_mulhi_epi16(
+            simd_min_epi16(
+                simd_load(
+                    &castUs[2 * i]
+                ),
+                q0Vec
+            ),
+            simd_slli_epi16(
+                simd_min_epi16(
+                    simd_max_epi16(
+                        simd_load(
+                            &castUs[2 * i + l1Size / weightsPerVector / 2]
+                        ), 
+                        zeroVec
+                    ),
+                    q0Vec
+                ),
+                7
+            )
+        );
+        Vector b = simd_mulhi_epi16(
+            simd_min_epi16(
+                simd_load(
+                    &castUs[2 * i + 1]
+                ),
+                q0Vec
+            ),
+            simd_slli_epi16(
+                simd_min_epi16(
+                    simd_max_epi16(
+                        simd_load(
+                            &castUs[2 * i + 1 + l1Size / weightsPerVector / 2]
+                        ), 
+                        zeroVec
+                    ),
+                    q0Vec
+                ),
+                7
+            )
+        );
+        l1AccV[i] = _mm256_permute4x64_epi64(simd_packus_epi16(a, b), 0b11011000);
+
+        // them
+        a = simd_mulhi_epi16(
+            simd_min_epi16(
+                simd_load(
+                    &castThem[2 * i]
+                ),
+                q0Vec
+            ),
+            simd_slli_epi16(
+                simd_min_epi16(
+                    simd_max_epi16(
+                        simd_load(
+                            &castThem[2 * i + l1Size / weightsPerVector / 2]
+                        ), 
+                        zeroVec
+                    ),
+                    q0Vec
+                ),
+                7
+            )
+        );
+        b = simd_mulhi_epi16(
+            simd_min_epi16(
+                simd_load(
+                    &castThem[2 * i + 1]
+                ),
+                q0Vec
+            ),
+            simd_slli_epi16(
+                simd_min_epi16(
+                    simd_max_epi16(
+                        simd_load(
+                            &castThem[2 * i + 1 + l1Size / weightsPerVector / 2]
+                        ), 
+                        zeroVec
+                    ),
+                    q0Vec
+                ),
+                7
+            )
+        );
+        l1AccV[i + ((l1Size / 2) / bytesPerVector)] = _mm256_permute4x64_epi64(simd_packus_epi16(a, b), 0b11011000);
     }
+
+    // cast it back to array
+    std::array<uint8_t, l1Size> l1Acc;
+    std::memcpy(
+        l1Acc.data(),
+        l1AccV.data(),
+        l1Size
+    );
 
     // l1 -> l2
     std::array<int32_t, l2Size> l2PartialAcc{};

@@ -41,7 +41,7 @@ std::vector<std::jthread> threads;
 int threadCount = 1;
 int64_t moveOverhead = 10;
 
-constexpr int defaultBenchDepth = 12;
+constexpr int defaultBenchDepth = 13;
 
 int rootColorToMove;
 
