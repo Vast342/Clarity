@@ -41,12 +41,24 @@ inline Vector simd_max_epi16(Vector a, Vector b) {
     return _mm512_max_epi16(a, b);
 }
 
+inline Vector simd_max_epi32(Vector a, Vector b) {
+    return _mm512_max_epi32(a, b);
+}
+
 inline Vector simd_min_epi16(Vector a, Vector b) {
     return _mm512_min_epi16(a, b);
 }
 
+inline Vector simd_min_epi32(Vector a, Vector b) {
+    return _mm512_min_epi32(a, b);
+}
+
 inline Vector simd_mullo_epi16(Vector a, Vector b) {
     return _mm512_mullo_epi16(a, b);
+}
+
+inline Vector simd_mullo_epi32(Vector a, Vector b) {
+    return _mm512_mullo_epi32(a, b);
 }
 
 inline Vector simd_madd_epi16(Vector a, Vector b) {
@@ -71,6 +83,11 @@ inline Vector simd_slli_epi16(Vector a, int count) {
     return _mm512_slli_epi16(a, count);
 }
 
+inline Vector simd_srai_epi32(Vector a, int count) {
+    return _mm512_srai_epi32(a, count);
+}
+
+
 inline Vector simd_mulhi_epi16(Vector a, Vector b) {
     return _mm512_mulhi_epi16(a, b);
 }
@@ -79,7 +96,6 @@ inline Vector simd_maddubs_epi16(Vector a, Vector b) {
     return _mm512_maddubs_epi16(a, b);
 }
 
-// --- AVX512 branch ---
 inline Vector simd_set1_epi32(int32_t v) {
     return _mm512_set1_epi32(v);
 }
@@ -120,12 +136,24 @@ inline Vector simd_max_epi16(Vector a, Vector b) {
     return _mm256_max_epi16(a, b);
 }
 
+inline Vector simd_max_epi32(Vector a, Vector b) {
+    return _mm256_max_epi32(a, b);
+}
+
 inline Vector simd_min_epi16(Vector a, Vector b) {
     return _mm256_min_epi16(a, b);
 }
 
+inline Vector simd_min_epi32(Vector a, Vector b) {
+    return _mm256_min_epi32(a, b);
+}
+
 inline Vector simd_mullo_epi16(Vector a, Vector b) {
     return _mm256_mullo_epi16(a, b);
+}
+
+inline Vector simd_mullo_epi32(Vector a, Vector b) {
+    return _mm256_mullo_epi32(a, b);
 }
 
 inline Vector simd_madd_epi16(Vector a, Vector b) {
@@ -142,6 +170,10 @@ inline Vector simd_packus_unpermuted_epi16(Vector a, Vector b) {
 
 inline Vector simd_slli_epi16(Vector a, int count) {
     return _mm256_slli_epi16(a, count);
+}
+
+inline Vector simd_srai_epi32(Vector a, int count) {
+    return _mm256_srai_epi32(a, count);
 }
 
 inline Vector simd_mulhi_epi16(Vector a, Vector b) {
@@ -204,12 +236,24 @@ inline Vector simd_max_epi16(Vector a, Vector b) {
     return _mm_max_epi16(a, b);
 }
 
+inline Vector simd_max_epi32(Vector a, Vector b) {
+    return _mm_max_epi32(a, b);
+}
+
 inline Vector simd_min_epi16(Vector a, Vector b) {
     return _mm_min_epi16(a, b);
 }
 
+inline Vector simd_min_epi32(Vector a, Vector b) {
+    return _mm_min_epi32(a, b);
+}
+
 inline Vector simd_mullo_epi16(Vector a, Vector b) {
     return _mm_mullo_epi16(a, b);
+}
+
+inline Vector simd_mullo_epi32(Vector a, Vector b) {
+    return _mm_mullo_epi32(a, b);
 }
 
 inline Vector simd_madd_epi16(Vector a, Vector b) {
@@ -226,6 +270,10 @@ inline Vector simd_packus_unpermuted_epi16(Vector a, Vector b) {
 
 inline Vector simd_slli_epi16(Vector a, int count) {
     return _mm_slli_epi16(a, count);
+}
+
+inline Vector simd_srai_epi32(Vector a, int count) {
+    return _mm_srai_epi32(a, count);
 }
 
 inline Vector simd_mulhi_epi16(Vector a, Vector b) {

@@ -321,59 +321,68 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size>
         l1AccV[i + ((l1Size / 2) / bytesPerVector)] = simd_packus_unpermuted_epi16(a, b);
     }
 
-    // cast it back to array
-    std::array<uint8_t, l1Size> l1Acc;
-    std::memcpy(
-        l1Acc.data(),
-        l1AccV.data(),
-        l1Size
-    );
-
     // l1 -> l2
     constexpr int i32PerVector = bytesPerVector / 4;
-    constexpr int l2Chunks = l2Size / i32PerVector;
 
-    std::array<Vector, l2Chunks> l2AccV;
-    for (auto& v : l2AccV) v = simd_zero();
+    std::array<Vector, l2Size / i32PerVector> l2AccV{};
+    const uint8_t* l1AccBytes = reinterpret_cast<const uint8_t*>(l1AccV.data());
 
-    for (int b = 0; b < l1Size / 4; b++) {
+    for(int b = 0; b < l1Size / 4; b++) {
         int32_t actChunk;
-        std::memcpy(&actChunk, &l1Acc[4 * b], sizeof(int32_t));
+        std::memcpy(&actChunk, &l1AccBytes[4 * b], sizeof(int32_t));
         const Vector actVec = simd_set1_epi32(actChunk);
         const auto* weightBlock = reinterpret_cast<const Vector*>(network->l2Weights[bucket][b].data());
-        for(int c = 0; c < l2Chunks; c++) {
+        for(int c = 0; c < l2Size / i32PerVector; c++) {
             l2AccV[c] = simd_dpbusd_epi32(l2AccV[c], actVec, simd_load(&weightBlock[c]));
         }
     }
 
-    std::array<int32_t, l2Size> l2PartialAcc;
-    for (int c = 0; c < l2Chunks; c++) {
-        simd_store(reinterpret_cast<Vector*>(&l2PartialAcc[c * i32PerVector]), l2AccV[c]);
+    std::array<Vector, l2Size / i32PerVector> l2AccAct;
+    const Vector zeroVecI32 = simd_zero();
+    const Vector qVecI32 = simd_set1_epi32(Q);
+
+    for(int c = 0; c < l2Size / i32PerVector; c++) {
+        Vector v = simd_srai_epi32(l2AccV[c], 8);
+        v = simd_add_epi32(v, simd_load(reinterpret_cast<const Vector*>(&network->l2Biases[bucket][c * i32PerVector])));
+        v = simd_max_epi32(v, zeroVecI32);
+        v = simd_min_epi32(v, qVecI32);
+        l2AccAct[c] = simd_mullo_epi32(v, v);
     }
 
     std::array<int32_t, l2Size> l2Acc;
-    for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-        const auto value = (l2PartialAcc[l2Node] >> 8) + network->l2Biases[bucket][l2Node];
-        const auto crelu = std::clamp(value, 0, Q);
-        l2Acc[l2Node] = crelu * crelu;
+    for(int c = 0; c < l2Size / i32PerVector; c++) {
+        simd_store(reinterpret_cast<Vector*>(&l2Acc[c * i32PerVector]), l2AccAct[c]);
     }
 
     // l2 -> l3
-    std::array<int32_t, l3Size> l3Acc = network->l3Biases[bucket];
-    for(int l3Node = 0; l3Node < l3Size; l3Node++) {
-        for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-            l3Acc[l3Node] += l2Acc[l2Node] * network->l3Weights[bucket][l3Node][l2Node];
+    constexpr int i32PerVecL3 = bytesPerVector / 4;
+    constexpr int l3Chunks = l3Size / i32PerVecL3;
+
+    std::array<Vector, l3Chunks> l3AccV;
+    for(int c = 0; c < l3Chunks; c++) {
+        l3AccV[c] = simd_load(reinterpret_cast<const Vector*>(&network->l3Biases[bucket][c * i32PerVecL3]));
+    }
+
+    for(int l2Node = 0; l2Node < l2Size; l2Node++) {
+        const Vector actVec = simd_set1_epi32(l2Acc[l2Node]);
+        const auto* w = reinterpret_cast<const Vector*>(network->l3Weights[bucket][l2Node].data());
+        for(int c = 0; c < l3Chunks; c++) {
+            l3AccV[c] = simd_add_epi32(l3AccV[c], simd_mullo_epi32(actVec, simd_load(&w[c])));
         }
     }
 
     // l3 -> output
-    int64_t output = 0;
-    for(int l3Node = 0; l3Node < l3Size; l3Node++) {
-        const auto crelu = std::clamp(l3Acc[l3Node], 0, Q*Q*Q);
-        output += crelu * network->outputWeights[bucket][l3Node];
+    Vector accVec = simd_zero();
+    const Vector qqqVec = simd_set1_epi32(Q*Q*Q);
+    for(int c = 0; c < l3Chunks; c++) {
+        Vector v = simd_max_epi32(l3AccV[c], simd_zero());
+        v = simd_min_epi32(v, qqqVec);
+        const Vector w = simd_load(reinterpret_cast<const Vector*>(&network->outputWeights[bucket][c * i32PerVecL3]));
+        accVec = simd_add_epi32(accVec, simd_mullo_epi32(v, w));
     }
+    int64_t output = simd_reduce_add_epi32(accVec) + network->outputBiases[bucket];
 
-    return output + network->outputBiases[bucket];
+    return output;
 }
 
 void NetworkState::activateFeature(int square, int piece, int blackKing, int whiteKing){ 
