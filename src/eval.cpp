@@ -220,14 +220,6 @@ int getBucket(int pieceCount) {
 }
 
 int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size> us, const std::span<int16_t, l1Size> them) {
-    // pairwise & screlu
-    /*std::array<int8_t, l1Size> l1ScalarAcc;
-    for(int ftNode = 0; ftNode < l1Size / 2; ftNode++) {
-        l1ScalarAcc[ftNode] = (std::clamp(us[ftNode], int16_t(0), Q0) 
-        * std::clamp(us[ftNode + l1Size / 2], int16_t(0), Q0)) >> 9;
-        l1ScalarAcc[ftNode + l1Size / 2] = (std::clamp(them[ftNode], int16_t(0), Q0) 
-        * std::clamp(them[ftNode + l1Size / 2], int16_t(0), Q0)) >> 9;
-    }*/
     // pairwise crelu!
     // vectors of u8s
     std::array<Vector, l1Size / bytesPerVector> l1AccV;
@@ -338,11 +330,25 @@ int64_t NetworkState::forward(const int bucket, const std::span<int16_t, l1Size>
     );
 
     // l1 -> l2
-    std::array<int32_t, l2Size> l2PartialAcc{};
-    for(int l2Node = 0; l2Node < l2Size; l2Node++) {
-        for(int l1Node = 0; l1Node < l1Size; l1Node++) {
-            l2PartialAcc[l2Node] += l1Acc[l1Node] * network->l2Weights[bucket][l2Node][l1Node];
+    constexpr int i32PerVector = bytesPerVector / 4;
+    constexpr int l2Chunks = l2Size / i32PerVector;
+
+    std::array<Vector, l2Chunks> l2AccV;
+    for (auto& v : l2AccV) v = simd_zero();
+
+    for (int b = 0; b < l1Size / 4; b++) {
+        int32_t actChunk;
+        std::memcpy(&actChunk, &l1Acc[4 * b], sizeof(int32_t));
+        const Vector actVec = simd_set1_epi32(actChunk);
+        const auto* weightBlock = reinterpret_cast<const Vector*>(network->l2Weights[bucket][b].data());
+        for(int c = 0; c < l2Chunks; c++) {
+            l2AccV[c] = simd_dpbusd_epi32(l2AccV[c], actVec, simd_load(&weightBlock[c]));
         }
+    }
+
+    std::array<int32_t, l2Size> l2PartialAcc;
+    for (int c = 0; c < l2Chunks; c++) {
+        simd_store(reinterpret_cast<Vector*>(&l2PartialAcc[c * i32PerVector]), l2AccV[c]);
     }
 
     std::array<int32_t, l2Size> l2Acc;

@@ -79,7 +79,7 @@ struct alignas(alignmentAmount) Network {
     std::array<std::array<int16_t, l1Size>, inputFeatureCount> l1Weights;
     std::array<int16_t, l1Size> l1Biases;
     // l1 -> l2
-    std::array<std::array<std::array<int8_t, l1Size>, l2Size>, outputBucketCount> l2Weights;
+    std::array<std::array<std::array<int8_t, l2Size * 4>, l1Size / 4>, outputBucketCount> l2Weights;
     std::array<std::array<int32_t, l2Size>, outputBucketCount> l2Biases;
     // l2 -> l3
     std::array<std::array<std::array<int32_t, l2Size>, l3Size>, outputBucketCount>  l3Weights;

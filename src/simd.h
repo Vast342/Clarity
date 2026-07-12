@@ -75,6 +75,29 @@ inline Vector simd_mulhi_epi16(Vector a, Vector b) {
     return _mm512_mulhi_epi16(a, b);
 }
 
+inline Vector simd_maddubs_epi16(Vector a, Vector b) {
+    return _mm512_maddubs_epi16(a, b);
+}
+
+// --- AVX512 branch ---
+inline Vector simd_set1_epi32(int32_t v) {
+    return _mm512_set1_epi32(v);
+}
+
+inline void simd_store(Vector *ptr, Vector v) {
+    _mm512_store_si512(ptr, v);
+}
+
+inline Vector simd_dpbusd_epi32(Vector acc, Vector a, Vector b) {
+#if defined(__AVX512VNNI__)
+    return _mm512_dpbusd_epi32(acc, a, b);
+#else
+    const Vector product16 = _mm512_maddubs_epi16(a, b);
+    const Vector product32 = _mm512_madd_epi16(product16, _mm512_set1_epi16(1));
+    return _mm512_add_epi32(acc, product32);
+#endif
+}
+
 #elif defined(__AVX2__)
 
 using Vector = __m256i;
@@ -137,6 +160,28 @@ inline int simd_reduce_add_epi32(Vector v) {
     return _mm_cvtsi128_si32(s);
 }
 
+inline Vector simd_maddubs_epi16(Vector a, Vector b) {
+    return _mm256_maddubs_epi16(a, b);
+}
+
+inline Vector simd_set1_epi32(int32_t v) {
+    return _mm256_set1_epi32(v);
+}
+
+inline void simd_store(Vector *ptr, Vector v) {
+    _mm256_store_si256(ptr, v);
+}
+
+inline Vector simd_dpbusd_epi32(Vector acc, Vector a, Vector b) {
+#if defined(__AVXVNNI__) || (defined(__AVX512VNNI__) && defined(__AVX512VL__))
+    return _mm256_dpbusd_epi32(acc, a, b);
+#else
+    const Vector product16 = _mm256_maddubs_epi16(a, b);
+    const Vector product32 = _mm256_madd_epi16(product16, _mm256_set1_epi16(1));
+    return _mm256_add_epi32(acc, product32);
+#endif
+}
+
 #else
 
 using Vector = __m128i;
@@ -197,6 +242,20 @@ inline int simd_reduce_add_epi32(Vector v) {
     __m128i hi32 = _mm_shuffle_epi32(s, _MM_SHUFFLE(2, 3, 0, 1));
     s = _mm_add_epi32(s, hi32);
     return _mm_cvtsi128_si32(s);
+}
+
+inline Vector simd_set1_epi32(int32_t v) {
+    return _mm_set1_epi32(v);
+}
+
+inline void simd_store(Vector *ptr, Vector v) {
+    _mm_store_si128(ptr, v);
+}
+
+inline Vector simd_dpbusd_epi32(Vector acc, Vector a, Vector b) {
+    const Vector product16 = _mm_maddubs_epi16(a, b);
+    const Vector product32 = _mm_madd_epi16(product16, _mm_set1_epi16(1));
+    return _mm_add_epi32(acc, product32);
 }
 
 #endif
