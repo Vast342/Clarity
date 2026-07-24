@@ -70,6 +70,17 @@ void runBench(int depth) {
     std::cout << total << " nodes " << std::to_string(int(total / (double(elapsedTime) / 1000))) << " nps" << '\n';
 }
 
+bool stringToBool(const std::string& str) {
+    bool b;
+    std::istringstream is(str);
+    if (!(is >> std::boolalpha >> b)) {
+        is.clear();
+        is.seekg(0);
+        is >> b;
+    }
+    return b;
+}
+
 // sets options, though currently just the hash size
 void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
@@ -87,6 +98,8 @@ void setOption(const std::vector<std::string>& bits) {
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
         useSyzygy = initSuccess;
+    } else if(name == "Minimal") {
+        minimal = stringToBool(bits[4]);
     } else {
         adjustTunable(name, std::stod(bits[4]));
     }
@@ -123,6 +136,7 @@ void identify() {
     std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
     std::cout << "option name MoveOverhead type spin default 10 min 1 max 100000" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
+    std::cout << "option name Minimal type check default false" << std::endl;
     //outputTunables();
     std::cout << "uciok" << std::endl;
 }

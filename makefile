@@ -99,9 +99,6 @@ debug: $(EVALFILE) $(EXE)
 uci:
 	$(MAKE) BUILD_TYPE=uci
 
-datagen:
-	$(MAKE) BUILD_TYPE=datagen
-
 # Architecture-specific targets
 v1:
 	$(MAKE) ARCH_LEVEL=v1
@@ -115,10 +112,7 @@ v3:
 v4:
 	$(MAKE) ARCH_LEVEL=v4
 
-# Combined targets (examples)
-datagen-v3:
-	$(MAKE) BUILD_TYPE=datagen ARCH_LEVEL=v3
-
+# Combined targets
 uci-v4:
 	$(MAKE) BUILD_TYPE=uci ARCH_LEVEL=v4
 
@@ -142,7 +136,7 @@ info:
 	@echo "  SOURCES: $(SRCS)"
 
 # Phony targets
-.PHONY: all debug clean uci datagen v1 v2 v3 v4 datagen-v3 uci-v4 info bench run
+.PHONY: all debug clean uci v1 v2 v3 v4 uci-v4 info bench run
 
 # Disable built-in rules and variables
 .SUFFIXES:

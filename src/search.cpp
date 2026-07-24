@@ -668,7 +668,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
             double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
             if(timesUp.load(std::memory_order_relaxed) || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * bmStabilityNumbers[std::min(stability, 6)]->value) break;
             // outputs info which is picked up by the user
-            outputInfo(board, score, depth, elapsedTime);
+            if(!minimal) outputInfo(board, score, depth, elapsedTime);
             //if(elapsedTime > softBound) break;
         }
     }
@@ -931,7 +931,7 @@ Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
         }
         const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
         // outputs info which is picked up by the user
-        if(printInfo) outputInfo(board, score, depth, elapsedTime);
+        if(printInfo && !minimal) outputInfo(board, score, depth, elapsedTime);
         //if(elapsedTime > softBound) break;
         if(timesUp) {
             rootBestMove = previousBest;

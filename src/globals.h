@@ -197,3 +197,5 @@ constexpr std::array<uint8_t, 4> castling = {0b0001, 0b0010, 0b0011, 0b0100};
 constexpr uint8_t EnPassant = 0b0101;
 constexpr uint8_t DoublePawnPush = 0b0110;
 constexpr std::array<uint8_t, 4> promotions = {0b0111, 0b1000, 0b1001, 0b1010};
+
+inline bool minimal = false;
