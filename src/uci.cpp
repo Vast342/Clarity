@@ -24,6 +24,7 @@
 #include "uci.h"
 #include "tunables.h"
 #include "eval.h"
+#include "datagen.h"
 
 bool useSyzygy = false;
 
@@ -34,7 +35,7 @@ bool useSyzygy = false;
 
 int defaultMovesToGo = 20;
 
-Board board("8/8/8/8/8/8/8/8 w - - 0 1");
+Board board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 TranspositionTable TT;
 std::vector<Engine> engines;
 std::vector<std::jthread> threads;
@@ -52,7 +53,7 @@ void newGame() {
         engines[i].resetEngine();
     }
     TT.clearTable(threadCount);
-    board = Board("8/8/8/8/8/8/8/8 w - - 0 1");
+    board = Board("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 }
 
 // runs a fixed depth search on a fixed set of positions, to see if a test changes how the engine behaves
@@ -245,6 +246,13 @@ void stopOtherThreads() {
     }
 }
 
+void parseGenFens(std::vector<std::string> bits) {
+    const uint64_t numGames = std::stoull(bits[1]);
+    const uint64_t seed = std::stoull(bits[3]);
+    // todo: book support
+    genFens(numGames, seed);
+}
+
 // interprets the command
 void interpretCommand(std::string command) {
     std::vector<std::string> bits = split(command, ' ');
@@ -306,6 +314,8 @@ void interpretCommand(std::string command) {
         std::cout << board.getThreats() << std::endl; 
     } else if(bits[0] == "calcthreats") {
         std::cout << board.calculateThreats() << std::endl;   
+    } else if(bits[0] == "genfens") {
+        parseGenFens(bits);
     } else {
         std::cout << "invalid or unsupported command\n";
     }
@@ -317,8 +327,6 @@ int main(int argc, char* argv[]) {
     std::cout << std::boolalpha;
     if(argc > 1) {
         // parse cli args as uci commands
-        // this will do incorrect things with more threads, but we ignore that
-        // in normal usage we won't use that at all
         for(int i = 1; i < argc; i++) {
             const auto command = std::string(argv[i]);
             if(command == "quit") return 0;

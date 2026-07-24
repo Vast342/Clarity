@@ -42,19 +42,9 @@ SRC_DIR := src
 BUILD_DIR := build
 
 # Base source files (common to both builds)
-BASE_SRCS := $(filter-out src/external/fathom/tbchess.cpp, $(wildcard src/external/fathom/*.cpp))
-BASE_SRCS += $(filter-out src/magic.cpp src/datagen.cpp src/wdldatagen.cpp src/uci.cpp, $(wildcard src/*.cpp))
+SRCS := $(filter-out src/external/fathom/tbchess.cpp, $(wildcard src/external/fathom/*.cpp))
+SRCS += $(filter-out src/magic.cpp src/wdldatagen.cpp, $(wildcard src/*.cpp))
 
-# Build-specific source files
-ifeq ($(BUILD_TYPE),datagen)
-    SRCS := $(BASE_SRCS) src/datagen.cpp
-    EXE_SUFFIX := -datagen
-else ifeq ($(BUILD_TYPE),uci)
-    SRCS := $(BASE_SRCS) src/uci.cpp
-    EXE_SUFFIX :=
-else
-    $(error Invalid BUILD_TYPE: $(BUILD_TYPE). Use 'uci' or 'datagen')
-endif
 
 OBJS := $(addprefix $(BUILD_DIR)/,$(notdir $(SRCS:.cpp=.o)))
 
