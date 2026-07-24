@@ -315,8 +315,24 @@ int main(int argc, char* argv[]) {
     initialize();
     newGame();
     std::cout << std::boolalpha;
-    if(argc > 1 && std::string(argv[1]) == "bench") {
-        runBench(14);
+    if(argc > 1) {
+        // parse cli args as uci commands
+        // this will do incorrect things with more threads, but we ignore that
+        // in normal usage we won't use that at all
+        for(int i = 1; i < argc; i++) {
+            const auto command = std::string(argv[i]);
+            if(command == "quit") return 0;
+
+            interpretCommand(command);
+
+            if(!threads.empty()) {
+                for(auto& thread : threads) {
+                    if(thread.joinable()) thread.join();
+                }
+
+                threads.clear();
+            }
+        }
         return 0;
     }
     std::string command;
