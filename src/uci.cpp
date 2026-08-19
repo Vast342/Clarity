@@ -129,8 +129,9 @@ void identify() {
 // tells the engine to search, with support for a few different types
 void go(std::vector<std::string> bits) {
     if(useSyzygy) {
-        if(__builtin_popcountll(board.getOccupiedBitboard()) <= 7) {
+        if(__builtin_popcountll(board.getOccupiedBitboard()) <= static_cast<int>(TB_LARGEST)) {
             // probe endgame tt at root
+            //std::array<unsigned, TB_MAX_MOVES> results = {};
             unsigned probeResult = tb_probe_root(board.getColoredBitboard(1), 
                                                 board.getColoredBitboard(0),
                                                 board.getPieceBitboard(King),
@@ -143,13 +144,27 @@ void go(std::vector<std::string> bits) {
                                                 0,
                                                 board.getEnPassantIndex() == 64 ? 0 : board.getEnPassantIndex(),
                                                 board.getColorToMove(),
+                                                //results.data());
                                                 NULL);
             if(probeResult != TB_RESULT_FAILED) {
                 int start = TB_GET_FROM(probeResult);
                 int end = TB_GET_TO(probeResult);
                 int promotion = TB_GET_PROMOTES(probeResult);
                 int ep = TB_GET_EP(probeResult);
+                int wdl = TB_GET_WDL(probeResult);
+                int dtz = TB_GET_DTZ(probeResult);
+                // test case: position fen 8/7k/8/8/8/Q6K/8/8 w - - 0 1
                 Move tbBest = Move(start, end, promotion, ep, board);
+                std::cout << "info score ";
+                if(wdl == TB_WIN) {
+                    // todo: detect mate distance with given DTZ
+                    std::cout << "mate " + std::to_string(dtz / 2 + 1) << std::endl;
+                } else if(wdl == TB_LOSS) {
+                    // todo: this^^
+                    std::cout << "mate -" + std::to_string(dtz / 2 + 1) << std::endl;
+                } else {
+                    std::cout << "cp 0" << std::endl;
+                }
                 std::cout << "bestmove " << toLongAlgebraic(tbBest) << std::endl;
                 return;
             }

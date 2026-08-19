@@ -994,11 +994,10 @@ bool tb_init(const char *path)
           }
 
 finished:
-  /* TBD - assumes UCI
+  // TBD - assumes UCI
   printf("info string Found %d WDL, %d DTM and %d DTZ tablebase files.\n",
       numWdl, numDtm, numDtz);
   fflush(stdout);
-  */
   // Set TB_LARGEST, for backward compatibility with pre-7-man Fathom
   TB_LARGEST = (unsigned)TB_MaxCardinality;
   if ((unsigned)TB_MaxCardinalityDTM > TB_LARGEST) {
