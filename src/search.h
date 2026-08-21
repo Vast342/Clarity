@@ -29,7 +29,7 @@ constexpr int16_t matedScore = -32000;
 struct Engine {
     public: 
         void resetEngine();
-        Move think(Board board, SearchLimiters limiters, bool printInfo);
+        Move think(Board board, SearchLimiters limiters, bool printInfo, std::array<Move, 256> optimalMoves, int numOptimalMoves);
         Move getBestMove();
         Engine(TranspositionTable *tt) {
             TT = tt;
@@ -39,6 +39,9 @@ struct Engine {
     private:
         Move rootBestMove = Move();
         int seldepth = 0;
+
+        std::array<Move, 256> rootMoves;
+        int numRootMoves;
 
         TranspositionTable* TT;
         SearchInfo info;

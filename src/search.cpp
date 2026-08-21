@@ -372,6 +372,17 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     while (true) {
         auto [move, moveValue] = picker.next();
         if (!move) break;
+        // filter by optimal moves for tb positions
+        if(ply == 0) {
+            bool found = false;
+            for(int i = 0; i < numRootMoves; i++) {
+                if(rootMoves[i] == move) {
+                    found = true;
+                    break;
+                }
+            }
+            if(!found) continue;
+        }
         if(move == info.stack[ply].excluded) continue;
         int moveStartSquare = move.getStartSquare();
         int moveEndSquare = move.getEndSquare();
@@ -592,8 +603,9 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
 }
 
 // the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
-// todo: refactor to unify the search functions
-Move Engine::think(Board board, SearchLimiters limiters, bool printInfo) {
+Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::array<Move, 256> optimalMoves, int numOptimalMoves) {
+    rootMoves = optimalMoves;
+    numRootMoves = numOptimalMoves;
     info.stack[0].doubleExtensions = 0;
     limits = limiters;
     //ageHistory();
