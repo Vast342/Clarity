@@ -31,9 +31,6 @@ bool useSyzygy = false;
     The entirety of my implementation of UCI, read the standard for that if you want more information
     There are things not supported here though, such as go infinite, and quite a few options
 */
-
-int defaultMovesToGo = 20;
-
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 TranspositionTable TT;
 std::vector<Engine> engines;
@@ -59,28 +56,26 @@ void newGame() {
 void runBench(int depth) {
     engines[0].resetEngine();
     uint64_t total = 0;
+    SearchLimiters limit = {};
+    limit.writeValues(0, 0, 20, depth, 0, 0);
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for(std::string fen : benchFens) {
         Board benchBoard(fen);
-        int j = engines[0].benchSearch(benchBoard, depth);
-        total += j;
+        engines[0].think(benchBoard, limit, false);
+        total += engines[0].nodes;
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
     std::cout << total << " nodes " << std::to_string(int(total / (double(elapsedTime) / 1000))) << " nps" << '\n';
 }
 
-// sets options, though currently just the hash size
 void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
     if(name == "Hash") {
         uint64_t newSizeMB = std::stoi(bits[4]);
         TT.resize(newSizeMB, threadCount);
     } else if(name == "Threads") {
-        //clock_t start = clock();
         threadCount = std::stoi(bits[4]);
         newGame();
-        //clock_t end = clock();
-        //std::cout << "operation took " << std::to_string((end-start)/static_cast<double>(1000)) << std::endl;
     } else if(name == "MoveOverhead") {
         moveOverhead = std::stoi(bits[4]);
     } else if(name == "SyzygyPath") {
@@ -147,6 +142,7 @@ void go(std::vector<std::string> bits) {
                                                 //results.data());
                                                 NULL);
             if(probeResult != TB_RESULT_FAILED) {
+                // todo: root search filtering
                 int start = TB_GET_FROM(probeResult);
                 int end = TB_GET_TO(probeResult);
                 int promotion = TB_GET_PROMOTES(probeResult);
@@ -157,10 +153,8 @@ void go(std::vector<std::string> bits) {
                 Move tbBest = Move(start, end, promotion, ep, board);
                 std::cout << "info score ";
                 if(wdl == TB_WIN) {
-                    // todo: detect mate distance with given DTZ
                     std::cout << "mate " + std::to_string(dtz / 2 + 1) << std::endl;
                 } else if(wdl == TB_LOSS) {
-                    // todo: this^^
                     std::cout << "mate -" + std::to_string(dtz / 2 + 1) << std::endl;
                 } else {
                     std::cout << "cp 0" << std::endl;
@@ -173,9 +167,8 @@ void go(std::vector<std::string> bits) {
     int time = 0;
     int depth = 0;
     int inc = 0;
-    int movestogo = defaultMovesToGo;
+    int movestogo = 20;
     int nodes = 0;
-    bool infinite = false;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
             time = std::stoi(bits[i+1]);
@@ -198,43 +191,13 @@ void go(std::vector<std::string> bits) {
         if(bits[i] == "nodes") {
             nodes = std::stoi(bits[i+1]);
         }
-        if(bits[i] == "infinite") {
-            infinite = true;
-            i--;
-        }
     }
-    // go depth x
-    if(depth != 0) {
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([depth, i]{
-                engines[i].fixedDepthSearch(board, depth, i == 0);
-            });
-        }
-        //bestMove = engines.fixedDepthSearch(board, depth, true);
-    } else if(nodes != 0) {
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([nodes, i]{
-                engines[i].fixedNodesSearch(board, nodes, i == 0);
-            });
-        }
-    } else if(infinite) {
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([i]{
-                engines[i].fixedDepthSearch(board, 100, i == 0);
-            });
-        }
-    } else {
-        // go wtime x btime x
-        // the formulas here are former formulas from Stormphrax
-        time -= moveOverhead;
-        const int softBound = tmsMultiplier.value * (time / movestogo + inc * tmsNumerator.value / tmsDenominator.value);
-        const int hardBound = time / tmhDivisor.value;
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([i, softBound, hardBound]{
-                engines[i].think(board, softBound, hardBound, i == 0);
-            });
-        }
-        //bestMove = engine.think(board, softBound, hardBound, true);
+    SearchLimiters limits = {};
+    limits.writeValues(time, inc, movestogo, depth, nodes, 0);
+    for(int i = 0; i < threadCount; i++) {
+        threads.emplace_back([limits, i]{
+            engines[i].think(board, limits, i == 0);
+        });
     }
 }
 

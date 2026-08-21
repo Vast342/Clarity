@@ -20,6 +20,7 @@
 #include "globals.h"
 #include "tt.h"
 #include "info.h"
+#include "limiters.h"
 
 extern std::atomic<bool> timesUp;
 
@@ -28,33 +29,23 @@ constexpr int16_t matedScore = -32000;
 struct Engine {
     public: 
         void resetEngine();
-        Move think(Board board, int softBound, int hardBound, bool info);
+        Move think(Board board, SearchLimiters limiters, bool printInfo);
         Move getBestMove();
-        int benchSearch(Board board, int depthToSearch);
-        Move fixedDepthSearch(Board board, int depthToSearch, bool info);
-        std::pair<Move, int> dataGenSearch(Board board, uint64_t nodeCap);
-        Move fixedNodesSearch(Board board, int nodeCount, bool info);
         Engine(TranspositionTable *tt) {
             TT = tt;
         }
 
         uint64_t nodes = 0;
     private:
-        bool useNodeCap = false;
-
         Move rootBestMove = Move();
-
-        int hardLimit = 0;
-
         int seldepth = 0;
 
         TranspositionTable* TT;
-
         SearchInfo info;
-
+        SearchLimiters limits;
         std::array<std::array<int, 64>, 64> nodeTMTable;
-
         std::chrono::steady_clock::time_point begin;
+
         void clearHistory();
         int16_t qSearch(Board &board, int alpha, int beta, int16_t ply);
         void updateHistory(const int colorToMove, const int start, const int end, const int piece, const int bonus, const int16_t ply, const int hash, const bool startAttack, const bool endAttack);

@@ -56,20 +56,10 @@ void Engine::resetEngine() {
 // Quiecense search, searching all the captures until there aren't anymore so that you can get an accurate eval
 int16_t Engine::qSearch(Board &board, int alpha, int beta, int16_t ply) {
     info.stack[ply].pvLength = 0;
-    //if(board.isRepeatedPosition()) return 0;
-    // time check every 4096 nodes
-    if(useNodeCap) {
-        if(nodes > hardNodeCap) {
-            timesUp.store(true);
-            return 0;
-        }
-    } else {
-        if(nodes % 4096 == 0) {
-            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-                timesUp.store(true);
-                return 0;
-            }
-        }
+    // check if search is supposed to have ended
+    if(!limits.hardLimitCheck(nodes, begin)) {
+        timesUp.store(true);
+        return 0;
     }
     if(ply > seldepth) seldepth = ply;
     const uint64_t hash = board.getZobristHash();
@@ -242,19 +232,10 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     info.stack[ply].pvLength = 0;
     // if it's a repeated position, it's a draw
     if(ply > 0 && (board.getFiftyMoveCount() >= 50 || board.isRepeatedPosition())) return 0;
-    // time check every 4096 nodes
-    if(useNodeCap) {
-        if(nodes >= hardNodeCap) {
-            timesUp.store(true);
-            return 0;
-        }
-    } else {
-        if(nodes % 4096 == 0) {
-            if(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count() > hardLimit) {
-                timesUp.store(true);
-                return 0;
-            }
-        }
+    // check if search is supposed to have ended
+    if(!limits.hardLimitCheck(nodes, begin)) {
+        timesUp.store(true);
+        return 0;
     }
     
     const bool inCheck = board.isInCheck();
@@ -583,8 +564,7 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
     return bestScore;
 }
 
-// gets the PV from the TT, has some inconsistencies or illegal moves, and will be replaced with a triangular PV table eventually
-// finally being replaced!!
+// fetches the PV line from the table
 std::string Engine::getPV() {
     std::string pv;
     for(int i = 0; i < info.stack[0].pvLength; i++) {
@@ -612,14 +592,14 @@ void Engine::outputInfo(const Board& board, int score, int depth, int elapsedTim
 }
 
 // the usual search function, where you give it the amount of time it has left, and it will search in increasing depth steps until it runs out of time
-Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
+// todo: refactor to unify the search functions
+Move Engine::think(Board board, SearchLimiters limiters, bool printInfo) {
     info.stack[0].doubleExtensions = 0;
+    limits = limiters;
     //ageHistory();
     //clearHistory();
     std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
     nodes = 0;
-    useNodeCap = false;
-    hardLimit = hardBound;
     seldepth = 0;
     timesUp.store(false);
     int stability = 0;
@@ -630,7 +610,7 @@ Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
     int16_t score = 0;
 
     // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
-    for(int depth = 1; depth < 100; depth++) {
+    for(int depth = 1; depth <= limits.getDepthLimit(); depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
         int delta = aspBaseDelta.value;
@@ -664,278 +644,11 @@ Move Engine::think(Board board, int softBound, int hardBound, bool printInfo) {
         if(timesUp.load(std::memory_order_relaxed)) rootBestMove = previousBest;
         if(printInfo) {
             const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-            // soft time bounds check
-            double frac = nodeTMTable[rootBestMove.getStartSquare()][rootBestMove.getEndSquare()] / static_cast<double>(nodes);
-            if(timesUp.load(std::memory_order_relaxed) || elapsedTime >= softBound * (depth > ntmDepthCondition.value ? (ntmSubtractor.value - frac) * ntmMultiplier.value : ntmDefault.value) * bmStabilityNumbers[std::min(stability, 6)]->value) break;
-            // outputs info which is picked up by the user
             outputInfo(board, score, depth, elapsedTime);
-            //if(elapsedTime > softBound) break;
-        }
-    }
-
-    if(rootBestMove == Move()) {
-        MovePicker picker = MovePicker::search(board, Move(), info, 0);
-
-        while (true) {
-            auto [move, score] = picker.next();
-            if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
-                rootBestMove = move;
+            // soft time bounds check
+            if(!limits.softLimitCheck(elapsedTime, rootBestMove, nodes, nodeTMTable, depth, stability)) {
                 break;
             }
-        }
-    }
-    
-    if(printInfo) {
-        timesUp.store(true);
-        stopOtherThreads();
-        std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
-        mainThreadDone = true;
-    }
-    return rootBestMove;
-}
-
-// searches done for bench, returns the number of nodes searched.
-int Engine::benchSearch(Board board, int depthToSearch) {
-    info.stack[0].doubleExtensions = 0;
-    //clearHistory();
-    nodes = 0;
-    hardLimit = 1215752192;
-    std::memset(nodeTMTable.data(), 0, sizeof(nodeTMTable));
-    useNodeCap = false;
-    seldepth = 0;
-    timesUp.store(false);
-    
-    begin = std::chrono::steady_clock::now();
-
-    rootBestMove = Move();
-    int16_t score = 0;
-    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
-    for(int depth = 1; depth <= depthToSearch; depth++) {
-        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
-        seldepth = depth;
-        int delta = aspBaseDelta.value;
-        int alpha = std::max(int(matedScore), score - delta);
-        int beta = std::min(-matedScore, score + delta);
-        int usedDepth = depth;
-        if(depth > aspDepthCondition.value) {
-            while(true) {
-                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                
-                if(score >= beta) {
-                    beta = std::min(beta + delta, -matedScore);
-                    usedDepth = std::max(usedDepth - 1, depth - 5);
-                } else if(score <= alpha) {
-                    beta = (alpha + beta) / 2;
-                    alpha = std::max(alpha - delta, int(matedScore));
-                    usedDepth = depth;
-                } else break;
-
-                delta *= aspDeltaMultiplier.value;
-            }
-        } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
-        }
-        //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        // outputs info which is picked up by the user
-        //outputInfo(board, score, depth, elapsedTime);
-    }
-    if(rootBestMove == Move()) std::cout << "bench returned null move" << std::endl;
-    return nodes;
-}
-
-// searches to a fixed depth when the user says go depth x
-Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool printInfo) {
-    info.stack[0].doubleExtensions = 0;
-    //ageHistory();
-    //clearHistory();
-    nodes = 0;
-    useNodeCap = false;
-    seldepth = 0;
-    hardLimit = 1215752192;
-    timesUp.store(false);
-    begin = std::chrono::steady_clock::now();
-
-    int16_t score = 0;
-
-    Move previousBest;
-
-    for(int depth = 1; depth <= depthToSearch; depth++) {
-        seldepth = 0;
-        int delta = aspBaseDelta.value;
-        int alpha = std::max(int(matedScore), score - delta);
-        int beta = std::min(-matedScore, score + delta);
-        int usedDepth = depth;
-        if(depth > aspDepthCondition.value) {
-            while(true) {
-                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                
-                if(score >= beta) {
-                    beta = std::min(beta + delta, -matedScore);
-                    usedDepth = std::max(usedDepth - 1, depth - 5);
-                } else if(score <= alpha) {
-                    beta = (alpha + beta) / 2;
-                    alpha = std::max(alpha - delta, int(matedScore));
-                    usedDepth = depth;
-                } else break;
-
-                delta *= aspDeltaMultiplier.value;
-            }
-        } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
-        }
-        if(timesUp) {
-            rootBestMove = previousBest;
-            break;
-        }
-        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        if(printInfo) outputInfo(board, score, depth, elapsedTime);
-        previousBest = rootBestMove;
-    }
-
-    if(rootBestMove == Move()) {
-        MovePicker picker = MovePicker::search(board, Move(), info, 0);
-
-        while (true) {
-            auto [move, score] = picker.next();
-            if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
-                rootBestMove = move;
-                break;
-            }
-        }
-    }
-
-    if(printInfo) {
-        timesUp.store(true);
-        stopOtherThreads();
-        std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
-        mainThreadDone = true;
-    }
-    return rootBestMove;
-}
-
-std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
-    info.stack[0].doubleExtensions = 0;
-    //clearHistory();
-    useNodeCap = true;
-    nodes = 0;
-    hardLimit = 400000;
-    seldepth = 0;
-    timesUp.store(false);
-
-    begin = std::chrono::steady_clock::now();
-
-    rootBestMove = Move();
-    Move previousBest = Move();
-    int16_t previousScore = 0;
-    int16_t score = 0;
-    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
-    for(int depth = 1; depth <= 100; depth++) {
-        previousBest = Move();
-        previousScore = score;
-        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
-        seldepth = depth;
-        int delta = aspBaseDelta.value;
-        int alpha = std::max(int(matedScore), score - delta);
-        int beta = std::min(-matedScore, score + delta);
-        int usedDepth = depth;
-        if(depth > aspDepthCondition.value) {
-            while(true) {
-                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                
-                if(score >= beta) {
-                    beta = std::min(beta + delta, -matedScore);
-                    usedDepth = std::max(usedDepth - 1, depth - 5);
-                } else if(score <= alpha) {
-                    beta = (alpha + beta) / 2;
-                    alpha = std::max(alpha - delta, int(matedScore));
-                    usedDepth = depth;
-                } else break;
-                if(nodes > nodeCap) break;
-                if(timesUp) break;
-                delta *= aspDeltaMultiplier.value;
-            }
-        } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
-        }
-        if(timesUp) {
-            rootBestMove = previousBest;
-            score = previousScore;
-            break;
-        }
-        //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        // outputs info which is picked up by the user
-        //outputInfo(board, score, depth, elapsedTime);
-        if(nodes > nodeCap) break;
-    }
-
-    if(rootBestMove == Move()) {
-        MovePicker picker = MovePicker::search(board, Move(), info, 0);
-
-        while (true) {
-            auto [move, score] = picker.next();
-            if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
-                rootBestMove = move;
-                break;
-            }
-        }
-    }
-
-    return std::pair<Move, int>(rootBestMove, score);
-}
-
-Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
-    info.stack[0].doubleExtensions = 0;
-    nodes = 0;
-    hardNodeCap = nodeCount;
-    useNodeCap = true;
-    seldepth = 0;
-    timesUp.store(false);
-
-    begin = std::chrono::steady_clock::now();
-
-    rootBestMove = Move();
-    int16_t score = 0;
-
-    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
-    for(int depth = 1; depth < 100; depth++) {
-        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
-        seldepth = depth;
-        int delta = aspBaseDelta.value;
-        int alpha = std::max(int(matedScore), score - delta);
-        int beta = std::min(-matedScore, score + delta);
-        int usedDepth = depth;
-        const Move previousBest = rootBestMove;
-        if(depth > aspDepthCondition.value) {
-            while(true) {
-                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                if(timesUp) break;
-                if(score >= beta) {
-                    beta = std::min(beta + delta, -matedScore);
-                    usedDepth = std::max(usedDepth - 1, depth - 5);
-                } else if(score <= alpha) {
-                    beta = (alpha + beta) / 2;
-                    alpha = std::max(alpha - delta, int(matedScore));
-                    usedDepth = depth;
-                } else break;
-
-                delta *= aspDeltaMultiplier.value;
-            }
-        } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
-        }
-        const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        // outputs info which is picked up by the user
-        if(printInfo) outputInfo(board, score, depth, elapsedTime);
-        //if(elapsedTime > softBound) break;
-        if(timesUp) {
-            rootBestMove = previousBest;
-            break;
         }
     }
 
