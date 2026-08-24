@@ -25,11 +25,9 @@
 #include "tunables.h"
 #include "eval.h"
 
-bool useSyzygy = false;
-
 /*
     The entirety of my implementation of UCI, read the standard for that if you want more information
-    There are things not supported here though, such as go infinite, and quite a few options
+    This implementation is currently incomplete, but it is functional
 */
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 TranspositionTable TT;
@@ -37,6 +35,8 @@ std::vector<Engine> engines;
 std::vector<std::jthread> threads;
 int threadCount = 1;
 int64_t moveOverhead = 10;
+bool useSyzygy = false;
+unsigned syzygyProbeLimit = 0;
 
 int rootColorToMove;
 
@@ -83,6 +83,8 @@ void setOption(const std::vector<std::string>& bits) {
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
         useSyzygy = initSuccess;
+    } else if(name == "SyzygyProbeLimit") {
+        syzygyProbeLimit = std::stoul(bits[4]);
     } else {
         adjustTunable(name, std::stod(bits[4]));
     }
@@ -119,6 +121,8 @@ void identify() {
     std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
     std::cout << "option name MoveOverhead type spin default 10 min 1 max 100000" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
+    // todo: increase max to 8
+    std::cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 7" << std::endl;
     //outputTunables();
     std::cout << "uciok" << std::endl;
 }
@@ -128,7 +132,7 @@ void go(std::vector<std::string> bits) {
     std::array<Move, 256> optimalMoves = {};
     int numOptimalMoves = 0;
     if(useSyzygy) {
-        if(__builtin_popcountll(board.getOccupiedBitboard()) <= static_cast<int>(TB_LARGEST)) {
+        if(__builtin_popcountll(board.getOccupiedBitboard()) <= static_cast<int>(std::min(TB_LARGEST, syzygyProbeLimit))) {
             // probe endgame tt at root
             std::array<unsigned, TB_MAX_MOVES> results = {};
             unsigned probeResult = tb_probe_root(board.getColoredBitboard(1), 
@@ -152,7 +156,7 @@ void go(std::vector<std::string> bits) {
                         numMoves = i;
                         break;
                     }
-                    // sort it by game result
+                    
                     int bestIdx = i;
                     for(int j = i + 1; j < TB_MAX_MOVES; j++) {
                         if(results[j] == TB_RESULT_FAILED) break;
