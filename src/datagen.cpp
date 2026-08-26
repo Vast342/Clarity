@@ -21,6 +21,8 @@
 #include "search.h"
 #include <thread>
 
+// todo: fix so that it uses the newly revised `think` function instead of the `datagenSearch`
+
 void stopOtherThreads() {
     // hehehe
 }

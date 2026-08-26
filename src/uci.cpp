@@ -25,21 +25,18 @@
 #include "tunables.h"
 #include "eval.h"
 
-bool useSyzygy = false;
-
 /*
     The entirety of my implementation of UCI, read the standard for that if you want more information
-    There are things not supported here though, such as go infinite, and quite a few options
+    This implementation is currently incomplete, but it is functional
 */
-
-int defaultMovesToGo = 20;
-
 Board board("8/8/8/8/8/8/8/8 w - - 0 1");
 TranspositionTable TT;
 std::vector<Engine> engines;
 std::vector<std::jthread> threads;
 int threadCount = 1;
 int64_t moveOverhead = 10;
+bool useSyzygy = false;
+unsigned syzygyProbeLimit = 0;
 
 int rootColorToMove;
 
@@ -59,33 +56,35 @@ void newGame() {
 void runBench(int depth) {
     engines[0].resetEngine();
     uint64_t total = 0;
+    SearchLimiters limit = {};
+    limit.writeValues(0, 0, 20, depth, 0, 0);
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
     for(std::string fen : benchFens) {
         Board benchBoard(fen);
-        int j = engines[0].benchSearch(benchBoard, depth);
-        total += j;
+        std::array<Move, 256> moves;
+        const int moveCount = benchBoard.getMoves(moves);
+        engines[0].think(benchBoard, limit, false, moves, moveCount);
+        total += engines[0].nodes;
     }
     const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
     std::cout << total << " nodes " << std::to_string(int(total / (double(elapsedTime) / 1000))) << " nps" << '\n';
 }
 
-// sets options, though currently just the hash size
 void setOption(const std::vector<std::string>& bits) {
     std::string name = bits[2];
     if(name == "Hash") {
         uint64_t newSizeMB = std::stoi(bits[4]);
         TT.resize(newSizeMB, threadCount);
     } else if(name == "Threads") {
-        //clock_t start = clock();
         threadCount = std::stoi(bits[4]);
         newGame();
-        //clock_t end = clock();
-        //std::cout << "operation took " << std::to_string((end-start)/static_cast<double>(1000)) << std::endl;
     } else if(name == "MoveOverhead") {
         moveOverhead = std::stoi(bits[4]);
     } else if(name == "SyzygyPath") {
         bool initSuccess = tb_init(bits[4].c_str());
         useSyzygy = initSuccess;
+    } else if(name == "SyzygyProbeLimit") {
+        syzygyProbeLimit = std::stoul(bits[4]);
     } else {
         adjustTunable(name, std::stod(bits[4]));
     }
@@ -116,22 +115,26 @@ void loadPosition(const std::vector<std::string>& bits) {
 
 // has the engine identify itself when the GUI says uci
 void identify() {
-    std::cout << "id name Clarity V7.2.0" << std::endl;
+    std::cout << "id name Clarity V8.0.0" << std::endl;
     std::cout << "id author Vast" << std::endl;
     std::cout << "option name Hash type spin default 64 min 1 max 524288" << std::endl;
     std::cout << "option name Threads type spin default 1 min 1 max 16384" << std::endl;
     std::cout << "option name MoveOverhead type spin default 10 min 1 max 100000" << std::endl;
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
+    // todo: increase max to 8
+    std::cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 7" << std::endl;
     //outputTunables();
     std::cout << "uciok" << std::endl;
 }
 
 // tells the engine to search, with support for a few different types
 void go(std::vector<std::string> bits) {
+    std::array<Move, 256> optimalMoves = {};
+    int numOptimalMoves = 0;
     if(useSyzygy) {
-        if(__builtin_popcountll(board.getOccupiedBitboard()) <= static_cast<int>(TB_LARGEST)) {
+        if(__builtin_popcountll(board.getOccupiedBitboard()) <= static_cast<int>(std::min(TB_LARGEST, syzygyProbeLimit))) {
             // probe endgame tt at root
-            //std::array<unsigned, TB_MAX_MOVES> results = {};
+            std::array<unsigned, TB_MAX_MOVES> results = {};
             unsigned probeResult = tb_probe_root(board.getColoredBitboard(1), 
                                                 board.getColoredBitboard(0),
                                                 board.getPieceBitboard(King),
@@ -144,38 +147,50 @@ void go(std::vector<std::string> bits) {
                                                 0,
                                                 board.getEnPassantIndex() == 64 ? 0 : board.getEnPassantIndex(),
                                                 board.getColorToMove(),
-                                                //results.data());
-                                                NULL);
+                                                results.data());
             if(probeResult != TB_RESULT_FAILED) {
-                int start = TB_GET_FROM(probeResult);
-                int end = TB_GET_TO(probeResult);
-                int promotion = TB_GET_PROMOTES(probeResult);
-                int ep = TB_GET_EP(probeResult);
-                int wdl = TB_GET_WDL(probeResult);
-                int dtz = TB_GET_DTZ(probeResult);
-                // test case: position fen 8/7k/8/8/8/Q6K/8/8 w - - 0 1
-                Move tbBest = Move(start, end, promotion, ep, board);
-                std::cout << "info score ";
-                if(wdl == TB_WIN) {
-                    // todo: detect mate distance with given DTZ
-                    std::cout << "mate " + std::to_string(dtz / 2 + 1) << std::endl;
-                } else if(wdl == TB_LOSS) {
-                    // todo: this^^
-                    std::cout << "mate -" + std::to_string(dtz / 2 + 1) << std::endl;
-                } else {
-                    std::cout << "cp 0" << std::endl;
+                // sort moves by game result
+                int numMoves = 0;
+                for(int i = 0; i < TB_MAX_MOVES; i++) {
+                    if(results[i] == TB_RESULT_FAILED) {
+                        numMoves = i;
+                        break;
+                    }
+                    
+                    int bestIdx = i;
+                    for(int j = i + 1; j < TB_MAX_MOVES; j++) {
+                        if(results[j] == TB_RESULT_FAILED) break;
+                        if(TB_GET_WDL(results[j]) > TB_GET_WDL(results[bestIdx])) {
+                            bestIdx = j;
+                        }
+                    }
+
+                    if(bestIdx != i) {
+                        std::swap(results[bestIdx], results[i]);
+                    }
                 }
-                std::cout << "bestmove " << toLongAlgebraic(tbBest) << std::endl;
-                return;
+                // convert optimal moves into moves
+                unsigned bestResult = TB_GET_WDL(results[0]);
+                for(int i = 0; i < numMoves; i++) {
+                    if(TB_GET_WDL(results[i]) != bestResult) break;
+                    int start = TB_GET_FROM(results[i]);
+                    int end = TB_GET_TO(results[i]);
+                    int promotion = TB_GET_PROMOTES(results[i]);
+                    int ep = TB_GET_EP(results[i]);
+                    optimalMoves[numOptimalMoves++] = Move(start, end, promotion, ep, board);
+                }
             }
         }
+    }
+    // if position not in syzygy, root searches all moves
+    if(numOptimalMoves == 0) {
+        numOptimalMoves = board.getMoves(optimalMoves);
     }
     int time = 0;
     int depth = 0;
     int inc = 0;
-    int movestogo = defaultMovesToGo;
+    int movestogo = 20;
     int nodes = 0;
-    bool infinite = false;
     for(int i = 1; i < std::ssize(bits); i+=2) {
         if(bits[i] == "wtime" && board.getColorToMove() == 1) {
             time = std::stoi(bits[i+1]);
@@ -198,43 +213,13 @@ void go(std::vector<std::string> bits) {
         if(bits[i] == "nodes") {
             nodes = std::stoi(bits[i+1]);
         }
-        if(bits[i] == "infinite") {
-            infinite = true;
-            i--;
-        }
     }
-    // go depth x
-    if(depth != 0) {
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([depth, i]{
-                engines[i].fixedDepthSearch(board, depth, i == 0);
-            });
-        }
-        //bestMove = engines.fixedDepthSearch(board, depth, true);
-    } else if(nodes != 0) {
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([nodes, i]{
-                engines[i].fixedNodesSearch(board, nodes, i == 0);
-            });
-        }
-    } else if(infinite) {
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([i]{
-                engines[i].fixedDepthSearch(board, 100, i == 0);
-            });
-        }
-    } else {
-        // go wtime x btime x
-        // the formulas here are former formulas from Stormphrax
-        time -= moveOverhead;
-        const int softBound = tmsMultiplier.value * (time / movestogo + inc * tmsNumerator.value / tmsDenominator.value);
-        const int hardBound = time / tmhDivisor.value;
-        for(int i = 0; i < threadCount; i++) {
-            threads.emplace_back([i, softBound, hardBound]{
-                engines[i].think(board, softBound, hardBound, i == 0);
-            });
-        }
-        //bestMove = engine.think(board, softBound, hardBound, true);
+    SearchLimiters limits = {};
+    limits.writeValues(time, inc, movestogo, depth, nodes, 0);
+    for(int i = 0; i < threadCount; i++) {
+        threads.emplace_back([limits, i, optimalMoves, numOptimalMoves] {
+            engines[i].think(board, limits, i == 0, optimalMoves, numOptimalMoves);
+        });
     }
 }
 
