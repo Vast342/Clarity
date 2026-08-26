@@ -42,7 +42,7 @@ void Engine::clearHistory() {
 }
 
 Move Engine::getBestMove() {
-    return rootBestMove;
+    return info.stack[0].pvTable[0];
 }
 
 // resets the engine, done when ucinewgame is sent
@@ -497,7 +497,6 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                 alpha = score;
                 bestMove = move;
                 bestIsCapture = isCapture;
-                if(ply == 0) rootBestMove = move;
                 if(isPV) {
                     info.stack[ply].pvTable[0] = move;
                     info.stack[ply].pvLength = info.stack[ply + 1].pvLength + 1;
@@ -509,7 +508,6 @@ int16_t Engine::negamax(Board &board, int depth, int alpha, int beta, int16_t pl
                     flag = BetaCutoff;
                     bestMove = move;
                     bestIsCapture = isCapture;
-                    if(ply == 0) rootBestMove = move;
                     const int colorToMove = board.getColorToMove();
                     // testing berserk history bonus
                     int bonus = std::min(hstMaxBonus.value, hstAdder.value * depth - hstSubtractor.value);
@@ -618,7 +616,6 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
 
     begin = std::chrono::steady_clock::now();
 
-    rootBestMove = Move();
     int16_t score = 0;
 
     // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
@@ -628,12 +625,12 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
         int delta = aspBaseDelta.value;
         int alpha = std::max(int(matedScore), score - delta);
         int beta = std::min(-matedScore, score + delta);
-        const Move previousBest = rootBestMove;
+        const Move previousBest = getBestMove();
         int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                if(rootBestMove == previousBest) {
+                if(getBestMove() == previousBest) {
                     stability++;
                 } else {
                     stability = 0;
@@ -653,36 +650,21 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
         } else {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
-        if(timesUp.load(std::memory_order_relaxed)) rootBestMove = previousBest;
         if(printInfo) {
             const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
             outputInfo(board, score, depth, elapsedTime);
             // soft time bounds check
-            if(!limits.softLimitCheck(elapsedTime, rootBestMove, nodes, nodeTMTable, depth, stability)) {
+            if(!limits.softLimitCheck(elapsedTime, getBestMove(), nodes, nodeTMTable, depth, stability)) {
                 break;
             }
         }
     }
 
-    if(rootBestMove == Move()) {
-        MovePicker picker = MovePicker::search(board, Move(), info, 0);
-
-        while (true) {
-            auto [move, score] = picker.next();
-            if (!move) break;
-            if(board.makeMove<true>(move)) {
-                board.undoMove<true>();
-                rootBestMove = move;
-                break;
-            }
-        }
-    }
-    
     if(printInfo) {
         timesUp.store(true);
         stopOtherThreads();
-        std::cout << "bestmove " << toLongAlgebraic(rootBestMove) << std::endl;
+        std::cout << "bestmove " << toLongAlgebraic(getBestMove()) << std::endl;
         mainThreadDone = true;
     }
-    return rootBestMove;
+    return getBestMove();
 }

@@ -37,7 +37,6 @@ struct Engine {
 
         uint64_t nodes = 0;
     private:
-        Move rootBestMove = Move();
         int seldepth = 0;
 
         std::array<Move, 256> rootMoves;
