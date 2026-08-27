@@ -618,6 +618,8 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
 
     int16_t score = 0;
 
+    Move bestMove = Move();
+
     // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
     for(int depth = 1; depth <= limits.getDepthLimit(); depth++) {
         // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
@@ -625,12 +627,13 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
         int delta = aspBaseDelta.value;
         int alpha = std::max(int(matedScore), score - delta);
         int beta = std::min(-matedScore, score + delta);
-        const Move previousBest = getBestMove();
+        const Move previousBest = bestMove;
         int usedDepth = depth;
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                if(getBestMove() == previousBest) {
+                bestMove = getBestMove();
+                if(bestMove == previousBest) {
                     stability++;
                 } else {
                     stability = 0;
@@ -644,6 +647,7 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
                     alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
                 } else break;
+                if(timesUp.load(std::memory_order_relaxed)) bestMove = previousBest;
 
                 delta *= aspDeltaMultiplier.value;
             }
@@ -654,7 +658,7 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
             const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
             outputInfo(board, score, depth, elapsedTime);
             // soft time bounds check
-            if(!limits.softLimitCheck(elapsedTime, getBestMove(), nodes, nodeTMTable, depth, stability)) {
+            if(!limits.softLimitCheck(elapsedTime, bestMove, nodes, nodeTMTable, depth, stability)) {
                 break;
             }
         }
@@ -663,8 +667,8 @@ Move Engine::think(Board board, SearchLimiters limiters, bool printInfo, std::ar
     if(printInfo) {
         timesUp.store(true);
         stopOtherThreads();
-        std::cout << "bestmove " << toLongAlgebraic(getBestMove()) << std::endl;
+        std::cout << "bestmove " << toLongAlgebraic(bestMove) << std::endl;
         mainThreadDone = true;
     }
-    return getBestMove();
+    return bestMove;
 }
