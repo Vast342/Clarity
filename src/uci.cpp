@@ -123,7 +123,7 @@ void identify() {
     std::cout << "option name SyzygyPath type string default <empty>" << std::endl;
     // todo: increase max to 8
     std::cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 7" << std::endl;
-    //outputTunables();
+    outputTunables();
     std::cout << "uciok" << std::endl;
 }
 
