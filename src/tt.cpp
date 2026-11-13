@@ -51,6 +51,6 @@ void TranspositionTable::resize(size_t newSizeMB, int threadCount) {
     size_t newSizeB = newSizeMB * 1024 * 1024;
     size_t newSizeEntries = newSizeB / sizeof(Transposition);
     size = newSizeEntries;
-    table.resize(size, Transposition());
+    table.resize(size);
     clearTable(threadCount);
 }
