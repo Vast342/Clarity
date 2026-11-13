@@ -36,7 +36,7 @@ std::chrono::steady_clock::time_point beginTime;
 std::vector<uint64_t> gamesPerThread;
 int games = 0;
 
-// run it with *directory of the Clarity_Datagen.exe* *directory to save the file to* *number of games* *number of threads*
+// run it with *directory of the Clarity-datagen.exe* *directory to save the file to* *number of games* *number of threads*
 int main([[maybe_unused]]int argc, char** argv) {
     initialize();
     int numGames;

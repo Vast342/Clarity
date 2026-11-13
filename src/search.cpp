@@ -817,9 +817,10 @@ Move Engine::fixedDepthSearch(Board board, int depthToSearch, bool printInfo) {
     return rootBestMove;
 }
 
+
 std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     info.stack[0].doubleExtensions = 0;
-    //clearHistory();
+
     useNodeCap = true;
     nodes = 0;
     hardLimit = 400000;
@@ -829,55 +830,80 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
     begin = std::chrono::steady_clock::now();
 
     rootBestMove = Move();
-    Move previousBest = Move();
-    int16_t previousScore = 0;
-    int16_t score = 0;
-    // Iterative Deepening, searches to increasing depths, which sounds like it would slow things down but it makes it much better
+
+    Move completedBestMove = Move();
+    int16_t completedScore = 0;
+
     for(int depth = 1; depth <= 100; depth++) {
-        previousBest = Move();
-        previousScore = score;
-        // Aspiration Windows, searches with reduced bounds until it doesn't fail high or low
         seldepth = depth;
+
         int delta = aspBaseDelta.value;
-        int alpha = std::max(int(matedScore), score - delta);
-        int beta = std::min(-matedScore, score + delta);
+        int alpha = std::max(int(matedScore), int(completedScore) - delta);
+        int beta = std::min(-matedScore, int(completedScore) + delta);
+
         int usedDepth = depth;
+        int16_t iterationScore = completedScore;
+
+        bool interrupted = false;
+
         if(depth > aspDepthCondition.value) {
             while(true) {
-                score = negamax(board, usedDepth, alpha, beta, 0, true, false);
-                
-                if(score >= beta) {
+                iterationScore = negamax(
+                    board, usedDepth, alpha, beta, 0, true, false
+                );
+
+                if(timesUp.load(std::memory_order_relaxed)) {
+                    interrupted = true;
+                    break;
+                }
+
+                if(iterationScore >= beta) {
                     beta = std::min(beta + delta, -matedScore);
                     usedDepth = std::max(usedDepth - 1, depth - 5);
-                } else if(score <= alpha) {
+                } else if(iterationScore <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
-                } else break;
-                if(nodes > nodeCap) break;
-                if(timesUp) break;
+                } else {
+                    break;
+                }
+
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
-            score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
+            iterationScore = negamax(
+                board, depth, matedScore, -matedScore, 0, true, false
+            );
+
+            if(timesUp.load(std::memory_order_relaxed)) {
+                interrupted = true;
+            }
         }
-        if(timesUp) {
-            rootBestMove = previousBest;
-            score = previousScore;
+
+        if(interrupted) {
+            rootBestMove = completedBestMove;
             break;
         }
-        //const auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - begin).count();
-        // outputs info which is picked up by the user
-        //outputInfo(board, score, depth, elapsedTime);
-        if(nodes > nodeCap) break;
+
+        if(nodes > nodeCap) {
+            break;
+        }
+
+        completedBestMove = rootBestMove;
+        completedScore = iterationScore;
     }
 
+    rootBestMove = completedBestMove;
+    
     if(rootBestMove == Move()) {
         MovePicker picker = MovePicker::search(board, Move(), info, 0);
+        std::cout << "fallback???" << std::endl;
 
-        while (true) {
-            auto [move, score] = picker.next();
-            if (!move) break;
+        while(true) {
+            auto [move, moveScore] = picker.next();
+
+            if(!move) break;
+
             if(board.makeMove<true>(move)) {
                 board.undoMove<true>();
                 rootBestMove = move;
@@ -886,7 +912,7 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         }
     }
 
-    return std::pair<Move, int>(rootBestMove, score);
+    return std::pair<Move, int>(rootBestMove, completedScore);
 }
 
 Move Engine::fixedNodesSearch(Board board, int nodeCount, bool printInfo) {
