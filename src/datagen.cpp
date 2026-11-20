@@ -224,7 +224,7 @@ void dumpToArray(std::ofstream &output, double result, std::vector<std::string>&
     if((games % outputFrequency) == 0) std::cout << "Finished game " << games << '\n';
     for(const std::string &fen : fenVector) {
         // add to file and append result \n
-        output << fen << " | " << result << '\n';
+        output << fen << " | " << result << std::endl;
         totalPositions++;
     }
     if((games % infoOutputFrequency) == 0) {

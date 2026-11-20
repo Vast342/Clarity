@@ -842,26 +842,34 @@ std::pair<Move, int> Engine::dataGenSearch(Board board, uint64_t nodeCap) {
         int alpha = std::max(int(matedScore), score - delta);
         int beta = std::min(-matedScore, score + delta);
         int usedDepth = depth;
+        bool complete = true;
         if(depth > aspDepthCondition.value) {
             while(true) {
                 score = negamax(board, usedDepth, alpha, beta, 0, true, false);
                 
+                if(nodes > nodeCap || timesUp) {
+                    complete = false;
+                    break;
+                }
                 if(score >= beta) {
                     beta = std::min(beta + delta, -matedScore);
                     usedDepth = std::max(usedDepth - 1, depth - 5);
+                    complete = false;
                 } else if(score <= alpha) {
                     beta = (alpha + beta) / 2;
                     alpha = std::max(alpha - delta, int(matedScore));
                     usedDepth = depth;
-                } else break;
-                if(nodes > nodeCap) break;
-                if(timesUp) break;
+                    complete = false;
+                } else {
+                    complete = true;
+                    break;
+                }
                 delta *= aspDeltaMultiplier.value;
             }
         } else {
             score = negamax(board, depth, matedScore, -matedScore, 0, true, false);
         }
-        if(timesUp) {
+        if(!complete) {
             rootBestMove = previousBest;
             score = previousScore;
             break;
